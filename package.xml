@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <name>bewego</name>
+  <version>0.1.1</version>
+  <description>Library Movement Planning</description>
+  <maintainer email="mainprice@gmail.com">Jim Mainprice</maintainer>
+  <license>GNU GPL</license>
+  <url type="website">https://github.com/jmainpri/bewego</url>
+  <author email="mainprice@gmail.com">Jim Mainprice</author>
+  <buildtool_depend>catkin</buildtool_depend>
+  <export>
+    <!-- <metapackage/> -->
+  </export>
+</package>
