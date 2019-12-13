@@ -2,7 +2,9 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <gtest/gtest.h>
 #include <bewego/atomic_operators.h>
-#include<random>
+#include <random>
+#include <iostream>
+#include <memory>
 
 using namespace bewego;
 using std::cout;
