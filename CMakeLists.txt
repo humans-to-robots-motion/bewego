@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.0)
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0057 NEW)
+
 project(bewego)
 
 ############################
@@ -7,13 +10,11 @@ project(bewego)
 # Enable c++11 GCC 4.7 or greater required
 add_definitions(-std=c++14 -fno-omit-frame-pointer -fPIC)
 add_definitions(-DPROFILING_ON=1) #print profiling output
-
-#add_definitions(-Wall)
-#add_definitions(-Wno-unused-local-typedefs)
-#add_definitions(-Wno-deprecated-declarations)
-#add_definitions(-Wno-comment)
-## for eigen-3.1.2
-#add_definitions(-Wno-deprecated-register)
+add_definitions(-Wno-deprecated-register)
+# add_definitions(-Wno-deprecated-declarations)
+# add_definitions(-Wall)
+# add_definitions(-Wno-unused-local-typedefs)
+# add_definitions(-Wno-comment)
 
 ############################
 # Library Version          #
@@ -25,6 +26,9 @@ add_definitions(-DPROFILING_ON=1) #print profiling output
 ############################
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(CMAKE_MACOSX_RPATH 1)
+endif()
 
 # local variables
 set(bewego_LIBRARY ${PROJECT_NAME})
@@ -105,6 +109,4 @@ add_library(${bewego_LIBRARY} SHARED
 ############################
 # Tests                    #
 ############################
-# enable_testing()
-# include(${CMAKE_MODULE_PATH}/gtest.cmake)
-# include(utests.cmake)
+include(${PROJECT_SOURCE_DIR}/tests/utests.cmake)

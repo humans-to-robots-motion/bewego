@@ -1,0 +1,8 @@
+enable_testing()
+find_package(gtest REQUIRED)
+include_directories(${gtest_INCLUDE_DIRS})
+message(${gtest_INCLUDE_DIRS})
+add_executable(atomic_operators_utest tests/atomic_operators_utest.cpp)
+target_link_libraries(atomic_operators_utest gtest)
+include(GoogleTest)
+gtest_add_tests(TARGET atomic_operators_utest)
