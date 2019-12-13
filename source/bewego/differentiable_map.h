@@ -1,5 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
+#pragma once
+
 #include <Eigen/Core>
 #include <cassert>
 
@@ -52,8 +54,7 @@ public:
         return FiniteDifferenceHessian(*this, q);
     }
 
-    /**
-     Evaluates the map and jacobian simultaneously. The default
+    /** Evaluates the map and jacobian simultaneously. The default
             implementation simply calls both forward and Getjacobian()
             separately but overriding this method can make the evaluation
             more efficient
@@ -63,16 +64,14 @@ public:
         return std::make_pair(Forward(q), Jacobian(q));
     }
 
-    /**
-     Takes an object f that has a forward method returning
+    /** Takes an object f that has a forward method returning
         a numpy array when querried.
         */
      static Eigen::MatrixXd FiniteDifferenceJacobian(
             const DifferentiableMap& f,
             const Eigen::VectorXd& q);
 
-    /**
-    Takes an object f that has a forward method returning
+    /** Takes an object f that has a forward method returning
         a numpy array when querried.
         */
     static Eigen::MatrixXd FiniteDifferenceHessian(

@@ -30,7 +30,7 @@ Eigen::MatrixXd DifferentiableMap::FiniteDifferenceJacobian(
 }
 
 /**
-Takes an object f that has a forward method returning
+    Takes an object f that has a forward method returning
     a numpy array when querried.
     */
 Eigen::MatrixXd DifferentiableMap::FiniteDifferenceHessian(
