@@ -77,6 +77,15 @@ public:
     static Eigen::MatrixXd FiniteDifferenceHessian(
             const DifferentiableMap& f,
             const Eigen::VectorXd& q);
+
+    /** check against finite differences */
+    bool CheckJacobian() const;
+
+    /** check against finite differences */
+    bool CheckHessian() const;
+
     };
+
+
 
 }

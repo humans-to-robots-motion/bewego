@@ -68,7 +68,9 @@ class AffineMap : public DifferentiableMap {
 public:
     AffineMap(
         const Eigen::MatrixXd& a,
-        const Eigen::VectorXd& b) : a_(a), b_(b) {}
+        const Eigen::VectorXd& b) : a_(a), b_(b) {
+        assert(a_.rows() == b.size());
+    }
 
     uint32_t output_dimension() const { return b_.size(); }
     uint32_t input_dimension() const { return a_.cols(); }
@@ -95,7 +97,7 @@ protected:
 };
 
 
-/** Simple squared norm: f(x)= | x - x_0 | ^2 */
+/** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
 class SquaredNorm : public DifferentiableMap {
 public:
     SquaredNorm(const Eigen::VectorXd& x0) : x0_(x0) {}
@@ -105,8 +107,9 @@ public:
 
     Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
         assert(input_dimension() == x.size());
-        Eigen::VectorXd v(output_dimension());
-        v(0) = 0.5 * (x - x0_).norm();
+        Eigen::VectorXd delta_x = x - x0_;
+        Eigen::VectorXd v(1);
+        v(0) = 0.5 * delta_x.transpose() * delta_x;      
         return v;
     }
 
