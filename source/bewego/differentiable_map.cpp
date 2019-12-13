@@ -61,17 +61,13 @@ Eigen::MatrixXd DifferentiableMap::FiniteDifferenceHessian(
 /** check against finite differences */
 bool DifferentiableMap::CheckJacobian() const {
     Eigen::VectorXd x = Eigen::VectorXd::Random(input_dimension());
-    auto J1 = Jacobian(x);
-    auto J2 = FiniteDifferenceJacobian(*this, x);
-    return J1.isApprox(J2);
+    return Jacobian(x).isApprox(FiniteDifferenceJacobian(*this, x));
 }
 
 /** check against finite differences */
 bool DifferentiableMap::CheckHessian() const {
     Eigen::VectorXd x = Eigen::VectorXd::Random(input_dimension());
-    auto H1 = Hessian(x);
-    auto H2 = FiniteDifferenceHessian(*this, x);
-    return H1.isApprox(H2);
+    return Hessian(x).isApprox(FiniteDifferenceHessian(*this, x));
 }
 
 } // namespace bewego
