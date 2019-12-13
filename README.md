@@ -14,5 +14,6 @@ Compile and execute tests
     mkdir -p build && cd build
     cmake ..
     make
+    make test
     cd ../tests
     python test.py
