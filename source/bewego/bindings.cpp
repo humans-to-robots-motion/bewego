@@ -3,7 +3,7 @@
 #include <pybind11/pybind11.h>
 
 #include <bewego/differentiable_map.h>
-#include <bewego/atomic_maps.h>
+#include <bewego/atomic_operators.h>
 
 int add(int i, int j) {
     return i + j;
