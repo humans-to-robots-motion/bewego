@@ -12,6 +12,6 @@ Download with pybind11
 Compile and execute tests
 
     mkdir -p build
-    cmake ..
+    cd build && cmake ..
     make
     cd .. && python tests/test.py
