@@ -48,11 +48,11 @@ class QuatToEuler : public DifferentiableMap {
     
     Eigen::Vector4d dX = -t0/(t0*t0+t1*t1)*dt1 + t1/(t0*t0+t1*t1)*dt0;
 
-    double t2 = 2. * (w*y - z*y);
+    double t2 = 2. * (w*y - z*x);
     Eigen::Vector4d dY;
 
     if (t2 < -.99999 || t2 > .99999) {
-      
+      dY << 0., 0., 0., 0.;
     } else {
       Eigen::Vector4d dt2;
       dt2 << -2.*z, 2.*w, -2.*x, 2.*y;
@@ -63,7 +63,7 @@ class QuatToEuler : public DifferentiableMap {
     double t3 = 2. * (w * z + x * y);
     double t4 = 1. - 2. * (y*y + z*z);
     Eigen::Vector4d dt3(2.*y, 2.*x, 2.*w, 2.*z);
-    Eigen::Vector4d dt4(-4.*y, -4.*z, 0., 0.);
+    Eigen::Vector4d dt4(0., -4.*y, -4.*z, 0.);
     Eigen::Vector4d dZ = -t3/(t3*t3+t4*t4)*dt4 + t4/(t3*t3+t4*t4)*dt3;
     Eigen::MatrixXd jac(3, 4);
     jac.row(0) = dX;
@@ -71,6 +71,5 @@ class QuatToEuler : public DifferentiableMap {
     jac.row(2) = dZ;
     return jac;
   }
-
 };
 }

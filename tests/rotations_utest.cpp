@@ -12,7 +12,7 @@ using std::endl;
 
 std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
-static const unsigned int SEED = 1;
+static const unsigned int SEED = 0;
 
 TEST(rotations, QuatToEuler_fd) {
   std::srand(SEED);
@@ -24,11 +24,11 @@ TEST(rotations, QuatToEuler_fd) {
 
 TEST(rotations, QuatToEuler) {
   f = std::make_shared<QuatToEuler>();
-  Eigen::Vector4d quat(0.64434867, -0.83761646, -0.13003315, -0.79692024);
-  cout << f->Forward(quat) << endl;
-  cout << f->Jacobian(quat) << endl;
-  //ASSERT_TRUE(f->CheckJacobian());
-
+  Eigen::Vector4d quat(-0.58377744, -0.4719759, 0.72638568, 0.04159109);
+  Eigen::MatrixXd correct(3, 4);
+  correct << 3.06874722,  2.16385246,  0.21609872,  0.26728813,-2.4705506, 0.14145777, 1.98551782, -1.60526342, 0.75672101, -0.91196898,  2.77735716, -1.16461729;
+  auto jac = f->Jacobian(quat);
+  ASSERT_TRUE(jac.isApprox(correct, 1e-7));
 }
 
 int main(int argc, char* argv[]) {
