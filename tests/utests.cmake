@@ -11,3 +11,8 @@ add_executable(atomic_operators_utest tests/atomic_operators_utest.cpp)
 target_link_libraries(atomic_operators_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET atomic_operators_utest)
+
+add_executable(rotations_utest tests/rotations_utest.cpp)
+target_link_libraries(rotations_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
+include(GoogleTest)
+gtest_add_tests(TARGET rotations_utest)

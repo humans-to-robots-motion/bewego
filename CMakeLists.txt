@@ -100,7 +100,8 @@ file(GLOB_RECURSE bewego_HEADERS
 
 # Build bewego library
 set(bewego_SOURCES    
-    ${bewego_SOURCE_DIR}/differentiable_map.cpp
+  ${bewego_SOURCE_DIR}/differentiable_map.cpp
+  ${bewego_SOURCE_DIR}/rotations.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
