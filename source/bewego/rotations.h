@@ -1,7 +1,7 @@
 #pragma once
 #include <bewego/differentiable_map.h>
 #include <iostream>
-
+using namespace std;
 namespace bewego {
 
 class QuatToEuler : public DifferentiableMap {
@@ -21,9 +21,11 @@ class QuatToEuler : public DifferentiableMap {
     double t0 = 2. * (w * x + y * z);
     double t1 = 1. - 2. * (x*x + y*y);
     double X = atan2(t0, t1);
-    double t2 = 2. * (w*y - z*y);
+    double t2 = 2. * (w*y - z*x);
+
     t2 = fmin(.99999, t2);
     t2 = fmax(-.99999, t2);
+
     double Y = asin(t2);
 
     double t3 = 2. * (w * z + x * y);

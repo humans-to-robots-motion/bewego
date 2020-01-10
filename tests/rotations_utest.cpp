@@ -14,15 +14,15 @@ std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
 
-TEST(rotations, QuatToEuler_fd) {
-  std::srand(SEED);
-
+TEST(rotations, QuatToEulerCheckForward) {
   f = std::make_shared<QuatToEuler>();
-  ASSERT_TRUE(f->CheckJacobian());
-
+  Eigen::Vector4d quat (0.48610611,  0.6118317,  -0.14720144, -0.65144289);
+  Eigen::Vector3d correct (-1.83638469, -0.71290728,  1.3123043);
+  auto res = f->Forward(quat);
+  ASSERT_TRUE(res.isApprox(correct, 1e-7));
 }
 
-TEST(rotations, QuatToEuler) {
+TEST(rotations, QuatToEulerCheckJacobian) {
   f = std::make_shared<QuatToEuler>();
   Eigen::Vector4d quat(-0.58377744, -0.4719759, 0.72638568, 0.04159109);
   Eigen::MatrixXd correct(3, 4);
@@ -30,6 +30,13 @@ TEST(rotations, QuatToEuler) {
   auto jac = f->Jacobian(quat);
   ASSERT_TRUE(jac.isApprox(correct, 1e-7));
 }
+
+TEST(rotations, QuatToEulerCheckJacobianFD) {
+  std::srand(SEED);
+  f = std::make_shared<QuatToEuler>();
+  ASSERT_TRUE(f->CheckJacobian(1e-7));
+}
+
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
