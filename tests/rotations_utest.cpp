@@ -37,6 +37,28 @@ TEST(rotations, QuatToEulerCheckJacobianFD) {
   ASSERT_TRUE(f->CheckJacobian(1e-7));
 }
 
+TEST(rotations, ExpmapToQuatCheckForward) {
+  f = std::make_shared<ExpmapToQuat>();
+  Eigen::Vector3d expmap(9.82132492,  4.9519887,  -3.16121018);
+  Eigen::Vector4d correct(-0.45657567, -0.23020902,  0.14695896,  0.84672636);
+  auto res = f->Forward(expmap);
+  ASSERT_TRUE(res.isApprox(correct, 1e-7));
+}
+
+TEST(rotations, ExpmapToQuatCheckJacobian) {
+  f = std::make_shared<ExpmapToQuat>();
+  Eigen::Vector3d expmap(-4.29343432, -3.61562964, -1.67723848);
+  Eigen::MatrixXd correct(4, 3);
+  correct << -0.24586002, -0.23735675, -0.11010638, -0.23735675, -0.16389237, -0.09272388, -0.11010638, -0.09272388, -0.00702041, 0.07726649,  0.06506842,  0.0301843;
+  auto jac = f->Jacobian(expmap);
+  ASSERT_TRUE(jac.isApprox(correct, 1e-7));
+}
+
+TEST(rotations, ExpmapToQuatCheckJacobianFD) {
+  std::srand(SEED);
+  f = std::make_shared<ExpmapToQuat>();
+  ASSERT_TRUE(f->CheckJacobian(1e-7));
+}
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

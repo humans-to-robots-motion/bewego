@@ -7,7 +7,7 @@ namespace bewego {
 class QuatToEuler : public DifferentiableMap {
  public:
   QuatToEuler() {}
-  
+
   uint32_t output_dimension() const { return 3; }
   uint32_t input_dimension() const { return 4; }
 
@@ -31,12 +31,12 @@ class QuatToEuler : public DifferentiableMap {
     double t3 = 2. * (w * z + x * y);
     double t4 = 1. - 2. * (y*y + z*z);
     double Z = atan2(t3, t4);
-     
+
     Eigen::VectorXd euler(3);
     euler << X, Y, Z;
     return euler;
   }
-  
+
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
     assert(q.size() == 4);
     const double& x = q[0];
@@ -47,7 +47,7 @@ class QuatToEuler : public DifferentiableMap {
     Eigen::Vector4d dt0(2.*w, 2.*z, 2.*y, 2.*x);
     double t1 = 1. - 2. * (x*x + y*y);
     Eigen::Vector4d dt1(-4.*x, -4.*y, 0., 0.);
-    
+
     Eigen::Vector4d dX = -t0/(t0*t0+t1*t1)*dt1 + t1/(t0*t0+t1*t1)*dt0;
 
     double t2 = 2. * (w*y - z*x);
@@ -60,8 +60,8 @@ class QuatToEuler : public DifferentiableMap {
       dt2 << -2.*z, 2.*w, -2.*x, 2.*y;
       dY = 1./(sqrt(1. - t2*t2)) * dt2;
     }
-    
-    
+
+
     double t3 = 2. * (w * z + x * y);
     double t4 = 1. - 2. * (y*y + z*z);
     Eigen::Vector4d dt3(2.*y, 2.*x, 2.*w, 2.*z);
@@ -74,4 +74,43 @@ class QuatToEuler : public DifferentiableMap {
     return jac;
   }
 };
+
+class ExpmapToQuat : public DifferentiableMap {
+ public:
+  ExpmapToQuat() {}
+
+  uint32_t output_dimension() const { return 4; }
+  uint32_t input_dimension() const { return 3; }
+
+  double sinc(const double x) const {
+    if (x == 0)
+      return 1;
+    return sin(x)/x;
+  }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& e) const {
+    assert(e.size() == 3);
+    double theta = e.norm();
+    double w = cos(.5*theta);
+    Eigen::Vector3d xyz = .5 * sinc(.5*theta) * e;
+    return Eigen::Vector4d(xyz[0], xyz[1], xyz[2], w);
+
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& e) const {
+    assert(e.size() == 3);
+    double theta = e.norm();
+    Eigen::Vector3d dtheta = (1. / theta) * e;
+    Eigen::Vector3d dw = dtheta * .5 * -sin(.5*theta);
+    Eigen::Vector3d xyz = .5 * sinc(.5*theta) * e;
+    double dsinc = .5 * (theta*cos(0.5*theta) - 2*sin(0.5*theta))/(theta*theta);
+    Eigen::MatrixXd dot = e * dtheta.transpose() * dsinc;
+    Eigen::MatrixXd dxyz = dot + .5 * sinc(.5*theta) * Eigen::MatrixXd::Identity(3,3);
+    Eigen::MatrixXd jac(4, 3);
+    jac.block(0, 0, 3, 3) = dxyz;
+    jac.row(3) = dw;
+    return jac;
+  }
+};
+
 }
