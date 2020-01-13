@@ -113,4 +113,49 @@ class ExpmapToQuat : public DifferentiableMap {
   }
 };
 
+class EulerToQuat : public DifferentiableMap {
+ public:
+  EulerToQuat() {}
+
+  uint32_t output_dimension() const { return 4; }
+  uint32_t input_dimension() const { return 3; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& e) const {
+    assert(e.size() == 3);
+    const double& x = e[0];
+    const double& y = e[1];
+    const double& z = e[2];
+    double c1 = cos(x / 2.);
+    double c2 = cos(y / 2.);
+    double c3 = cos(z / 2.);
+    double s1 = sin(x / 2.);
+    double s2 = sin(y / 2.);
+    double s3 = sin(z / 2.);
+    double xq = s1*c2*c3 - c1*s2*s3;
+    double yq = s1*c2*s3 + c1*s2*c3;
+    double zq = c1*c2*s3 - s1*s2*c3;
+    double wq = c1*c2*c3 + s1*s2*s3;
+    return Eigen::Vector4d(xq, yq, zq, wq);
+  }
+};
+
+class QuatToExpmap : public DifferentiableMap {
+ public:
+  QuatToExpmap() {}
+
+  uint32_t output_dimension() const { return 3; }
+  uint32_t input_dimension() const { return 4; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    assert(q.size() == 4);
+    Eigen::Vector3d qxyz(q[0], q[1], q[2]);
+    double qw = q[3];
+    double norm = qxyz.norm();
+    qxyz/=norm;
+    double theta = 2. * atan2(norm, qw);
+    theta = fmod(theta + 2. * M_PI, 2. * M_PI);
+    return qxyz * theta;
+  }
+};
+
 }

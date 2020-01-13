@@ -14,6 +14,11 @@ std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
 
+
+// ------------------------------------------------------------
+// Quaternion to Euler Tests
+// ------------------------------------------------------------
+
 TEST(rotations, QuatToEulerCheckForward) {
   f = std::make_shared<QuatToEuler>();
   Eigen::Vector4d quat (0.48610611,  0.6118317,  -0.14720144, -0.65144289);
@@ -37,6 +42,11 @@ TEST(rotations, QuatToEulerCheckJacobianFD) {
   ASSERT_TRUE(f->CheckJacobian(1e-7));
 }
 
+
+// ------------------------------------------------------------
+// Expmap to Quaternion Tests
+// ------------------------------------------------------------
+
 TEST(rotations, ExpmapToQuatCheckForward) {
   f = std::make_shared<ExpmapToQuat>();
   Eigen::Vector3d expmap(9.82132492,  4.9519887,  -3.16121018);
@@ -59,6 +69,33 @@ TEST(rotations, ExpmapToQuatCheckJacobianFD) {
   f = std::make_shared<ExpmapToQuat>();
   ASSERT_TRUE(f->CheckJacobian(1e-7));
 }
+
+
+// ------------------------------------------------------------
+// Euler To Quaternion Test
+// ------------------------------------------------------------
+
+TEST(rotations, EulerToQuatCheckForward) {
+  f = std::make_shared<EulerToQuat>();
+  Eigen::Vector3d euler (5.5766361, -1.61447717, 3.2797492);
+  Eigen::Vector4d correct (-0.69266627, 0.19188573, -0.66449562, -0.20454555);
+  auto res = f->Forward(euler);
+  ASSERT_TRUE(res.isApprox(correct, 1e-7));
+}
+
+
+// ------------------------------------------------------------
+// Quaternion To Expmap Test
+// ------------------------------------------------------------
+
+TEST(rotations, QuatToExpmapCheckForward) {
+  f = std::make_shared<QuatToExpmap>();
+  Eigen::Vector4d quat (-0.40468662, -0.69453879, -0.56126898, -0.16210983);
+  Eigen::Vector3d correct (-1.43206404, -2.45776358, -1.98616187);
+  auto res = f->Forward(quat);
+  ASSERT_TRUE(res.isApprox(correct, 1e-7));
+}
+
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
