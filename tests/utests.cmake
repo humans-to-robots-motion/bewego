@@ -16,3 +16,8 @@ add_executable(rotations_utest tests/rotations_utest.cpp)
 target_link_libraries(rotations_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET rotations_utest)
+
+add_executable(rnn_utest tests/rnn_utest.cpp)
+target_link_libraries(rnn_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
+include(GoogleTest)
+gtest_add_tests(TARGET rnn_utest)

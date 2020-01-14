@@ -96,12 +96,13 @@ set_target_properties(pybewego
 include_directories(${bewego_INCLUDE_DIRS})
 set(bewego_SOURCE_DIR source/${PROJECT_NAME})
 file(GLOB_RECURSE bewego_HEADERS 
-    ${bewego_SOURCE_DIR}/*.hpp ${bewego_SOURCE_DIR}/*.h)
+    ${bewego_SOURCE_DIR}/[a-z0-9]*.hpp ${bewego_SOURCE_DIR}/[a-z0-9]*.h)
 
 # Build bewego library
 set(bewego_SOURCES    
   ${bewego_SOURCE_DIR}/differentiable_map.cpp
   ${bewego_SOURCE_DIR}/rotations.cpp
+  ${bewego_SOURCE_DIR}/rnn.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
