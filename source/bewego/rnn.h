@@ -128,12 +128,13 @@ namespace bewego {
     uint32_t hidden_dimension() const {return 0;};
     uint32_t input_dimension() const {return 0;};
 
-    StackedGRUCell(int layers, int hidden_dim, std::vector<std::shared_ptr<GRUCell>>& cells, const Eigen::MatrixXd& Wdense, const Eigen::VectorXd& bdense) {
+    StackedGRUCell(int layers, int hidden_dim, int output_dim, std::vector<std::shared_ptr<GRUCell>>& cells, const Eigen::MatrixXd& Wdense, const Eigen::VectorXd& bdense) {
       this->layers=layers;
       this->cells=cells;
       this->hidden_dim=hidden_dim;
       this->Wdense=Wdense;
       this->bdense=bdense;
+      this->output_dim=output_dim;
     }
 
     std::tuple<Eigen::VectorXd, Eigen::VectorXd> Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
@@ -152,6 +153,38 @@ namespace bewego {
     }
 
     std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
+      const int input_dim = x.rows();
+      Eigen::VectorXd output = x;
+      Eigen::VectorXd states = h_in;
+      Eigen::MatrixXd jac_h_h = Eigen::MatrixXd::Zero(layers*hidden_dim, layers*hidden_dim);
+      Eigen::MatrixXd jac_h_out = Eigen::MatrixXd::Zero(output_dim, hidden_dim*layers);
+      Eigen::MatrixXd jac_in_h = Eigen::MatrixXd::Zero(hidden_dim*layers, input_dim);
+
+      for (int l=0; l<layers; ++l) {
+	Eigen::VectorXd h_out;
+	Eigen::MatrixXd jac_in, jac_h, jd1, jd2;
+	std::tie(jac_in, jac_h, jd1, jd2) = cells[l]->Jacobian(output, states.segment(l*hidden_dim, hidden_dim));
+	std::tie(output, h_out) = cells[l]->Forward(output, states.segment(l*hidden_dim, hidden_dim));
+
+        if (l > 0) {
+	  jac_in_h.block(l*hidden_dim, 0, hidden_dim, input_dim) = jac_in * jac_in_h.block((l-1)*hidden_dim, 0, hidden_dim, input_dim);
+	} else {
+	  jac_in_h.block(0, 0, hidden_dim, input_dim) = jac_in;
+	}
+
+	jac_h_h.block(l*hidden_dim, l*hidden_dim, hidden_dim, hidden_dim) = jac_h;
+
+	for (int i=0; i<l; ++i) {
+	  jac_h_h.block(l*hidden_dim, i*hidden_dim, hidden_dim, hidden_dim) = jac_in * jac_h_h.block((l-1)*hidden_dim, i*hidden_dim, hidden_dim, hidden_dim);
+	}
+
+	states.segment(l*hidden_dim, hidden_dim)=output;
+      }
+      Eigen::MatrixXd jac_in_out = Wdense.transpose() * jac_in_h.block((layers-1)*hidden_dim, 0, hidden_dim, input_dim);
+      for (int l=0; l<layers; ++l) {
+	jac_h_out.block(0, l*hidden_dim, output_dim, hidden_dim) = Wdense.transpose() * jac_h_h.block((layers-1)*hidden_dim, l*hidden_dim, hidden_dim, hidden_dim);
+      }
+      return {jac_in_out, jac_in_h, jac_h_out, jac_h_h};
 
     }
 
@@ -159,6 +192,7 @@ namespace bewego {
     std::vector<std::shared_ptr<GRUCell>> cells;
     int layers;
     int hidden_dim;
+    int output_dim;
     Eigen::MatrixXd Wdense;
     Eigen::VectorXd bdense;
   };
