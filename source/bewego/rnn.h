@@ -1,17 +1,29 @@
+// Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
+// author: Phliipp Kratzer, philipp.kratzer@ipvs.uni-stuttgart.de
+// rnn.h: Implementations of Recurrent neural network structures and
+// analytical input->output Jacobians for fast computations.
+
 #pragma once
 
 #include <bewego/differentiable_map.h>
-#include <iostream>
 #include <tuple>
 #include <vector>
 #include <memory>
-
-using std::cout;
-using std::endl;
+#include "rotations.h"
 
 namespace bewego {
 
-  /** Abstract class for a RNN cell. A RNN cell maps a pair (input, hidden state) to a pair (output, new hidden state) **/
+  static double Sigmoid(const double x)  {
+    if (x > 0)
+      return 1./(1. + exp(-x));
+    else
+      return exp(x) / ( 1. + exp(x) );
+  }
+
+
+  /**
+      Abstract class for a RNN cell. A RNN cell maps a pair (input, hidden state) to a pair (output, new hidden state)
+  **/
   class RNNCell {
   public:
     virtual uint32_t output_dimension() const = 0;
@@ -25,83 +37,36 @@ namespace bewego {
   };
 
 
-  /** Gated Recurrent Unit. A RNN cell with coupled output and hidden state. **/
-  class GRUCell : public RNNCell {
+  /**
+      Abstract class for a coupled RNN cell (coupled output and hidden state). A coupled RNN cell maps a pair (input, hidden state) to an output
+  **/
+  class CoupledRNNCell {
+  public:
+    virtual uint32_t output_dimension() const = 0;
+    virtual uint32_t hidden_dimension() const = 0;
+    virtual uint32_t input_dimension() const = 0;
+
+    /** maps input in and hidden state h to output o **/
+    virtual Eigen::VectorXd Forward(const Eigen::VectorXd& in, const Eigen::VectorXd& h) const = 0;
+    /** outputs input->output Jacobians of the coupled RNN: dodin dodh **/
+    virtual std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& in, const Eigen::VectorXd& h) const = 0;
+  };
+
+
+  /**
+      Gated Recurrent Unit. A RNN cell with coupled output and hidden state.
+  **/
+  class GRUCell : public CoupledRNNCell {
   public:
     uint32_t output_dimension() const {return hidden_dim;};
     uint32_t hidden_dimension() const {return hidden_dim;};
     uint32_t input_dimension() const {return input_dim;};
 
-    GRUCell(const int input_dimension, const int hidden_dimension, const Eigen::MatrixXd& Wi, const Eigen::MatrixXd& Wr, const Eigen::MatrixXd& Wn, const Eigen::MatrixXd& Ri, const Eigen::MatrixXd& Rr, const Eigen::MatrixXd& Rn, const Eigen::VectorXd& bWi, const Eigen::VectorXd& bWr, const Eigen::VectorXd& bWn, const Eigen::VectorXd& bRi, const Eigen::VectorXd& bRr, const Eigen::VectorXd& bRn) {
-      this->input_dim = input_dimension;
-      this->hidden_dim = hidden_dimension;
-      this->Wi = Wi;
-      this->Wr = Wr;
-      this->Wn = Wn;
-      this->Ri = Ri;
-      this->Rr = Rr;
-      this->Rn = Rn;
-      this->bWi = bWi;
-      this->bWr = bWr;
-      this->bWn = bWn;
-      this->bRi = bRi;
-      this->bRr = bRr;
-      this->bRn = bRn;
-    }
+    GRUCell(const Eigen::MatrixXd& Wi, const Eigen::MatrixXd& Wr, const Eigen::MatrixXd& Wn, const Eigen::MatrixXd& Ri, const Eigen::MatrixXd& Rr, const Eigen::MatrixXd& Rn, const Eigen::VectorXd& bWi, const Eigen::VectorXd& bWr, const Eigen::VectorXd& bWn, const Eigen::VectorXd& bRi, const Eigen::VectorXd& bRr, const Eigen::VectorXd& bRn);
 
-    static double Sigmoid(const double x)  {
-      if (x > 0)
-	return 1./(1. + exp(-x));
-      else
-	return exp(x) / ( 1. + exp(x) );
-    }
+    Eigen::VectorXd Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const;
 
-    std::tuple<Eigen::VectorXd, Eigen::VectorXd> Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
-      Eigen::VectorXd r = (Wr * x + Rr * h_in + bWr + bRr).unaryExpr(&Sigmoid);
-      Eigen::VectorXd i = (Wi * x + Ri * h_in + bWi + bRi).unaryExpr(&Sigmoid);
-      Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&tanh);
-      Eigen::VectorXd h_out = (Eigen::VectorXd::Ones(hidden_dim) - i).cwiseProduct(n) + i.cwiseProduct(h_in);
-      return {h_out, h_out};
-    }
-
-    /* because output and h are coupled, only 2 matrices are returned */
-    std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
-      Eigen::VectorXd r = (Wr * x + Rr * h_in + bWr + bRr).unaryExpr(&Sigmoid);
-      Eigen::VectorXd dsdr = r.cwiseProduct(Eigen::VectorXd::Ones(hidden_dim)-r);
-      Eigen::MatrixXd drdx;
-      drdx.array() = Wr.array().colwise() * dsdr.array();
-      Eigen::MatrixXd drdh;
-      drdh.array() = Rr.array().colwise() * dsdr.array();
-
-      Eigen::VectorXd i = (Wi * x + Ri * h_in + bWi + bRi).unaryExpr(&Sigmoid);
-      Eigen::VectorXd dsdi = i.cwiseProduct(Eigen::VectorXd::Ones(hidden_dim)-i);
-      Eigen::MatrixXd didx;
-
-      didx.array() = Wi.array().colwise() * dsdi.array();
-      Eigen::MatrixXd didh;
-      didh.array() = Ri.array().colwise() * dsdi.array();
-
-      Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&tanh);
-      Eigen::VectorXd dtdn = Eigen::VectorXd::Ones(hidden_dim) - n.cwiseProduct(n);
-      Eigen::VectorXd Rnh = Rn * h_in;
-
-      Eigen::MatrixXd inner_x;
-      inner_x.array() = Wn.array() + drdx.array().colwise() * Rnh.array() + drdx.array().colwise() * bRn.array();
-      Eigen::MatrixXd dndx;
-      dndx.array() = inner_x.array().colwise() * dtdn.array();
-
-      Eigen::MatrixXd inner_h;
-      inner_h.array() =  Rn.array().colwise() * r.array() + drdh.array().colwise() * Rnh.array() + drdh.array().colwise() * bRn.array();
-      Eigen::MatrixXd dndh;
-      dndh.array() = inner_h.array().colwise() * dtdn.array();
-      Eigen::MatrixXd doutdx;
-      doutdx.array() = dndx.array() - dndx.array().colwise() * i.array() - didx.array().colwise() * n.array()  + didx.array().colwise() * h_in.array();
-      Eigen::MatrixXd doutdh;
-      doutdh.array() = dndh.array() - dndh.array().colwise() * i.array() - didh.array().colwise() * n.array() + didh.array().colwise() * h_in.array();
-      doutdh.diagonal() += i;
-
-      return {doutdx, doutdh, Eigen::MatrixXd(), Eigen::MatrixXd()};
-    }
+    std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const;
   protected:
     uint32_t input_dim;
     uint32_t hidden_dim;
@@ -121,79 +86,48 @@ namespace bewego {
   };
 
 
-  /* Stacks multiple GRUs + a linear layer */
-  class StackedGRUCell : public RNNCell {
+  /**
+      Class for stacking RNN cells. Stacks multiple coupled RNNs + a linear layer on top.
+   **/
+  class StackedCoupledRNNCell : public RNNCell {
   public:
-    uint32_t output_dimension() const {return 0;};
-    uint32_t hidden_dimension() const {return 0;};
-    uint32_t input_dimension() const {return 0;};
+    uint32_t output_dimension() const {return output_dim;}
+    uint32_t hidden_dimension() const {return layers*hidden_dim;}
+    uint32_t input_dimension() const {return cells[0]->input_dimension();}
 
-    StackedGRUCell(int layers, int hidden_dim, int output_dim, std::vector<std::shared_ptr<GRUCell>>& cells, const Eigen::MatrixXd& Wdense, const Eigen::VectorXd& bdense) {
-      this->layers=layers;
-      this->cells=cells;
-      this->hidden_dim=hidden_dim;
-      this->Wdense=Wdense;
-      this->bdense=bdense;
-      this->output_dim=output_dim;
-    }
+    StackedCoupledRNNCell(const int layers, const int hidden_dim, const int output_dim, const std::vector<std::shared_ptr<CoupledRNNCell>>& cells, const Eigen::MatrixXd& Wdense, const Eigen::VectorXd& bdense);
 
-    std::tuple<Eigen::VectorXd, Eigen::VectorXd> Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
-      Eigen::VectorXd output = x;
-      Eigen::VectorXd states = h_in;
-      // gru cells
-      for (int l=0; l<layers; ++l) {
-	Eigen::VectorXd h_out;
-	std::tie(output, h_out) = cells[l]->Forward(output, states.segment(l*hidden_dim, hidden_dim));
-	states.segment(l*hidden_dim, hidden_dim)=output;
-      }
+    std::tuple<Eigen::VectorXd, Eigen::VectorXd> Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const;
 
-      // fully connected
-      output = Wdense.transpose() * output + bdense;
-      return {output, states};
-    }
-
-    std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
-      const int input_dim = x.rows();
-      Eigen::VectorXd output = x;
-      Eigen::VectorXd states = h_in;
-      Eigen::MatrixXd jac_h_h = Eigen::MatrixXd::Zero(layers*hidden_dim, layers*hidden_dim);
-      Eigen::MatrixXd jac_h_out = Eigen::MatrixXd::Zero(output_dim, hidden_dim*layers);
-      Eigen::MatrixXd jac_in_h = Eigen::MatrixXd::Zero(hidden_dim*layers, input_dim);
-
-      for (int l=0; l<layers; ++l) {
-	Eigen::VectorXd h_out;
-	Eigen::MatrixXd jac_in, jac_h, jd1, jd2;
-	std::tie(jac_in, jac_h, jd1, jd2) = cells[l]->Jacobian(output, states.segment(l*hidden_dim, hidden_dim));
-	std::tie(output, h_out) = cells[l]->Forward(output, states.segment(l*hidden_dim, hidden_dim));
-
-        if (l > 0) {
-	  jac_in_h.block(l*hidden_dim, 0, hidden_dim, input_dim) = jac_in * jac_in_h.block((l-1)*hidden_dim, 0, hidden_dim, input_dim);
-	} else {
-	  jac_in_h.block(0, 0, hidden_dim, input_dim) = jac_in;
-	}
-
-	jac_h_h.block(l*hidden_dim, l*hidden_dim, hidden_dim, hidden_dim) = jac_h;
-
-	for (int i=0; i<l; ++i) {
-	  jac_h_h.block(l*hidden_dim, i*hidden_dim, hidden_dim, hidden_dim) = jac_in * jac_h_h.block((l-1)*hidden_dim, i*hidden_dim, hidden_dim, hidden_dim);
-	}
-
-	states.segment(l*hidden_dim, hidden_dim)=output;
-      }
-      Eigen::MatrixXd jac_in_out = Wdense.transpose() * jac_in_h.block((layers-1)*hidden_dim, 0, hidden_dim, input_dim);
-      for (int l=0; l<layers; ++l) {
-	jac_h_out.block(0, l*hidden_dim, output_dim, hidden_dim) = Wdense.transpose() * jac_h_h.block((layers-1)*hidden_dim, l*hidden_dim, hidden_dim, hidden_dim);
-      }
-      return {jac_in_out, jac_in_h, jac_h_out, jac_h_h};
-
-    }
+    std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> Jacobian(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const;
 
   protected:
-    std::vector<std::shared_ptr<GRUCell>> cells;
+    std::vector<std::shared_ptr<CoupledRNNCell>> cells;
     int layers;
     int hidden_dim;
     int output_dim;
     Eigen::MatrixXd Wdense;
     Eigen::VectorXd bdense;
   };
+
+
+  /**
+      Unrolled position-velocity RNN. Reimplemantation of a position-velocity encoder-decoder network for human movement prediction (https://arxiv.org/abs/1906.06514) with adaptions based on (https://arxiv.org/abs/1910.01843).
+  **/
+  class VRED {
+  public:
+    VRED(std::shared_ptr<RNNCell>& cell, int dim_trans);
+
+    /** Returns a prediction for future timesteps given control parameters deltas **/
+    Eigen::MatrixXd Forward (const Eigen::MatrixXd data, const Eigen::MatrixXd deltas, int src_length, int pred_length) const;
+
+    /** Jacobian wrt. control parameters delta as matrix **/
+    Eigen::MatrixXd Jacobian (const Eigen::MatrixXd data, const Eigen::MatrixXd deltas, int src_length, int pred_length) const;
+
+  protected:
+    int dim_trans;
+    std::shared_ptr<DifferentiableMap> eulertoquat, quattoexpmap, expmaptoquat, quattoeuler;
+    std::shared_ptr<RNNCell> cell;
+  };
+
 }
