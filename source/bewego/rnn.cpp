@@ -3,8 +3,14 @@
 // rnn.cpp: Implementations of Recurrent neural network structures and
 // analytical input->output Jacobians for fast computations.
 #include <bewego/rnn.h>
+#include <cmath>
 
 namespace bewego {
+
+
+static double Tanh(const double x)  {
+      return std::tanh(x);
+  }
 
   // ------------------------------------------------------------
   // GRUCell
@@ -30,7 +36,7 @@ namespace bewego {
   Eigen::VectorXd GRUCell::Forward(const Eigen::VectorXd& x, const Eigen::VectorXd& h_in) const {
     Eigen::VectorXd r = (Wr * x + Rr * h_in + bWr + bRr).unaryExpr(&Sigmoid);
     Eigen::VectorXd i = (Wi * x + Ri * h_in + bWi + bRi).unaryExpr(&Sigmoid);
-    Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&tanh);
+    Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&Tanh);
     Eigen::VectorXd h_out = (Eigen::VectorXd::Ones(hidden_dim) - i).cwiseProduct(n) + i.cwiseProduct(h_in);
     return h_out;
   }
@@ -51,7 +57,7 @@ namespace bewego {
     Eigen::MatrixXd didh;
     didh.array() = Ri.array().colwise() * dsdi.array();
 
-    Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&tanh);
+    Eigen::VectorXd n = (Wn * x + r.cwiseProduct(Rn * h_in + bRn) + bWn).unaryExpr(&Tanh);
     Eigen::VectorXd dtdn = Eigen::VectorXd::Ones(hidden_dim) - n.cwiseProduct(n);
     Eigen::VectorXd Rnh = Rn * h_in;
 
