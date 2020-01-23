@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <chrono>
 
 using namespace bewego;
 using std::cout;
@@ -282,6 +283,70 @@ TEST(rnn, VRED) {
   Eigen::MatrixXd jac20(input_dim, input_dim);
   jac20 << 7.87866e-05, 0.00094780803, -0.0004375159, -0.00097520766, 0.00015157278, -0.00083062134, -0.00051748136, 0.00091791, 0.00076773023, 0.0006214075, 0.0007907535, 0.00024535856, -0.00075051654, -0.000506395, -0.0004289957, 0.0009298588, 0.00030065223, 0.00023607587, 3.3188666e-05, -0.00053083204, -0.00024968933, 0.0008304614, -0.00025601618, 0.00097016356, 0.00027419368, 0.001602138, -0.00018695678, 0.00018764463, 7.14471e-05, 0.0005802726, -0.00026405227, -0.00012328128, -0.00032120472, 0.00054013287, -0.0016758343, -0.0002983561, 0.0006586779, 0.000622693, -0.00020584674, -0.00028521445, -0.0006830247, 0.00022151213, 0.0009474344, 0.0023176062, 0.00037079578, 0.0003862975, 5.1327268e-05, 0.00050716975, -4.7030273e-05, -0.00042451784, 5.7955272e-05, 0.0009604786, -0.00065029156, -0.00028301412, -0.00045371428, -0.00041105723, -0.00031151035, 0.00039361563, 0.00040708107, 0.0001929016, -0.00081865926, 0.000102923135, -7.371567e-06, 0.00015478188, 0.0006144016, -0.00014481576, -0.000633069, -1.5530637e-05, -0.0005098974, -7.325716e-05, 0.00041244976, 0.00040872826, 5.9120488e-05, 0.0009665569, -0.0004966769, -0.0009814056, 0.00017255319, -0.0008332633, -0.0005871416, 0.0010626126, 0.0008142452;
   ASSERT_TRUE(jac20.isApprox(jac.block(2*input_dim, 0*input_dim, input_dim, input_dim), 1e-3));  // longer path through RNN --> lower precision
+
+}
+
+TEST(rnn, VREDspeedtest) {
+  std::shared_ptr<RNNCell> cell;
+  std::srand(SEED);
+  int input_dim = 66;
+  int dim_trans = 3;
+  int hidden_dim = 100;
+  int rnn_layers = 3;
+  int src_length = 30;
+  int pred_length = 30;
+  std::vector<std::shared_ptr<CoupledRNNCell>> cells;
+  // Define some Weights of network
+  Eigen::MatrixXd l1Wi = Eigen::MatrixXd::Random(hidden_dim, input_dim*2-dim_trans);
+  Eigen::MatrixXd l1Wr = Eigen::MatrixXd::Random(hidden_dim, input_dim*2-dim_trans);
+  Eigen::MatrixXd l1Wn = Eigen::MatrixXd::Random(hidden_dim, input_dim*2-dim_trans);
+  Eigen::MatrixXd l1Ri = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+  Eigen::MatrixXd l1Rr = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+  Eigen::MatrixXd l1Rn = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+  Eigen::VectorXd l1bWi = Eigen::VectorXd::Random(hidden_dim);
+  Eigen::VectorXd l1bWr = Eigen::VectorXd::Random(hidden_dim);
+  Eigen::VectorXd l1bWn = Eigen::VectorXd::Random(hidden_dim);
+  Eigen::VectorXd l1bRi = Eigen::VectorXd::Random(hidden_dim);
+  Eigen::VectorXd l1bRr = Eigen::VectorXd::Random(hidden_dim);
+  Eigen::VectorXd l1bRn = Eigen::VectorXd::Random(hidden_dim);
+  std::shared_ptr<CoupledRNNCell> l1 = std::make_shared<GRUCell>(l1Wi, l1Wr, l1Wn, l1Ri, l1Rr, l1Rn, l1bWi, l1bWr, l1bWn, l1bRi, l1bRr, l1bRn);
+  cells.push_back(l1);
+
+  for (int l=0; l<rnn_layers-1; ++l) {
+    Eigen::MatrixXd l2Wi = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::MatrixXd l2Wr = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::MatrixXd l2Wn = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::MatrixXd l2Ri = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::MatrixXd l2Rr = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::MatrixXd l2Rn = Eigen::MatrixXd::Random(hidden_dim, hidden_dim);
+    Eigen::VectorXd l2bWi = Eigen::VectorXd::Random(hidden_dim);
+    Eigen::VectorXd l2bWr = Eigen::VectorXd::Random(hidden_dim);
+    Eigen::VectorXd l2bWn = Eigen::VectorXd::Random(hidden_dim);
+    Eigen::VectorXd l2bRi = Eigen::VectorXd::Random(hidden_dim);
+    Eigen::VectorXd l2bRr = Eigen::VectorXd::Random(hidden_dim);
+    Eigen::VectorXd l2bRn = Eigen::VectorXd::Random(hidden_dim);
+
+    std::shared_ptr<CoupledRNNCell> l2 = std::make_shared<GRUCell>(l2Wi, l2Wr, l2Wn, l2Ri, l2Rr, l2Rn, l2bWi, l2bWr, l2bWn, l2bRi, l2bRr, l2bRn);
+    cells.push_back(l2);
+
+  }
+
+  Eigen::MatrixXd Wdense = Eigen::MatrixXd::Random(hidden_dim, input_dim);
+  Eigen::VectorXd bdense(input_dim);
+
+  Eigen::MatrixXd inp =  Eigen::MatrixXd::Random(src_length, input_dim);
+  Eigen::MatrixXd deltas =  Eigen::MatrixXd::Random(pred_length - 1, input_dim);
+  
+
+  cell = std::make_shared<StackedCoupledRNNCell>(rnn_layers, hidden_dim, input_dim, cells, Wdense, bdense);
+
+  VRED model(cell, dim_trans);
+  Eigen::MatrixXd pred = model.Forward(inp, deltas, src_length, pred_length);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  Eigen::MatrixXd jac = model.Jacobian(inp, deltas, src_length, pred_length);
+  auto t2 = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+  cout << duration << endl;
 
 }
 
