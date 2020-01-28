@@ -2,9 +2,13 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/atomic_operators.h>
 #include <bewego/differentiable_map.h>
-#include <pybind11/pybind11.h>
+#include <bewego/rnn.h>
 
-int add(int i, int j) { return i + j; }
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+#include <pybind11/stl.h>
+
+using namespace bewego;
 
 bool test_identity(int n) {
   uint32_t dimension = n;
@@ -22,6 +26,7 @@ bool test_identity(int n) {
   return a && b;
 }
 
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(pybewego, m) {
@@ -35,21 +40,33 @@ PYBIND11_MODULE(pybewego, m) {
            subtract
     )pbdoc";
 
-  m.def("add", &add, R"pbdoc(
-        Add two numbers
-        Some other explanation about the add function.
-    )pbdoc");
-
-  m.def(
-      "subtract", [](int i, int j) { return i - j; }, R"pbdoc(
-        Subtract two numbers
-        Some other explanation about the subtract function.
-    )pbdoc");
-
   m.def("test_identity", &test_identity, R"pbdoc(
         Test the identity map
         Some other explanation about the subtract function.
     )pbdoc");
+  py::class_<RNNCell, std::shared_ptr<RNNCell>>(m, "RNNCell");
+  py::class_<CoupledRNNCell, std::shared_ptr<CoupledRNNCell>>(m, "CoupledRNNCell");
 
+  py::class_<GRUCell, CoupledRNNCell, std::shared_ptr<GRUCell>>(m, "GRUCell")
+    .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::VectorXd&, const Eigen::VectorXd&, const Eigen::VectorXd&, const Eigen::VectorXd&, const Eigen::VectorXd&, const Eigen::VectorXd&>())
+    .def("Forward", &GRUCell::Forward)
+    .def("Jacobian", &GRUCell::Jacobian)
+    .def("output_dimension", &GRUCell::output_dimension)
+    .def("hidden_dimension", &GRUCell::hidden_dimension)
+    .def("input_dimension", &GRUCell::input_dimension)
+    ;
+  py::class_<StackedCoupledRNNCell, RNNCell, std::shared_ptr<StackedCoupledRNNCell>>(m, "StackedCoupledRNNCell")
+    .def(py::init<const int, const int, const int, const std::vector<std::shared_ptr<CoupledRNNCell>>& , const Eigen::MatrixXd&, const Eigen::VectorXd&>())
+    .def("Forward", &StackedCoupledRNNCell::Forward)
+    .def("Jacobian", &StackedCoupledRNNCell::Jacobian)
+    .def("output_dimension", &StackedCoupledRNNCell::output_dimension)
+    .def("hidden_dimension", &StackedCoupledRNNCell::hidden_dimension)
+    .def("input_dimension", &StackedCoupledRNNCell::input_dimension)
+    ;
+  py::class_<VRED>(m, "VRED")
+    .def(py::init<std::shared_ptr<RNNCell>&, int>())
+    .def("Forward", &VRED::Forward)
+    .def("Jacobian", &VRED::Jacobian)
+    ;
   m.attr("__version__") = "0.0.1";
 }

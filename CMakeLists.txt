@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 
+find_package( PythonInterp 3.6 REQUIRED )
+
 project(bewego)
 
 ############################
@@ -11,6 +13,7 @@ project(bewego)
 add_definitions(-std=c++14 -fno-omit-frame-pointer -fPIC)
 add_definitions(-DPROFILING_ON=1) #print profiling output
 add_definitions(-Wno-deprecated-register)
+add_definitions(-march=native)
 # add_definitions(-Wno-deprecated-declarations)
 # add_definitions(-Wall)
 # add_definitions(-Wno-unused-local-typedefs)
@@ -20,6 +23,7 @@ add_definitions(-Wno-deprecated-register)
 # Library Version          #
 ############################
 # include(cmake/version.cmake)
+
 
 ############################
 # Setup                    #
@@ -49,39 +53,48 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Dependencies             #
 ############################
 # Use catkin of available otherwise fall back to native cmake
-find_package(catkin QUIET)
-
-if(catkin_FOUND)
-  message(STATUS "Using catkin")
-  catkin_package(
-    INCLUDE_DIRS
-      ${bewego_INCLUDE_DIRS}
-    LIBRARIES
-      ${bewego_LIBRARIES}
-    CATKIN_DEPENDS
-    DEPENDS
-      )
-  list(APPEND bewego_INCLUDE_DIRS ${catkin_INCLUDE_DIRS})
+#find_package(catkin QUIET)
+#
+#if(catkin_FOUND)
+#  message(STATUS "Using catkin")
+#  catkin_package(
+#   INCLUDE_DIRS
+#     ${bewego_INCLUDE_DIRS}
+#   LIBRARIES
+#     ${bewego_LIBRARIES}
+#   CATKIN_DEPENDS
+#   DEPENDS
+#     )
+# list(APPEND bewego_INCLUDE_DIRS ${catkin_INCLUDE_DIRS})
 
   ## Uncomment this if the package has a setup.py. This macro ensures
   ## modules and global scripts declared therein get installed
   ## See http://ros.org/doc/groovy/api/catkin/html/user_guide/setup_dot_py.html
-  catkin_python_setup()
+# catkin_python_setup()
 
   ## Tests
-  catkin_add_nosetests(tests)
-
-else(catkin_FOUND)
-    message("Building without catkin")
-endif(catkin_FOUND)
+# catkin_add_nosetests(tests)
+#
+#lse(catkin_FOUND)
+#   message("Building without catkin")
+#ndif(catkin_FOUND)
 
 # message("where to compile : ${CMAKE_CURRENT_BINARY_DIR}")
 # message("where to compile : ${PROJECT_SOURCE_DIR}")
 
+
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+
 ############################
 ## bewego bindings         #
 ############################
-set(PYBIND11_PYTHON_VERSION 2.7 CACHE STRING "")
+set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "")
 add_subdirectory(pybind11)
 pybind11_add_module(pybewego SHARED source/bewego/bindings.cpp)
 target_link_libraries(pybewego PRIVATE bewego)
