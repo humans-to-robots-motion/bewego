@@ -160,6 +160,7 @@ static double Tanh(const double x)  {
 
     Eigen::MatrixXd inputs = data;
     Eigen::MatrixXd outputs(pred_length, inputs.cols());
+
     // convert the rotational parts from euler to expmap
     for (int t=0; t<inputs.rows(); ++t) {
       for (int r=dim_trans; r<inputs.cols(); r+=3) {
@@ -203,11 +204,15 @@ static double Tanh(const double x)  {
   }
 
   Eigen::MatrixXd VRED::Jacobian (const Eigen::MatrixXd data, const Eigen::MatrixXd deltas, int src_length, int pred_length) const {
+    const int idim = cell->input_dimension();
+    const int odim = cell->output_dimension();
+    const int hdim = cell->hidden_dimension();
 
     Eigen::MatrixXd inputs = data;
     Eigen::MatrixXd outputs(pred_length, inputs.cols());
-    Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero((pred_length-1) * deltas.cols(), (pred_length-1) * deltas.cols());
+    Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero((pred_length-1) * odim, (pred_length-1) * odim);
     // convert the rotational parts from euler to expmap
+    #pragma omp parallel for simd collapse(2)
     for (int t=0; t<inputs.rows(); ++t) {
       for (int r=dim_trans; r<inputs.cols(); r+=3) {
 	inputs.block(t, r, 1, 3) = quattoexpmap->Forward(eulertoquat->Forward(inputs.block(t, r, 1, 3).transpose())).transpose();
@@ -219,7 +224,7 @@ static double Tanh(const double x)  {
     inputs = inputs.block(1, 0, inputs.rows()-1, inputs.cols());
 
     // set initial state zero
-    Eigen::VectorXd states = Eigen::VectorXd::Zero(cell->hidden_dimension());
+    Eigen::VectorXd states = Eigen::VectorXd::Zero(hdim);
 
     Eigen::VectorXd cell_input(inputs.cols()*2-dim_trans);
     Eigen::VectorXd output_vel;
@@ -233,8 +238,9 @@ static double Tanh(const double x)  {
     outputs.row(0) = output;
 
     // loop 2: self conditioning
-    Eigen::MatrixXd dhddelta((pred_length-1)*cell->hidden_dimension(), (pred_length-1)*cell->input_dimension());
-    Eigen::MatrixXd doddelta((pred_length-1)*cell->output_dimension(), (pred_length-1)*cell->input_dimension());
+    Eigen::MatrixXd dhddelta((pred_length-1)*hdim, (pred_length-1)*idim);
+    Eigen::MatrixXd doddelta((pred_length-1)*odim, (pred_length-1)*idim);
+
     for (int o=0; o<pred_length-1;++o) {
       cell_input << output.segment(dim_trans, output.rows() - dim_trans), output_vel + deltas.row(o).transpose();
       Eigen::MatrixXd states_out;
@@ -243,28 +249,27 @@ static double Tanh(const double x)  {
       std::tie(jac_in_out, jac_in_h, jac_h_out, jac_h_h) = cell->Jacobian(cell_input, states);
       states=states_out;
 
-      dhddelta.block(o*cell->hidden_dimension(), o*cell->input_dimension(), cell->hidden_dimension(), cell->input_dimension()) = jac_in_h;
-      doddelta.block(o*cell->output_dimension(), o*cell->input_dimension(), cell->output_dimension(), cell->input_dimension()) = jac_in_out;
+      dhddelta.block(o*hdim, o*idim, hdim, idim) = jac_in_h;
+      doddelta.block(o*odim, o*idim, odim, idim) = jac_in_out;
 
-      jacobian.block(o * deltas.cols(), o * deltas.cols(), deltas.cols(), deltas.cols()) = jac_in_out.block(0, deltas.cols()-dim_trans, jac_in_out.rows(), deltas.cols());  // only second half wrt delta
+      jacobian.block(o * odim, o * odim, odim, odim) = jac_in_out.block(0, odim-dim_trans, jac_in_out.rows(), odim);  // only second half wrt delta
 
       output = output_vel + outputs.row(o).transpose();
       outputs.row(o+1) = output;
 
       for (int d=0; d<o; ++d) {
-	// jacobian of current output at timestep o wrt delta at timestep d; computet using jacobians of previous timesteps:
-	const int idx1 = o-1;
-	const int idx2 = d;
-	Eigen::MatrixXd dod = jac_in_out.block(0, deltas.cols()-dim_trans, jac_in_out.rows(), deltas.cols()) * doddelta.block(idx1*cell->output_dimension(), idx2*cell->input_dimension(), cell->output_dimension(), cell->input_dimension()) + jac_h_out * dhddelta.block(idx1*cell->hidden_dimension(), idx2*cell->input_dimension(), cell->hidden_dimension(), cell->input_dimension());
-	dod += doddelta.block(idx1*cell->output_dimension(), idx2*cell->input_dimension(), cell->output_dimension(), cell->input_dimension());  //residual
-	doddelta.block(o*cell->output_dimension(), d*cell->input_dimension(), cell->output_dimension(), cell->input_dimension()) = dod;
-	Eigen::MatrixXd dhd = jac_in_h.block(0, deltas.cols()-dim_trans, jac_in_h.rows(), deltas.cols()) * doddelta.block(idx1*cell->output_dimension(), idx2*cell->input_dimension(), cell->output_dimension(), cell->input_dimension()) + jac_h_h * dhddelta.block(idx1*cell->hidden_dimension(), idx2*cell->input_dimension(), cell->hidden_dimension(), cell->input_dimension());
-	dhddelta.block(o*cell->hidden_dimension(), d*cell->input_dimension(), cell->hidden_dimension(), cell->input_dimension()) = dhd;
-	jacobian.block(o*deltas.cols(), d*deltas.cols(),deltas.cols(),deltas.cols()) = dod.block(0, deltas.cols()-dim_trans, dod.rows(), deltas.cols());
+	// jacobian of current output at timestep o wrt delta at timestep d; computed using jacobians of previous timesteps:
+	Eigen::MatrixXd dod = jac_in_out.block(0, odim-dim_trans, odim, odim) * doddelta.block((o-1)*odim, d*idim, odim, idim) + jac_h_out * dhddelta.block((o-1)*hdim, d*idim, hdim, idim);
+	dod += doddelta.block((o-1)*odim, d*idim, odim, idim);  //residual
+	doddelta.block(o*odim, d*idim, odim, idim) = dod;
+	Eigen::MatrixXd dhd = jac_in_h.block(0, odim-dim_trans, hdim, odim) * doddelta.block((o-1)*odim, d*idim, odim, idim) + jac_h_h * dhddelta.block((o-1)*hdim, d*idim, hdim, idim);
+	dhddelta.block(o*hdim, d*idim, hdim, idim) = dhd;
+	jacobian.block(o*odim, d*odim,odim,odim) = dod.block(0, odim-dim_trans, odim, odim);
       }
     }
 
     // rotational jacobian
+    #pragma omp parallel for simd collapse(2)
     for (int t=1; t<outputs.rows(); ++t) {
       for (int r=dim_trans; r<outputs.cols(); r+=3) {
 	Eigen::MatrixXd expmap = outputs.block(t, r, 1, 3).transpose();
@@ -272,8 +277,9 @@ static double Tanh(const double x)  {
 	Eigen::MatrixXd jac_rot_quat = expmaptoquat->Jacobian(expmap);
 	Eigen::MatrixXd jac_rot_euler = quattoeuler->Jacobian(quat);
 	Eigen::MatrixXd jac_rot = jac_rot_euler * jac_rot_quat;
+
 	for (int js=0; js<jacobian.cols(); js+=3)
-	  jacobian.block(r+(t-1)*outputs.cols(), js, 3, 3) = jac_rot * jacobian.block(r+(t-1)*outputs.cols(), js, 3, 3);
+	  jacobian.block(r+(t-1)*odim, js, 3, 3) = jac_rot * jacobian.block(r+(t-1)*odim, js, 3, 3);
       }
     }
     return jacobian;
