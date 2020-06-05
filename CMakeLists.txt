@@ -99,8 +99,10 @@ file(GLOB_RECURSE bewego_HEADERS
     ${bewego_SOURCE_DIR}/*.hpp ${bewego_SOURCE_DIR}/*.h)
 
 # Build bewego library
-set(bewego_SOURCES    
+set(bewego_SOURCES 
     ${bewego_SOURCE_DIR}/differentiable_map.cpp
+    ${bewego_SOURCE_DIR}/chrono.cpp
+    ${bewego_SOURCE_DIR}/astar.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
