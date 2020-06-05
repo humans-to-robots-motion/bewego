@@ -22,7 +22,7 @@ namespace bewego {
 class SearchState {
  public:
   SearchState();
-  double computeCost(SearchState* parent, SearchState* goal);  // f (f=g+h)
+  double Cost(SearchState* parent, SearchState* goal);  // f (f=g+h)
 
   double f() const;  // get functions for the variables
   double g() const;
@@ -34,15 +34,15 @@ class SearchState {
   /* states after branching is returned and the number of
    non-NULL states in the returned array is saved in the variable nodes_n */
   virtual std::vector<SearchState*> Successors(SearchState* s);
-  virtual bool is_leaf(); /* leaf control for an admissible heuristic function;
+  virtual bool leaf(); /* leaf control for an admissible heuristic function;
                             the test of h==0*/
   virtual bool equal(SearchState* other);
 
   virtual void set_closed(std::vector<SearchState*>& closed_states,
                           std::vector<SearchState*>& open_states);
-  virtual bool is_closed(std::vector<SearchState*>& closed_states);
-
   virtual void set_open(std::vector<SearchState*>& open_states);
+  
+  virtual bool is_closed(std::vector<SearchState*>& closed_states);
   virtual bool is_open(std::vector<SearchState*>& open_states);
 
   virtual void reset() {}
@@ -64,7 +64,7 @@ class SearchState {
  */
 class TreeNode {
  public:
-  TreeNode() : _Parent(NULL) {}
+  TreeNode() : parent_(NULL) {}
   TreeNode(bewego::SearchState*, TreeNode*);
   ~TreeNode() {}
 
@@ -83,8 +83,8 @@ class TreeNode {
  */
 class QueueElement {
  public:
-  QueueElement() : _Node(NULL) {}
-  QueueElement(TreeNode* te) : _Node(te) {}
+  QueueElement() : node_(NULL) {}
+  QueueElement(TreeNode* n) : node_(n) {}
   ~QueueElement() {}
 
   TreeNode* tree_node() { return node_; }
@@ -121,7 +121,7 @@ class AStar {
   ~AStar() {}
 
   std::vector<SearchState*> Solve(SearchState* initial_state);
-§
+
  private:
   void set_goal(SearchState* v) { goal_ = v; }
   bool is_goal(SearchState* state);

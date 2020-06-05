@@ -8,16 +8,18 @@ using namespace std;
 using namespace bewego;
 
 // -----------------------------------------------------------------------------
+// Search state implementation
 // -----------------------------------------------------------------------------
-SearchState::SearchState() : _f(0), _g(0), _h(0) {}
 
-double SearchState::computeCost(SearchState* parent, SearchState* goal) {
+SearchState::SearchState() : f_(0), g_(0), h_(0) {}
+
+double SearchState::Cost(SearchState* parent, SearchState* goal) {
   g_ = Length(parent);
   h_ = Heuristic(parent, goal);
-  return f = (g_ + h_);
+  return f_ = (g_ + h_);
 }
 
-bool SearchState::is_leaf() { return (0 == h_); }
+bool SearchState::leaf() { return (0 == h_); }
 
 bool SearchState::equal(SearchState* other) {
   cout << "equal(SearchState* other) not implemented" << endl;
@@ -28,7 +30,7 @@ double SearchState::f() const { return f_; }
 double SearchState::g() const { return g_; }
 double SearchState::h() const { return h_; }
 
-vector<SearchState*> SearchState::getSuccessors(SearchState* s) {
+vector<SearchState*> SearchState::Successors(SearchState* s) {
   vector<SearchState*> successors;
   cout << "SearchState::getSuccessors() Not implemented" << endl;
   return successors;
@@ -51,6 +53,17 @@ bool SearchState::is_closed(vector<SearchState*>& closed_search_states) {
   return is_closed;
 }
 
+bool SearchState::is_open(vector<SearchState*>& open_search_states) {
+  bool is_open = false;
+  for (unsigned i = 0; i < open_search_states.size(); i++) {
+    if (this->equal(open_search_states[i])) {
+      is_open = true;
+      break;
+    }
+  }
+  return is_open;
+}
+
 void SearchState::set_closed(
     std::vector<SearchState*>& closed_search_states,
     std::vector<SearchState*>& open_search_states) {
@@ -64,26 +77,15 @@ void SearchState::set_closed(
   closed_search_states.push_back(this);
 }
 
-bool SearchState::is_open(vector<SearchState*>& open_search_states) {
-  bool is_open = false;
-  for (unsigned i = 0; i < open_search_states.size(); i++) {
-    if (this->equal(open_search_states[i])) {
-      is_open = true;
-      break;
-    }
-  }
-  return is_open;
-}
 
 void SearchState::set_open(std::vector<SearchState*>& open_search_states) {
   open_search_states.push_back(this);
 }
 
 // -----------------------------------------------------------------------------
+// Tree element implementation
 // -----------------------------------------------------------------------------
-/**
- * Tree Element Class
- */
+
 TreeNode::TreeNode(SearchState* st, TreeNode* prnt = NULL) {
   if (st != NULL) {
     search_state_ = st;
@@ -95,14 +97,12 @@ TreeNode::TreeNode(SearchState* st, TreeNode* prnt = NULL) {
 }
 
 // -----------------------------------------------------------------------------
+// A Star implementation
 // -----------------------------------------------------------------------------
-/**
- * A Star
- * backwards solution
- */
-vector<SearchState*> AStar::getSolution(QueueElement q_tmp) {
+
+vector<SearchState*> AStar::Solution(QueueElement q_tmp) {
   a_star_search_state_ = FOUND;
-  TreeNode* solution_leaf = q_tmp.getTreeNode();
+  TreeNode* solution_leaf = q_tmp.tree_node();
   TreeNode* node = solution_leaf;
   
   while (node) {
@@ -113,10 +113,7 @@ vector<SearchState*> AStar::getSolution(QueueElement q_tmp) {
   return solution_;
 }
 
-/**
- *
- */
-bool AStar::isGoal(SearchState* state) {
+bool AStar::is_goal(SearchState* state) {
   if (goal_is_defined_) {
     return goal_->equal(state);
   } else {
@@ -124,17 +121,13 @@ bool AStar::isGoal(SearchState* state) {
   }
 }
 
-void AStar::cleanSearchStates() {
-  for (unsigned i = 0; i < explored_.size(); i++) {
-    explored_[i]->reset();
+void AStar::CleanSearchStates() {
+  for (unsigned i = 0; i < explored_states_.size(); i++) {
+    explored_states_[i]->reset();
   }
 }
 
-/**
- * A Star
- * solving function (main)
- */
-vector<SearchState*> AStar::solve(SearchState* initial_search_state) {
+vector<SearchState*> AStar::Solve(SearchState* initial_search_state) {
   double tu, ts;
   cout << "start solve" << endl;
   ChronoOn();
@@ -152,13 +145,13 @@ vector<SearchState*> AStar::solve(SearchState* initial_search_state) {
   open_set.push_back(initial_search_state);
 
   open_set_.push(*new QueueElement(root_));
-  explored_.push_back(initial_search_state);
+  explored_states_.push_back(initial_search_state);
 
   QueueElement q_tmp;
 
-  while (!open_set.empty()) {
-    q_tmp = open_set.top();
-    open_set.pop();
+  while (!open_set_.empty()) {
+    q_tmp = open_set_.top();
+    open_set_.pop();
 
     SearchState* current_search_state = q_tmp.tree_node()->search_state();
     // cout << "SearchState = "<< currentSearchState << endl;
@@ -170,32 +163,31 @@ vector<SearchState*> AStar::solve(SearchState* initial_search_state) {
       ChronoPrint("");
       ChronoTimes(&tu, &ts);
       ChronoOff();
-      cout << "Number of explored states = " << _Explored.size() << endl;
+      cout << "Number of explored states = " << explored_states_.size() << endl;
       return Solution(q_tmp);
     }
 
-    TreeNode* parent = q_tmp.getTreeNode()->getParent();
+    TreeNode* parent = q_tmp.tree_node()->parent();
     SearchState* parent_state = NULL;
     if (parent != NULL) {
-      parent_state = parent->getSearchState();
+      parent_state = parent->search_state();
     }
 
     vector<SearchState*> branched_states =
-        currentSearchState->getSuccessors(parent_state);
+        current_search_state->Successors(parent_state);
 
     for (unsigned int i = 0; i < branched_states.size(); i++) {
       if ((branched_states[i] != NULL) &&
-          (branched_states[i]->isValid())) {
+          (branched_states[i]->valid())) {
         if (!((parent != NULL) && (parent->search_state()->valid()) &&
-              (parent->getSearchState()->equal(branched_states[i])))) {
+              (parent->search_state()->equal(branched_states[i])))) {
           if (!(branched_states[i]->is_closed(closed_set))) {
             if (!(branched_states[i]->is_open(open_set))) {
-              branched_states[i]->computeCost(current_search_state, goal_);
-              branched_states[i]->setOpen(openSet);
-
-              explored_.push_back(branched_states[i]);
+              branched_states[i]->Cost(current_search_state, goal_);
+              branched_states[i]->set_open(open_set);
+              explored_states_.push_back(branched_states[i]);
               open_set_.push(*new QueueElement(new TreeNode(
-                  branched_states[i], (q_tmp.getTreeNode()))));
+                  branched_states[i], (q_tmp.tree_node()))));
             }
           }
         }
@@ -210,8 +202,8 @@ vector<SearchState*> AStar::solve(SearchState* initial_search_state) {
 
   if (NOT_FOUND == a_star_search_state_) {
     cerr << "The Solution does not exist\n";
-    return _Solution;
+    return solution_;
   }
 
-  return _Solution;
+  return solution_;
 }

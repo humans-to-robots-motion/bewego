@@ -103,6 +103,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/differentiable_map.cpp
     ${bewego_SOURCE_DIR}/chrono.cpp
     ${bewego_SOURCE_DIR}/astar.cpp
+    ${bewego_SOURCE_DIR}/planar_grid.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
