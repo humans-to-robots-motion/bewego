@@ -188,25 +188,27 @@ class PlanState : public SearchState {
   PlanCell* previous_cell_;
 };
 
-class AStarPlanner {
+class AStarProblem {
  public:
-  AStarPlanner();
-  ~AStarPlanner();
-
-  //! change implementation here
-  unsigned int run() { return 0; }
-  unsigned int init();
-
+  AStarProblem();
+  ~AStarProblem();
   bool Solve(PlanState* start, PlanState* goal);
   void reset();
   double pathCost();
-  void set_pace(double pace) { pace_ = pace; }
-  void set_env_size(double pace) { pace_ = pace; }
 
-  PlanGrid* getGrid() { return grid_; }
+  PlanGrid* grid() const { return grid_; }
+  double pace() const { return pace_; }
+  const std::vector<double>& env_size() const {  return env_size_; }
+  void set_pace(double pace) { pace_ = pace; }
+  void set_env_size(const std::vector<double>& env_size) { 
+    env_size_ = env_size; }
+ 
 
  private:
-  bool computeAStarIn2DGrid(Eigen::Vector2d source, Eigen::Vector2d target);
+  unsigned int init();
+  bool computeAStarIn2DGrid(
+    const Eigen::Vector2d& source,
+    const Eigen::Vector2d& target);
 
   std::vector<double> env_size_;
   double max_radius_;

@@ -81,7 +81,7 @@ endif(catkin_FOUND)
 ############################
 ## bewego bindings         #
 ############################
-set(PYBIND11_PYTHON_VERSION 2.7 CACHE STRING "")
+set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
 add_subdirectory(pybind11)
 pybind11_add_module(pybewego SHARED source/bewego/bindings.cpp)
 target_link_libraries(pybewego PRIVATE bewego)

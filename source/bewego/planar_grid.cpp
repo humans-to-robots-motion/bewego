@@ -319,9 +319,7 @@ vector<SearchState*> PlanState::Successors(SearchState* s) {
 
   if (s) {
     Vector2i coord1 = dynamic_cast<PlanState*>(s)->cell_->getCoord();
-
     Vector2i coord = coord1 - coord2;
-
     int dir = (coord[0] + 1) + (coord[1] + 1) * 3;
 
     // Remove directions that go back
@@ -412,17 +410,12 @@ bool PlanState::isOpen(std::vector<PlanState*>& openStates) {
 }
 
 void PlanState::reset() { cell_->resetExplorationStatus(); }
-
 void PlanState::print() {}
-
 double PlanState::computeLength(SearchState* parent) {
   PlanState* preced = dynamic_cast<PlanState*>(parent);
-
-  double g;
-
   Vector2d pos1 = cell_->Center();
   Vector2d pos2 = preced->cell_->Center();
-  g = preced->g() + (pos1 - pos2).norm();
+  double g = preced->g() + (pos1 - pos2).norm();
   cell_->setCost(g);
   return g;
 }
@@ -438,27 +431,20 @@ double PlanState::computeHeuristic(SearchState* parent, SearchState* goal) {
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-AStarPlanner::AStarPlanner() {
-  // cout << "Create planner for robot : " << R->getName() << endl;
+AStarProblem::AStarProblem() {
   pace_ = .05;
 }
-AStarPlanner::~AStarPlanner() {}
+AStarProblem::~AStarProblem() {}
 
-unsigned int AStarPlanner::init() {
-  // env_size_ = global_Project->getActiveScene()->getBounds();
-  env_size_.resize(4);
-  env_size_[0] = 0;
-  env_size_[1] = 1;
-  env_size_[2] = 0;
-  env_size_[3] = 1;
-  cout << "pace : " << pace_ << " meters" << endl;
+unsigned int AStarProblem::init() {
+  assert(env_size_.size() == 4);
   grid_ = new PlanGrid(pace_, env_size_);
   return 1;
 }
 
-void AStarPlanner::reset() { grid_->reset(); }
+void AStarProblem::reset() { grid_->reset(); }
 
-bool AStarPlanner::Solve(PlanState* start, PlanState* goal) {
+bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
   bool path_exists = true;
   path_.clear();
 
@@ -500,7 +486,9 @@ bool AStarPlanner::Solve(PlanState* start, PlanState* goal) {
   return path_exists;
 }
 
-bool AStarPlanner::computeAStarIn2DGrid(Vector2d source, Vector2d target) {
+bool AStarProblem::computeAStarIn2DGrid(
+    const Vector2d& source, 
+    const Vector2d& target) {
   PlanCell* startCell = dynamic_cast<PlanCell*>(grid_->getCell(source));
   if (startCell == NULL) {
     cout << "start (" << source.transpose() << ") not in grid" << endl;
