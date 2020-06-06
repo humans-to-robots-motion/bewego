@@ -237,16 +237,33 @@ TwoDCell* PlanGrid::createNewCell(uint32_t index, uint32_t x, uint32_t y) {
   return newCell;
 }
 
-void PlanGrid::reset() {
+void PlanGrid::Reset() {
   for (size_t i = 0; i < cells_.size(); i++) {
     PlanCell* cell = dynamic_cast<PlanCell*>(cells_[i]);
-
     if (cell != NULL) {
       cell->resetExplorationStatus();
       cell->resetCost();
       cell->resetIsValid();
     }
   }
+}
+
+void PlanGrid::setCostBounds(double min, double max) {
+    use_given_bounds_ = true;
+    min_cost_ = min;
+    max_cost_ = max;
+}
+
+void PlanGrid::SetCosts(const Eigen::MatrixXd& cost) {
+  assert(cost.rows() == nb_cells_x_);
+  assert(cost.cols() == nb_cells_y_);
+
+  for (size_t i = 0; i < nb_cells_x_; i++) {
+    for (size_t j = 0; j < nb_cells_y_; j++) {
+        size_t index = i + j * nb_cells_x_;
+        static_cast<PlanCell*>(cells_[index])->setCost(cost(i, j));
+      }
+    }
 }
 
 std::pair<double, double> PlanGrid::getMinMaxCost() {
@@ -433,16 +450,21 @@ double PlanState::computeHeuristic(SearchState* parent, SearchState* goal) {
 
 AStarProblem::AStarProblem() {
   pace_ = .05;
+  env_size_ = {0, 1, 0, 1};
 }
 AStarProblem::~AStarProblem() {}
 
-unsigned int AStarProblem::init() {
+void AStarProblem::InitGrid() {
   assert(env_size_.size() == 4);
-  grid_ = new PlanGrid(pace_, env_size_);
-  return 1;
+  grid_ = std::make_shared<PlanGrid>(pace_, env_size_);
 }
 
-void AStarProblem::reset() { grid_->reset(); }
+void AStarProblem::InitCosts(const Eigen::MatrixXd& cost) {
+    assert(grid_.get() != nullptr);
+    grid_->SetCosts(cost);
+}
+
+void AStarProblem::Reset() { grid_->Reset(); }
 
 bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
   bool path_exists = true;
@@ -516,8 +538,8 @@ bool AStarProblem::computeAStarIn2DGrid(
     return false;
   }
 
-  PlanState* start = new PlanState(startCell, grid_);
-  PlanState* goal = new PlanState(goalCell, grid_);
+  PlanState* start = new PlanState(startCell, grid_.get());
+  PlanState* goal = new PlanState(goalCell, grid_.get());
   if (start == NULL || goal == NULL) {
     cout << "Start or goal == NULL" << endl;
     return false;

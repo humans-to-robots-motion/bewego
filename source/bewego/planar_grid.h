@@ -94,13 +94,10 @@ class TwoDGrid {
 class PlanGrid : public TwoDGrid {
  public:
   PlanGrid(double pace, std::vector<double> envSize, bool print_cost = true);
-  void reset();
+  void Reset();
   std::pair<double, double> getMinMaxCost();
-  void setCostBounds(double min, double max) {
-    use_given_bounds_ = true;
-    min_cost_ = min;
-    max_cost_ = max;
-  }
+  void setCostBounds(double min, double max);
+  void SetCosts(const Eigen::MatrixXd& cost);
 
  protected:
   TwoDCell* createNewCell(uint32_t index, uint32_t x, uint32_t y);
@@ -193,27 +190,28 @@ class AStarProblem {
   AStarProblem();
   ~AStarProblem();
   bool Solve(PlanState* start, PlanState* goal);
-  void reset();
+  void InitGrid();
+  void InitCosts(const Eigen::MatrixXd& cost);
+  void Reset();
   double pathCost();
-
-  PlanGrid* grid() const { return grid_; }
+  std::shared_ptr<PlanGrid> grid() const { return grid_; }
   double pace() const { return pace_; }
   const std::vector<double>& env_size() const {  return env_size_; }
   void set_pace(double pace) { pace_ = pace; }
   void set_env_size(const std::vector<double>& env_size) { 
     env_size_ = env_size; }
+  
  
 
  private:
-  unsigned int init();
   bool computeAStarIn2DGrid(
     const Eigen::Vector2d& source,
     const Eigen::Vector2d& target);
 
   std::vector<double> env_size_;
-  double max_radius_;
   double pace_;
-  PlanGrid* grid_;
+  double max_radius_;
+  std::shared_ptr<PlanGrid> grid_;
   std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >
       path_;
   std::vector<TwoDCell*> cell_path_;

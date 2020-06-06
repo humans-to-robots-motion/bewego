@@ -5,6 +5,7 @@
 #include <bewego/planar_grid.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/eigen.h>
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -45,18 +46,13 @@ class AStarGrid {
      return problem_->env_size();
   }
 
-  // Setters.
-  void set_pace(double v) {
-    problem_->set_pace(v);
+  void init_grid(double p, const std::vector<double>& e){
+    problem_->set_pace(p);
+    problem_->set_env_size(e);
+    problem_->InitGrid();
   }
-  void set_env_size(std::vector<double> v) {
-    if (v.size() != 4) {
-      throw std::runtime_error("Input shapes must be 4");
-    }
-    cout << "set env size : " 
-        << v[0] << " , " << v[1] << " , " 
-        << v[2] << " , " << v[3] << endl;
-     problem_->set_env_size(v);
+  void set_costs(const Eigen::MatrixXd& costs) {
+     problem_->InitCosts(costs);
   }
 
 protected:
@@ -99,10 +95,10 @@ PYBIND11_MODULE(pybewego, m) {
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")
       .def(py::init<>())
-      .def("set_pace", &bewego::AStarGrid::set_pace)
-      .def("set_env_size", &bewego::AStarGrid::set_env_size)
       .def("pace", &bewego::AStarGrid::pace)
-      .def("env_size", &bewego::AStarGrid::env_size);
+      .def("env_size", &bewego::AStarGrid::env_size)
+      .def("init_grid", &bewego::AStarGrid::init_grid)
+      .def("set_costs", &bewego::AStarGrid::set_costs);
 
   m.attr("__version__") = "0.0.1";
 }

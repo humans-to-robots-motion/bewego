@@ -26,37 +26,29 @@ sys.path.insert(0, driectory + os.sep + "../python")
 from pybewego import AStarGrid
 
 
-def test_set_env_size():
+def test_env_size():
     astar = AStarGrid()
-
-    v1 = [0, 2, 0, 2]
-    astar.set_env_size(v1)
+    v1 = [0, 1, 0, 1]
     v2 = astar.env_size()
     assert np.linalg.norm((np.array(v1) - np.array(v2))) < 1e-10
 
-    v3 = [0, 1, 0, 1]
-    astar.set_env_size(v3)
-    v2 = astar.env_size()
-    assert np.linalg.norm((np.array(v3) - np.array(v2))) < 1e-10
 
-
-def test_set_pace():
+def test_pace():
     astar = AStarGrid()
-
-    v1 = .1
-    astar.set_pace(v1)
+    v1 = .05
     v2 = astar.pace()
     d = abs(v1 - v2)
     print(d)
     assert d < 1e-10
 
-    v3 = .2
-    astar.set_pace(v3)
-    v2 = astar.pace()
-    d = abs(v2 - v3)
-    print(d)
-    assert d < 1e-10
+
+def test_set_costs():
+    costs = np.random.random((20, 20))
+    astar = AStarGrid()
+    astar.init_grid(.05, [0, 1, 0, 1])
+    astar.set_costs(costs)
 
 
-test_set_env_size()
-test_set_pace()
+test_env_size()
+test_pace()
+test_set_costs()
