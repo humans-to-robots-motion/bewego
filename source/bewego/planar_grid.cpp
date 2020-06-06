@@ -2,22 +2,8 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include "planar_grid.h"
+
 #include <iostream>
-
-// #include "API/ConfigSpace/configuration.hpp"
-// #include "API/Search/AStar/AStar.hpp"
-// #include "API/project.hpp"
-// #include "AStarPlanner.hpp"
-// #include "Collision-pkg.h"
-// #include "Graphic-pkg.h"
-// #include "P3d-pkg.h"
-// #include "hri_costspace/grid/HRICS_grid.hpp"
-// #include "planner/TrajectoryOptim/Classic/smoothing.hpp"
-// #include "planner/TrajectoryOptim/plannarTrajectorySmoothing.hpp"
-// #include "planner/planEnvironment.hpp"
-
-// std::vector<Eigen::Vector2d,Eigen::aligned_allocator<Eigen::Vector2d> >
-// path_to_draw;
 
 using namespace std;
 using namespace Eigen;
@@ -29,152 +15,111 @@ namespace bewego {
 //---------------------------------------------------------------------------
 
 TwoDCell::TwoDCell() {}
-TwoDCell::TwoDCell(int i, Vector2d corner, TwoDGrid* grid)
-    : _index(i), _corner(corner), _grid(grid) {
-  //    cout << " ThreeDCell " << i << ", Cornner = "<<  _corner.at(0) <<
-  //    _corner.at(1) <<  _corner.at(2) << ", Grid = " << _grid << endl;
-}
-
+TwoDCell::TwoDCell(int i, const Vector2d& corner, TwoDGrid* grid)
+    : index_(i), corner_(corner), grid_(grid) {}
 TwoDCell::~TwoDCell() {}
 
-Vector2d TwoDCell::getCenter() {
-  //    cout << "getCenter()" << endl;
-
-  Vector2d dimentions = _grid->getCellSize();
-
+Vector2d TwoDCell::Center() const {
+  Vector2d dimentions = grid_->cell_size();
   for (int i = 0; i < dimentions.size(); i++) {
-    dimentions[i] = dimentions[i] / 2 + _corner[i];
+    dimentions[i] = .5 * dimentions[i] + corner_[i];
   }
-
   return dimentions;
 }
 
-Vector2d TwoDCell::getRandomPoint() {
-  Vector2d X = Vector2d::Random();
-
+Vector2d TwoDCell::RandomPoint() const {
+  Vector2d x = Vector2d::Random();
   Matrix2d A = Matrix2d::Zero();
-
-  A(0, 0) = _grid->getCellSize()[0] / 2;
-  A(1, 1) = _grid->getCellSize()[1] / 2;
-  //    A(2,2) = _grid->getCellSize()[2]/2;
-
-  X = A * X;
-
-  Vector2d B = this->getCenter();
-
-  return X + B;
+  Vector2d b = Center();
+  A(0, 0) = grid_->cell_size().x();
+  A(1, 1) = grid_->cell_size().y();
+  return .5 * A * x + b;
 }
 
-Vector2d TwoDCell::getCellSize() { return _grid->getCellSize(); }
+Vector2d TwoDCell::cell_size() const { return grid_->cell_size(); }
 
 //---------------------------------------------------------------------------
 // TwoD grid implementation
 //---------------------------------------------------------------------------
 
 TwoDGrid::TwoDGrid() {}
-TwoDGrid::~TwoDGrid() {
-  //    for(unsigned int i=0;i<_cells.size();i++)
-  //    {
-  //        delete _cells.at(i);
-  //    }
+TwoDGrid::~TwoDGrid() {}
+TwoDGrid::TwoDGrid(const Vector2i& numCell, const vector<double>& env_size) {
+  assert(env_size.size() == 4);
+  setEnvSizeAndNumCell(numCell[0], numCell[1], env_size);
 }
 
-TwoDGrid::TwoDGrid(Vector2i numCell, vector<double> envSize)
-
-{
-  envSize.resize(4);
-  setEnvSizeAndNumCell(numCell[0], numCell[1], envSize);
-}
-
-TwoDGrid::TwoDGrid(double samplingRate, vector<double> envSize) {
-  envSize.resize(4);
-
-  for (unsigned int i = 0; i < envSize.size(); i++) {
-    cout << envSize.at(i) << " ";
-  }
-  cout << endl;
-
+TwoDGrid::TwoDGrid(double samplingRate, const vector<double>& env_size) {
+  assert(env_size.size() == 4);
   if (((int)samplingRate) != 0) {
-    if ((((int)(envSize.at(1) - envSize.at(0))) % (int)samplingRate) != 0) {
-      cout << "TwoDGrid Warning : not good X disctretization " << endl;
+    if ((((int)(env_size.at(1) - env_size.at(0))) % (int)samplingRate) != 0) {
+      cerr << "TwoDGrid Warning : not good X disctretization " << endl;
     }
 
-    if ((((int)(envSize.at(3) - envSize.at(2))) % (int)samplingRate) != 0) {
-      cout << "TwoDGrid Warning : not good Y disctretization " << endl;
+    if ((((int)(env_size.at(3) - env_size.at(2))) % (int)samplingRate) != 0) {
+      cerr << "TwoDGrid Warning : not good Y disctretization " << endl;
     }
   }
 
-  //    _cellSize.push_back( (envSize.at(1) - envSize.at(0))/pace );
-  //    _cellSize.push_back( (envSize.at(3) - envSize.at(2))/pace );
+  cell_size_[0] = samplingRate;
+  cell_size_[1] = samplingRate;
 
-  _cellSize[0] = samplingRate;
-  _cellSize[1] = samplingRate;
+  nb_cells_x_ = (env_size.at(1) - env_size.at(0)) / samplingRate;
+  nb_cells_y_ = (env_size.at(3) - env_size.at(2)) / samplingRate;
 
-  _nbCellsX = (envSize.at(1) - envSize.at(0)) / samplingRate;
-  _nbCellsY = (envSize.at(3) - envSize.at(2)) / samplingRate;
-
-  cout << " _nbCellsX = " << _nbCellsX << endl;
-  cout << " _nbCellsY = " << _nbCellsY << endl;
-
-  _originCorner[0] = envSize.at(0);
-  _originCorner[1] = envSize.at(2);
-
-  cout << "_originCorner[0] = " << _originCorner[0] << endl;
-  cout << "_originCorner[1] = " << _originCorner[1] << endl;
+  origin_corner_[0] = env_size.at(0);
+  origin_corner_[1] = env_size.at(2);
 }
 
-void TwoDGrid::setEnvSizeAndNumCell(int x, int y, std::vector<double> envSize) {
-  _nbCellsX = x;
-  _nbCellsY = y;
+void TwoDGrid::setEnvSizeAndNumCell(int x, int y,
+                                    std::vector<double> env_size_) {
+  nb_cells_x_ = x;
+  nb_cells_y_ = y;
 
-  _cellSize[0] = (envSize.at(1) - envSize.at(0)) / _nbCellsX;
-  _cellSize[1] = (envSize.at(3) - envSize.at(2)) / _nbCellsY;
+  cell_size_[0] = (env_size_.at(1) - env_size_.at(0)) / nb_cells_x_;
+  cell_size_[1] = (env_size_.at(3) - env_size_.at(2)) / nb_cells_y_;
 
-  _originCorner[0] = envSize.at(0);
-  _originCorner[0] = envSize.at(2);
+  origin_corner_[0] = env_size_.at(0);
+  origin_corner_[0] = env_size_.at(2);
 }
 
 void TwoDGrid::createAllCells() {
-  unsigned int nbCells = _nbCellsX * _nbCellsY;
-
-  _cells.resize(nbCells);
-
-  unsigned int x = 0;
-  unsigned int y = 0;
-
-  for (unsigned int i = 0; i < nbCells; i++) {
-
-    TwoDCell* ptrCell = createNewCell(i, x, y);
-    _cells[i] = ptrCell;
-
+  uint32_t nb_cells = nb_cells_x_ * nb_cells_y_;
+  cells_.resize(nb_cells);
+  uint32_t x = 0;
+  uint32_t y = 0;
+  for (uint32_t i = 0; i < nb_cells; i++) {
+    cells_[i] = createNewCell(i, x, y);
     x++;
-    if (x >= _nbCellsX) {
+    if (x >= nb_cells_x_) {
       y++;
       x = 0;
-      if (y >= _nbCellsY) {
+      if (y >= nb_cells_y_) {
         return;
       }
     }
   }
 }
 
-TwoDCell* TwoDGrid::getCell(const Vector2i& coord) {
-  return dynamic_cast<TwoDCell*>(_cells[coord[0] + coord[1] * _nbCellsX]);
+TwoDCell* TwoDGrid::getCell(uint32_t index) const {
+  return dynamic_cast<TwoDCell*>(cells_[index]);
 }
 
-TwoDCell* TwoDGrid::getCell(int x, int y) {
+TwoDCell* TwoDGrid::getCell(const Vector2i& coord) const {
+  return dynamic_cast<TwoDCell*>(cells_[coord[0] + coord[1] * nb_cells_x_]);
+}
+
+TwoDCell* TwoDGrid::getCell(uint32_t x, uint32_t y) const {
   Vector2i coord;
   coord[0] = x;
   coord[1] = y;
-
   return getCell(coord);
 }
 
-TwoDCell* TwoDGrid::getCell(Vector2d point) {
+TwoDCell* TwoDGrid::getCell(const Vector2d& point) const {
   Vector2i coord;
-  coord[0] = (int)floor((abs(point[0] - _originCorner[0])) / _cellSize[0]);
-  coord[1] = (int)floor((abs(point[1] - _originCorner[1])) / _cellSize[1]);
-
+  coord[0] = (int)floor((abs(point[0] - origin_corner_[0])) / cell_size_[0]);
+  coord[1] = (int)floor((abs(point[1] - origin_corner_[1])) / cell_size_[1]);
   if (!isCellCoordInGrid(coord)) {
     cout << "TwoDGrid::OutBounds" << endl;
     return 0x0;
@@ -183,12 +128,10 @@ TwoDCell* TwoDGrid::getCell(Vector2d point) {
   return getCell(coord);
 }
 
-TwoDCell* TwoDGrid::getCell(double* pos) {
+TwoDCell* TwoDGrid::getCell(double* pos) const {
   Vector2i coord;
-  coord[0] = (int)((pos[0] - _originCorner[0]) / _cellSize[0]);
-  coord[1] = (int)((pos[1] - _originCorner[1]) / _cellSize[1]);
-
-  //    cout << "( "<<x<<" , "<<y<<" , "<<z<<" ) "<< endl;
+  coord[0] = (int)((pos[0] - origin_corner_[0]) / cell_size_[0]);
+  coord[1] = (int)((pos[1] - origin_corner_[1]) / cell_size_[1]);
 
   if (!isCellCoordInGrid(coord)) {
     cout << "ThreeDGrid::OutBounds" << endl;
@@ -198,19 +141,15 @@ TwoDCell* TwoDGrid::getCell(double* pos) {
   return getCell(coord);
 }
 
-TwoDCell* TwoDGrid::getCell(unsigned int index) {
-  return dynamic_cast<TwoDCell*>(_cells[index]);
-}
-
-bool TwoDGrid::isCellCoordInGrid(const Vector2i& coord) {
-  return !(coord[0] >= ((int)_nbCellsX) || coord[1] >= ((int)_nbCellsY) ||
+bool TwoDGrid::isCellCoordInGrid(const Vector2i& coord) const {
+  return !(coord[0] >= ((int)nb_cells_x_) || coord[1] >= ((int)nb_cells_y_) ||
            coord[0] < 0 || coord[1] < 0);
 }
 
-Vector2i TwoDGrid::getCellCoord(TwoDCell* ptrCell) {
+Vector2i TwoDGrid::getCellCoord(TwoDCell* cell) const {
   Vector2i coord;
 
-  int i = ptrCell->getIndex();
+  uint32_t i = cell->index();
 
   coord[0] = (i / 1) % 2 - 1;  // x
   coord[1] = (i / 2) % 2 - 1;  // y
@@ -218,27 +157,26 @@ Vector2i TwoDGrid::getCellCoord(TwoDCell* ptrCell) {
   return coord;
 }
 
-TwoDCell* TwoDGrid::createNewCell(unsigned int index, unsigned int x,
-                                          unsigned int y) {
+TwoDCell* TwoDGrid::createNewCell(uint32_t index, uint32_t x, uint32_t y) {
   if (index == 0) {
-    return new TwoDCell(0, _originCorner, this);
+    return new TwoDCell(0, origin_corner_, this);
   }
   TwoDCell* newCell = new TwoDCell(index, computeCellCorner(x, y), this);
   return newCell;
 }
 
-Vector2d TwoDGrid::computeCellCorner(int x, int y) {
+Vector2d TwoDGrid::computeCellCorner(uint32_t x, uint32_t y) {
   Vector2d corner;
 
-  corner[0] = _originCorner[0] + x * (_cellSize[0] * 1.0);
-  corner[1] = _originCorner[1] + y * (_cellSize[1] * 1.0);
+  corner[0] = origin_corner_[0] + x * (cell_size_[0] * 1.0);
+  corner[1] = origin_corner_[1] + y * (cell_size_[1] * 1.0);
 
   return corner;
 }
 
-int TwoDGrid::getNumberOfCells() { return _cells.size(); }
+uint32_t TwoDGrid::getNumberOfCells() const { return cells_.size(); }
 
-TwoDCell* TwoDGrid::getNeighbour(const Vector2i& pos, int i) {
+TwoDCell* TwoDGrid::getNeighbour(const Vector2i& pos, uint32_t i) const {
   if (i < 0 || i > 8) {
     return 0x0;
   } else {
@@ -246,8 +184,6 @@ TwoDCell* TwoDGrid::getNeighbour(const Vector2i& pos, int i) {
 
     int dx = (i / 1) % 3 - 1;
     int dy = (i / 3) % 3 - 1;
-
-    //    cout << "( "<<dx<<" , "<<dy<<" ) "<< endl;
 
     Vector2i coord;
 
@@ -262,14 +198,14 @@ TwoDCell* TwoDGrid::getNeighbour(const Vector2i& pos, int i) {
   }
 }
 
-Vector2d TwoDGrid::getCoordinates(TwoDCell* cell) {
+Vector2d TwoDGrid::getCoordinates(TwoDCell* cell) const {
   Vector2d coordinates;
-  int index = cell->getIndex();
-  int sizeXY = _nbCellsX * _nbCellsY;
+  int index = cell->index();
+  int sizeXY = nb_cells_x_ * nb_cells_y_;
   coordinates[2] = floor(index / sizeXY);
-  coordinates[1] = floor((index - coordinates[2] * sizeXY) / _nbCellsX);
+  coordinates[1] = floor((index - coordinates[2] * sizeXY) / nb_cells_x_);
   //  coordinates[0] = floor(index - coordinates[2]*sizeXY - coordinates[1] *
-  //  _nbCellsX);
+  //  nb_cells_x_);
   return coordinates;
 }
 
@@ -277,17 +213,15 @@ Vector2d TwoDGrid::getCoordinates(TwoDCell* cell) {
 // Plan grid implementation
 //---------------------------------------------------------------------------
 
-PlanGrid::PlanGrid(double pace, vector<double> env_size,
-                   bool print_cost)
+PlanGrid::PlanGrid(double pace, vector<double> env_size, bool print_cost)
     : TwoDGrid(pace, env_size),
       print_cost_(print_cost),
       use_given_bounds_(false) {
   createAllCells();
-  cout << "Number total of cells = " << _nbCellsX * _nbCellsY << endl;
+  cout << "Number total of cells = " << nb_cells_x_ * nb_cells_y_ << endl;
 }
 
-TwoDCell* PlanGrid::createNewCell(unsigned int index, unsigned int x,
-                                  unsigned int y) {
+TwoDCell* PlanGrid::createNewCell(uint32_t index, uint32_t x, uint32_t y) {
   Vector2i coord;
   coord[0] = x;
   coord[1] = y;
@@ -295,7 +229,7 @@ TwoDCell* PlanGrid::createNewCell(unsigned int index, unsigned int x,
   TwoDCell* newCell;
 
   if (index == 0) {
-    newCell = new PlanCell(0, coord, _originCorner, this);
+    newCell = new PlanCell(0, coord, origin_corner_, this);
   } else {
     newCell = new PlanCell(index, coord, computeCellCorner(x, y), this);
   }
@@ -304,8 +238,8 @@ TwoDCell* PlanGrid::createNewCell(unsigned int index, unsigned int x,
 }
 
 void PlanGrid::reset() {
-  for (int i = 0; i < int(_cells.size()); i++) {
-    PlanCell* cell = dynamic_cast<PlanCell*>(_cells[i]);
+  for (size_t i = 0; i < cells_.size(); i++) {
+    PlanCell* cell = dynamic_cast<PlanCell*>(cells_[i]);
 
     if (cell != NULL) {
       cell->resetExplorationStatus();
@@ -319,9 +253,8 @@ std::pair<double, double> PlanGrid::getMinMaxCost() {
   double max = std::numeric_limits<double>::min();  // TODO this is 0 ...
   double min = std::numeric_limits<double>::max();
 
-  for (int i = 0; i < int(_cells.size()); i++) {
-    double cost = dynamic_cast<PlanCell*>(_cells[i])->getCost();
-
+  for (size_t i = 0; i < cells_.size(); i++) {
+    double cost = dynamic_cast<PlanCell*>(cells_[i])->getCost();
     if (cost > max) max = cost;
     if (cost < min) min = cost;
   }
@@ -347,31 +280,17 @@ PlanCell::PlanCell(int i, Vector2i coord, Vector2d corner, PlanGrid* grid)
       is_valid_(false) {}
 
 double PlanCell::getCost() {
-    if (cost_is_computed_)
-      return cost_;
-    else
-      return 0.0;
+  if (cost_is_computed_)
+    return cost_;
+  else
+    return 0.0;
 }
 
 bool PlanCell::isValid() {
   if (is_cell_tested_) {
     return is_valid_;
   }
-
   is_valid_ = false;
-
-  // if (dynamic_cast<PlanGrid*>(_grid)->getRobot()->setAndUpdate(*q)) {
-  //   is_valid_ = !q->isInCollision();
-
-    //    if( !mIsValid ) {
-    //      p3d_print_col_pair();
-    //    }
-    //    else {
-    //      cout << "Valid cell for robot : " << q->getRobot()->getName() <<
-    //      endl;
-    //    }
-  // }
-
   is_cell_tested_ = true;
   return is_valid_;
 }
@@ -456,10 +375,6 @@ vector<SearchState*> PlanState::Successors(SearchState* s) {
   }
 
   for (int i = 0; i < 8; i++) {
-    // if( i == remove[0] || i == remove[1] || i == remove[2] ){
-    //       continue;
-    // }
-
     PlanCell* neigh = dynamic_cast<PlanCell*>(grid_->getNeighbour(coord2, i));
     if (neigh != NULL) {
       newStates.push_back(new PlanState(neigh, grid_));
@@ -472,36 +387,27 @@ vector<SearchState*> PlanState::Successors(SearchState* s) {
 bool PlanState::leaf() { return false; }
 bool PlanState::valid() { return cell_->isValid(); }
 bool PlanState::equal(SearchState* other) {
-  // bool equal(false);
   PlanState* state = dynamic_cast<PlanState*>(other);
-
   if (cell_ != state->cell_) {
-    // cout << "PlanState::equal false" << endl;
     return false;
   }
-
-  // cout << "State::equal true" << endl;
   return true;
 }
 
 void PlanState::setClosed(std::vector<PlanState*>& closedStates,
                           std::vector<PlanState*>& openStates) {
-  // cout << "State :: set Closed" <<endl;
   cell_->setClosed();
 }
 
 bool PlanState::isColsed(std::vector<PlanState*>& closedStates) {
-  //    cout << "State :: get Closed" <<endl;
   return cell_->getClosed();
 }
 
 void PlanState::setOpen(std::vector<PlanState*>& openStates) {
-  //     cout << "State :: set open" <<endl;
   cell_->setOpen();
 }
 
 bool PlanState::isOpen(std::vector<PlanState*>& openStates) {
-  //    cout << "State :: get open" <<endl;
   return cell_->getOpen();
 }
 
@@ -514,86 +420,52 @@ double PlanState::computeLength(SearchState* parent) {
 
   double g;
 
-  Vector2d pos1 = cell_->getCenter();
-  Vector2d pos2 = preced->cell_->getCenter();
-
-/**
-  if (ENV.getBool(Env::isCostSpace)) {
-    confPtr_t q1 = grid_->getRobot()->getNewConfig();
-    confPtr_t q2 = grid_->getRobot()->getNewConfig();
-    (*q1)[6] = pos1[0];
-    (*q2)[6] = pos2[0];
-    (*q1)[7] = pos1[1];
-    (*q2)[7] = pos2[1];
-    LocalPath path(q2, q1);
-    g = preced->g() + path.cost();
-  } else {
-    g = preced->g() + (pos1 - pos2).norm();
-    cell_->setCost(g);
-  }
-    */
+  Vector2d pos1 = cell_->Center();
+  Vector2d pos2 = preced->cell_->Center();
+  g = preced->g() + (pos1 - pos2).norm();
+  cell_->setCost(g);
   return g;
-
 }
 
 double PlanState::computeHeuristic(SearchState* parent, SearchState* goal) {
-  //    return 0.0;
-  // if (!ENV.getBool(Env::isCostSpace)) {
-  //   PlanState* state = dynamic_cast<PlanState*>(goal);
-  //   Vector2d posGoal = state->cell_->getCenter();
-  //   Vector2d posThis = cell_->getCenter();
-  //   return (posGoal - posThis).norm();
-  // } 
-  return 0.0;
+  PlanState* state = dynamic_cast<PlanState*>(goal);
+  Vector2d posGoal = state->cell_->Center();
+  Vector2d posThis = cell_->Center();
+  return (posGoal - posThis).norm();
 }
 
-/**
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-AStarPlanner::AStarPlanner()  {
+AStarPlanner::AStarPlanner() {
   // cout << "Create planner for robot : " << R->getName() << endl;
-  pace_ = 1.0;
-
-  // double diagonal = std::sqrt( std::pow(m_envSize[1]-m_envSize[0], 2 ) +
-  // std::pow(m_envSize[3]-m_envSize[2] , 2 ) ); double pace = 0.20;
-  //    init();
+  pace_ = .05;
 }
-
-AStarPlanner::~AStarPlanner() {
-  //    if( grid_ == API_activeGrid )
-  //        API_activeGrid = NULL;
-
-  //    delete grid_;
-}
+AStarPlanner::~AStarPlanner() {}
 
 unsigned int AStarPlanner::init() {
-  env_size_ = global_Project->getActiveScene()->getBounds();
+  // env_size_ = global_Project->getActiveScene()->getBounds();
   env_size_.resize(4);
-
+  env_size_[0] = 0;
+  env_size_[1] = 1;
+  env_size_[2] = 0;
+  env_size_[3] = 1;
   cout << "pace : " << pace_ << " meters" << endl;
-
-  grid_ = new PlanGrid(_Robot, pace_, env_size_);
-
-  if (API_activeGrid != NULL) {
-    delete API_activeGrid;
-  }
-  API_activeGrid = grid_;
-
+  grid_ = new PlanGrid(pace_, env_size_);
   return 1;
 }
 
 void AStarPlanner::reset() { grid_->reset(); }
 
-bool AStarPlanner::solveAStar(PlanState* start, PlanState* goal) {
+bool AStarPlanner::Solve(PlanState* start, PlanState* goal) {
   bool path_exists = true;
   path_.clear();
 
   // Change the way AStar is computed to go down
   if (start->getCell()->getCost() < goal->getCell()->getCost()) {
-    AStar* search = new AStar(start);
-    vector<State*> path = search->solve(goal);
+    AStar* problem = new AStar(start);
+    vector<SearchState*> path = problem->Solve(goal);
 
     if (path.size() == 0) {
       path_.clear();
@@ -604,12 +476,12 @@ bool AStarPlanner::solveAStar(PlanState* start, PlanState* goal) {
 
     for (unsigned int i = 0; i < path.size(); i++) {
       TwoDCell* cell = dynamic_cast<PlanState*>(path[i])->getCell();
-      path_.push_back(cell->getCenter());
+      path_.push_back(cell->Center());
       cell_path_.push_back(cell);
     }
   } else {
-    AStar* search = new AStar(goal);
-    vector<State*> path = search->solve(start);
+    AStar* problem = new AStar(goal);
+    vector<SearchState*> path = problem->Solve(start);
 
     if (path.size() == 0) {
       path_.clear();
@@ -620,7 +492,7 @@ bool AStarPlanner::solveAStar(PlanState* start, PlanState* goal) {
 
     for (int i = path.size() - 1; i >= 0; i--) {
       PlanCell* cell = dynamic_cast<PlanState*>(path[i])->getCell();
-      path_.push_back(cell->getCenter());
+      path_.push_back(cell->Center());
       cell_path_.push_back(cell);
     }
   }
@@ -663,7 +535,7 @@ bool AStarPlanner::computeAStarIn2DGrid(Vector2d source, Vector2d target) {
     return false;
   }
 
-  if (solveAStar(start, goal)) {
+  if (Solve(start, goal)) {
     double SumOfCost = 0.0;
     for (int i = 0; i < int(path_.size()); i++) {
       // cout << "Cell "<< i <<" = " << endl << path_[i] << endl;
@@ -676,57 +548,4 @@ bool AStarPlanner::computeAStarIn2DGrid(Vector2d source, Vector2d target) {
   }
 }
 
-Trajectory* AStarPlanner::computeRobotTrajectory(confPtr_t source,
-                                                 confPtr_t target) {
-  confPtr_t q = _Robot->getCurrentPos();
-  (*q)[6] = 0;
-  (*q)[7] = 0;
-
-  Vector2d x1, x2;
-
-  x1[0] = (*source)[6];
-  x1[1] = (*source)[7];
-
-  x2[0] = (*target)[6];
-  x2[1] = (*target)[7];
-
-  _Robot->setAndUpdate(*source);
-
-  if (computeAStarIn2DGrid(x1, x2)) {
-    Trajectory* traj = new Trajectory(_Robot);
-
-    traj->push_back(source);
-
-    for (int i = 0; i < int(path_.size()); i++) {
-      confPtr_t q = _Robot->getCurrentPos();
-      (*q)[6] = path_[i][0];
-      (*q)[7] = path_[i][1];
-
-      traj->push_back(q);
-    }
-    traj->push_back(target);
-    traj->computeSubPortionIntergralCost(traj->getCourbe());
-    traj->replaceP3dTraj();
-    _Robot->setAndUpdate(*q);
-    return traj;
-  } else {
-    _Robot->setAndUpdate(*q);
-    return NULL;
-  }
-}
-
-void AStarPlanner::draw() {
-  for (int i = 0; i < int(path_.size()) - 1; i++) {
-    glLineWidth(3.);
-    g3d_drawOneLine(path_[i][0], path_[i][1], 0.4, path_[i + 1][0],
-                    path_[i + 1][1], 0.4, Yellow, NULL);
-    glLineWidth(1.);
-  }
-}
-
-void AStarPlanner::allow_smoothing(bool state) {
-  PlanEnv->setBool(PlanParam::env_createTrajs, state);
-}
-*/
-
-}
+}  // namespace bewego

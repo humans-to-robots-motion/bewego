@@ -19,6 +19,7 @@ namespace bewego {
 * call the base one.
 */
 class TwoDGrid;
+
 /**
  * @ingroup CPP_API
  * @defgroup GRID Grid over the WS
@@ -30,31 +31,30 @@ class TwoDGrid;
 class TwoDCell {
  public:
   TwoDCell();
-  TwoDCell(int i, Eigen::Vector2d corner, TwoDGrid* grid);
+  TwoDCell(int i, const Eigen::Vector2d& corner, TwoDGrid* grid);
   virtual ~TwoDCell();
 
-  Eigen::Vector2d getCenter();
-  Eigen::Vector2d getCorner() { return _corner; }
-  Eigen::Vector2d getRandomPoint();
-  Eigen::Vector2d getCellSize();
+  Eigen::Vector2d Center() const;
+  Eigen::Vector2d corner() const { return corner_; }
+  Eigen::Vector2d RandomPoint() const;
+  Eigen::Vector2d cell_size() const;
+  int index() const { return index_; }
 
-  int getIndex() { return _index; }
-
-  bool operator==(TwoDCell otherCell) {
-    return ((otherCell._index) == (this->_index));
+  bool operator==(TwoDCell c) {
+    return ((c.index_) == (this->index_));
   }
 
  protected:
-  int _index;
-  Eigen::Vector2d _corner;
-  TwoDGrid* _grid;
+  uint32_t index_;
+  Eigen::Vector2d corner_;
+  TwoDGrid* grid_;
 };
 
 class TwoDGrid {
  public:
   TwoDGrid();
-  TwoDGrid(Eigen::Vector2i numCell, std::vector<double> envSize);
-  TwoDGrid(double samplingRate, std::vector<double> envSize);
+  TwoDGrid(const Eigen::Vector2i& num_cell, const std::vector<double>& env_size);
+  TwoDGrid(double sampling_rate, const std::vector<double>& env_size);
 
   void setEnvSizeAndNumCell(int x, int y, std::vector<double> envSize);
 
@@ -62,52 +62,48 @@ class TwoDGrid {
 
   void createAllCells();
 
-  Eigen::Vector2d getCellSize() { return _cellSize; }
+  Eigen::Vector2d cell_size() const { return cell_size_; }
 
-  TwoDCell* getCell(const Eigen::Vector2i& cell);
-  TwoDCell* getCell(int x, int y);
-  TwoDCell* getCell(Eigen::Vector2d pos);
-  TwoDCell* getCell(double* pos);
-  TwoDCell* getCell(unsigned int index);
+  TwoDCell* getCell(const Eigen::Vector2i& cell) const;
+  TwoDCell* getCell(const Eigen::Vector2d& pos) const;
+  TwoDCell* getCell(uint32_t x, uint32_t y) const;
+  TwoDCell* getCell(double* pos) const;
+  TwoDCell* getCell(uint32_t index) const;
 
-  bool isCellCoordInGrid(const Eigen::Vector2i& coord);
+  bool isCellCoordInGrid(const Eigen::Vector2i& coord) const;
 
-  Eigen::Vector2i getCellCoord(TwoDCell* ptrCell);
-  int getNumberOfCells();
-  TwoDCell* getNeighbour(const Eigen::Vector2i& pos, int i);
-  Eigen::Vector2d getCoordinates(TwoDCell* cell);
+  Eigen::Vector2i getCellCoord(TwoDCell* ptrCell) const;
+  uint32_t getNumberOfCells() const;
+  TwoDCell* getNeighbour(const Eigen::Vector2i& pos, uint32_t i) const;
+  Eigen::Vector2d getCoordinates(TwoDCell* cell) const;
 
  protected:
-  virtual TwoDCell* createNewCell(unsigned int index, unsigned int x,
-                                  unsigned int y);
-  Eigen::Vector2d computeCellCorner(int x, int y);
+  virtual TwoDCell* createNewCell(
+    uint32_t index,
+    uint32_t x,
+    uint32_t y);
+  Eigen::Vector2d computeCellCorner(uint32_t x, uint32_t y);
 
-  std::vector<TwoDCell*> _cells;
-  Eigen::Vector2d _originCorner;
-  Eigen::Vector2d _cellSize;
-
-  unsigned int _nbCellsX;
-  unsigned int _nbCellsY;
+  std::vector<TwoDCell*> cells_;
+  Eigen::Vector2d origin_corner_;
+  Eigen::Vector2d cell_size_;
+  uint32_t nb_cells_x_;
+  uint32_t nb_cells_y_;
 };
-
 
 class PlanGrid : public TwoDGrid {
  public:
-  PlanGrid(double pace, std::vector<double> envSize,
-           bool print_cost = true);
-
-  TwoDCell* createNewCell(unsigned int index, unsigned int x, unsigned int y);
-
+  PlanGrid(double pace, std::vector<double> envSize, bool print_cost = true);
   void reset();
   std::pair<double, double> getMinMaxCost();
-  void draw();
   void setCostBounds(double min, double max) {
     use_given_bounds_ = true;
     min_cost_ = min;
     max_cost_ = max;
   }
 
- private:
+ protected:
+  TwoDCell* createNewCell(uint32_t index, uint32_t x, uint32_t y);
   bool print_cost_;
   bool use_given_bounds_;
   double min_cost_;
@@ -121,10 +117,10 @@ class PlanCell : public TwoDCell {
 
   ~PlanCell() {}
 
-  Eigen::Vector2i getCoord() { return coord_; }
+  Eigen::Vector2i getCoord() const { return coord_; }
 
   double
-  getCost(); // { std::cout << " Warning not implemented"  << std::endl; }
+  getCost();
   void resetCost() { cost_is_computed_ = false; }
   void setCost(double cost) {
     cost_is_computed_ = true;
@@ -164,8 +160,8 @@ class PlanState : public SearchState {
 
   std::vector<SearchState*> Successors(SearchState* s);
 
- // leaf control for an admissible heuristic function; the test of h==0
-  bool leaf(); 
+  // leaf control for an admissible heuristic function; the test of h==0
+  bool leaf();
   bool equal(SearchState* other);
   bool valid();
 
@@ -182,9 +178,9 @@ class PlanState : public SearchState {
   PlanCell* getCell() { return cell_; }
 
  protected:
-  double computeLength(SearchState* parent); // g
+  double computeLength(SearchState* parent);  // g
   double computeHeuristic(SearchState* parent = NULL,
-                          SearchState* goal = NULL); // h 
+                          SearchState* goal = NULL);  // h
 
  private:
   PlanGrid* grid_;
@@ -192,32 +188,25 @@ class PlanState : public SearchState {
   PlanCell* previous_cell_;
 };
 
-/**
 class AStarPlanner {
  public:
   AStarPlanner();
   ~AStarPlanner();
 
-  // Trajectory* computeRobotTrajectory(confPtr_t source, confPtr_t target);
-  Trajectory* getSimplePath(std::vector<double> goal,
-                            std::vector<std::vector<double> >& path);
-
   //! change implementation here
   unsigned int run() { return 0; }
   unsigned int init();
 
+  bool Solve(PlanState* start, PlanState* goal);
   void reset();
-  void draw();
   double pathCost();
-  void allow_smoothing(bool state);
-
   void set_pace(double pace) { pace_ = pace; }
+  void set_env_size(double pace) { pace_ = pace; }
 
   PlanGrid* getGrid() { return grid_; }
 
  private:
   bool computeAStarIn2DGrid(Eigen::Vector2d source, Eigen::Vector2d target);
-  bool solveAStar(PlanState* start, PlanState* goal);
 
   std::vector<double> env_size_;
   double max_radius_;
@@ -227,6 +216,5 @@ class AStarPlanner {
       path_;
   std::vector<TwoDCell*> cell_path_;
 };
-*/
 
 }  // namespace bewego
