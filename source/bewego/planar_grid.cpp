@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include "planar_grid.h"
+#include "chrono.h"
 
 #include <iostream>
 
@@ -10,9 +11,9 @@ using namespace Eigen;
 
 namespace bewego {
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // TwoDCell implementation
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 TwoDCell::TwoDCell() {}
 TwoDCell::TwoDCell(int i, const Vector2d& corner, TwoDGrid* grid)
@@ -38,9 +39,9 @@ Vector2d TwoDCell::RandomPoint() const {
 
 Vector2d TwoDCell::cell_size() const { return grid_->cell_size(); }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // TwoD grid implementation
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 TwoDGrid::TwoDGrid() {}
 TwoDGrid::~TwoDGrid() {}
@@ -204,14 +205,12 @@ Vector2d TwoDGrid::getCoordinates(TwoDCell* cell) const {
   int sizeXY = nb_cells_x_ * nb_cells_y_;
   coordinates[2] = floor(index / sizeXY);
   coordinates[1] = floor((index - coordinates[2] * sizeXY) / nb_cells_x_);
-  //  coordinates[0] = floor(index - coordinates[2]*sizeXY - coordinates[1] *
-  //  nb_cells_x_);
   return coordinates;
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Plan grid implementation
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 PlanGrid::PlanGrid(double pace, vector<double> env_size, bool print_cost)
     : TwoDGrid(pace, env_size),
@@ -282,9 +281,9 @@ std::pair<double, double> PlanGrid::getMinMaxCost() {
   return result;
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // PlanCell Implementation
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 PlanCell::PlanCell(int i, Vector2i coord, Vector2d corner, PlanGrid* grid)
     : TwoDCell(i, corner, grid),
@@ -294,7 +293,7 @@ PlanCell::PlanCell(int i, Vector2i coord, Vector2d corner, PlanGrid* grid)
       cost_is_computed_(false),
       cost_(0.0),
       is_cell_tested_(false),
-      is_valid_(false) {}
+      is_valid_(true) {}
 
 double PlanCell::getCost() {
   if (cost_is_computed_)
@@ -307,21 +306,19 @@ bool PlanCell::isValid() {
   if (is_cell_tested_) {
     return is_valid_;
   }
-  is_valid_ = false;
-  is_cell_tested_ = true;
-  return is_valid_;
+  return true;
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // PlanState Implementation
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-PlanState::PlanState(Vector2i cell, PlanGrid* grid) : grid_(grid) {
+PlanState::PlanState(Vector2i cell, PlanGrid* grid) : grid_(grid), distance_cost_(false) {
   cell_ = dynamic_cast<PlanCell*>(grid->getCell(cell));
 }
 
 PlanState::PlanState(PlanCell* cell, PlanGrid* grid)
-    : grid_(grid), cell_(cell) {}
+    : grid_(grid), cell_(cell), distance_cost_(false) {}
 
 vector<SearchState*> PlanState::Successors(SearchState* s) {
   vector<SearchState*> newStates;
@@ -427,26 +424,30 @@ bool PlanState::isOpen(std::vector<PlanState*>& openStates) {
 }
 
 void PlanState::reset() { cell_->resetExplorationStatus(); }
-void PlanState::print() {}
-double PlanState::computeLength(SearchState* parent) {
+
+double PlanState::Length(SearchState* parent) {
   PlanState* preced = dynamic_cast<PlanState*>(parent);
-  Vector2d pos1 = cell_->Center();
-  Vector2d pos2 = preced->cell_->Center();
-  double g = preced->g() + (pos1 - pos2).norm();
-  cell_->setCost(g);
-  return g;
+  if(distance_cost_) {
+      Vector2d pos1 = cell_->Center();
+      Vector2d pos2 = preced->cell_->Center();
+      return preced->g() + (pos1 - pos2).norm();
+  }
+  return preced->g() + cell_->getCost();
 }
 
-double PlanState::computeHeuristic(SearchState* parent, SearchState* goal) {
-  PlanState* state = dynamic_cast<PlanState*>(goal);
-  Vector2d posGoal = state->cell_->Center();
-  Vector2d posThis = cell_->Center();
-  return (posGoal - posThis).norm();
+double PlanState::Heuristic(SearchState* parent, SearchState* goal) {
+  if(distance_cost_) {
+    PlanState* state = dynamic_cast<PlanState*>(goal);
+    Vector2d posGoal = state->cell_->Center();
+    Vector2d posThis = cell_->Center();
+    return (posGoal - posThis).norm();
+  }
+  return 0;
 }
 
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// A star problem implementation
+//------------------------------------------------------------------------------
 
 AStarProblem::AStarProblem() {
   pace_ = .05;
@@ -456,17 +457,32 @@ AStarProblem::~AStarProblem() {}
 
 void AStarProblem::InitGrid() {
   assert(env_size_.size() == 4);
+  ChronoOn();
   grid_ = std::make_shared<PlanGrid>(pace_, env_size_);
+  ChronoPrint("Init grid");
+  ChronoOff();
 }
 
 void AStarProblem::InitCosts(const Eigen::MatrixXd& cost) {
-    assert(grid_.get() != nullptr);
-    grid_->SetCosts(cost);
+  assert(grid_.get() != nullptr);
+  ChronoOn();
+  grid_->SetCosts(cost);
+  ChronoPrint("Set costs");
+  ChronoOff();
+}
+
+
+Eigen::MatrixXi AStarProblem::PathCoordinates() const {
+  Eigen::MatrixXi path_coordinates(path_.size(), 2);
+  for(size_t i=0; i<cell_path_.size(); i++) {
+    path_coordinates.row(i) = cell_path_[i]->getCoord();
+  }
+  return path_coordinates;
 }
 
 void AStarProblem::Reset() { grid_->Reset(); }
 
-bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
+bool AStarProblem::SearchPath(PlanState* start, PlanState* goal) {
   bool path_exists = true;
   path_.clear();
 
@@ -483,7 +499,7 @@ bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
     }
 
     for (unsigned int i = 0; i < path.size(); i++) {
-      TwoDCell* cell = dynamic_cast<PlanState*>(path[i])->getCell();
+      PlanCell* cell = dynamic_cast<PlanState*>(path[i])->getCell();
       path_.push_back(cell->Center());
       cell_path_.push_back(cell);
     }
@@ -492,7 +508,6 @@ bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
     vector<SearchState*> path = problem->Solve(start);
 
     if (path.size() == 0) {
-      path_.clear();
       cell_path_.clear();
       path_exists = false;
       return path_exists;
@@ -508,9 +523,10 @@ bool AStarProblem::Solve(PlanState* start, PlanState* goal) {
   return path_exists;
 }
 
-bool AStarProblem::computeAStarIn2DGrid(
+bool AStarProblem::Solve(
     const Vector2d& source, 
     const Vector2d& target) {
+  
   PlanCell* startCell = dynamic_cast<PlanCell*>(grid_->getCell(source));
   if (startCell == NULL) {
     cout << "start (" << source.transpose() << ") not in grid" << endl;
@@ -523,17 +539,33 @@ bool AStarProblem::computeAStarIn2DGrid(
     return false;
   }
 
-  Vector2i startCoord = startCell->getCoord();
-  cout << "Start Pos = (" << source[0] << " , " << source[1] << ")" << endl;
-  cout << "Start Coord = (" << startCoord[0] << " , " << startCoord[1] << ")"
-       << endl;
+  Eigen::Vector2i s = startCell->getCoord();
+  Eigen::Vector2i g = goalCell->getCoord();
+  return Solve(s, g);
+}
 
-  Vector2i goalCoord = goalCell->getCoord();
-  cout << "Goal Pos = (" << target[0] << " , " << target[1] << ")" << endl;
-  cout << "Goal Coord = (" << goalCoord[0] << " , " << goalCoord[1] << ")"
-       << endl;
+bool AStarProblem::Solve(
+    const Vector2i& start_coord, 
+    const Vector2i& goal_coord) {
 
-  if (startCoord == goalCoord) {
+  ChronoOn();
+  
+  PlanCell* startCell = dynamic_cast<PlanCell*>(grid_->getCell(start_coord));
+  if (startCell == NULL) {
+    cout << "start (" << start_coord.transpose() << ") not in grid" << endl;
+    return false;
+  }
+
+  PlanCell* goalCell = dynamic_cast<PlanCell*>(grid_->getCell(goal_coord));
+  if (goalCell == NULL) {
+    cout << "goal (" << goal_coord.transpose() << ") not in grid" << endl;
+    return false;
+  }
+
+  cout << "Start Coord = (" << start_coord.transpose() << ")" << endl;
+  cout << "Goal Coord = (" << goal_coord.transpose() << ")" << endl;
+
+  if (start_coord.x() == goal_coord.x() && start_coord.y() == goal_coord.y()) {
     cout << " no planning as cells are identical" << endl;
     return false;
   }
@@ -545,7 +577,12 @@ bool AStarProblem::computeAStarIn2DGrid(
     return false;
   }
 
-  if (Solve(start, goal)) {
+  bool success = SearchPath(start, goal);
+
+  ChronoPrint("AStar solved");
+  ChronoOff();
+
+  if (success) {
     double SumOfCost = 0.0;
     for (int i = 0; i < int(path_.size()); i++) {
       // cout << "Cell "<< i <<" = " << endl << path_[i] << endl;

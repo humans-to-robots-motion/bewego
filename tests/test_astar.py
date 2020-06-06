@@ -43,12 +43,28 @@ def test_pace():
 
 
 def test_set_costs():
-    costs = np.random.random((20, 20))
+    costs = np.random.random((100, 100))
     astar = AStarGrid()
-    astar.init_grid(.05, [0, 1, 0, 1])
+    print("Init Grid...")
+    astar.init_grid(.01, [0, 1, 0, 1])
     astar.set_costs(costs)
+
+
+def test_solve():
+    costs = 10. * np.random.random((40, 40))
+    astar = AStarGrid()
+    print("Init Grid...")
+    astar.init_grid(.025, [0, 1, 0, 1])
+    astar.set_costs(costs)
+    assert astar.solve([2, 2], [38, 38])
+    print(astar.path().shape)
+
+
+def show_solution():
+
 
 
 test_env_size()
 test_pace()
 test_set_costs()
+test_solve()

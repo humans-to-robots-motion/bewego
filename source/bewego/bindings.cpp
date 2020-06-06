@@ -54,6 +54,12 @@ class AStarGrid {
   void set_costs(const Eigen::MatrixXd& costs) {
      problem_->InitCosts(costs);
   }
+  bool solve(const Eigen::Vector2i& s, const Eigen::Vector2i& g) {
+     return problem_->Solve(s, g);
+  }
+  Eigen::MatrixXi path() const {
+     return problem_->PathCoordinates();
+  }
 
 protected:
     std::shared_ptr<AStarProblem> problem_;
@@ -98,7 +104,9 @@ PYBIND11_MODULE(pybewego, m) {
       .def("pace", &bewego::AStarGrid::pace)
       .def("env_size", &bewego::AStarGrid::env_size)
       .def("init_grid", &bewego::AStarGrid::init_grid)
-      .def("set_costs", &bewego::AStarGrid::set_costs);
+      .def("set_costs", &bewego::AStarGrid::set_costs)
+      .def("solve", &bewego::AStarGrid::solve)
+      .def("path", &bewego::AStarGrid::path);
 
   m.attr("__version__") = "0.0.1";
 }

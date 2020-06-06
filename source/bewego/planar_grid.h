@@ -119,10 +119,16 @@ class PlanCell : public TwoDCell {
   double
   getCost();
   void resetCost() { cost_is_computed_ = false; }
+
   void setCost(double cost) {
     cost_is_computed_ = true;
     cost_ = cost;
   }
+
+  // void setCostToCome(double cost) {
+  //   cost_to_come_is_computed_ = true;
+  //   cost_to_come_ = cost;
+  // }
 
   bool getOpen() { return open_; }
   void setOpen() { open_ = true; }
@@ -144,6 +150,9 @@ class PlanCell : public TwoDCell {
 
   bool cost_is_computed_;
   double cost_;
+
+  bool cost_to_come_is_computed_;
+  double cost_to_come_;
 
   bool is_cell_tested_;
   bool is_valid_;
@@ -170,26 +179,32 @@ class PlanState : public SearchState {
   bool isOpen(std::vector<PlanState*>& openStates);
 
   void reset();
-  void print();
 
   PlanCell* getCell() { return cell_; }
 
  protected:
-  double computeLength(SearchState* parent);  // g
-  double computeHeuristic(SearchState* parent = NULL,
-                          SearchState* goal = NULL);  // h
+  double Length(SearchState* parent);  // g
+  double Heuristic(
+        SearchState* parent = NULL,
+        SearchState* goal = NULL);  // h
 
  private:
   PlanGrid* grid_;
   PlanCell* cell_;
   PlanCell* previous_cell_;
+  bool distance_cost_;
 };
 
 class AStarProblem {
  public:
   AStarProblem();
   ~AStarProblem();
-  bool Solve(PlanState* start, PlanState* goal);
+  bool Solve(
+    const Eigen::Vector2d& source,
+    const Eigen::Vector2d& target);
+  bool Solve(
+    const Eigen::Vector2i& start_coord, 
+    const Eigen::Vector2i& goal_coord);
   void InitGrid();
   void InitCosts(const Eigen::MatrixXd& cost);
   void Reset();
@@ -200,21 +215,16 @@ class AStarProblem {
   void set_pace(double pace) { pace_ = pace; }
   void set_env_size(const std::vector<double>& env_size) { 
     env_size_ = env_size; }
-  
- 
+  Eigen::MatrixXi PathCoordinates() const;
 
  private:
-  bool computeAStarIn2DGrid(
-    const Eigen::Vector2d& source,
-    const Eigen::Vector2d& target);
-
+  bool SearchPath(PlanState* start, PlanState* goal);
   std::vector<double> env_size_;
   double pace_;
   double max_radius_;
   std::shared_ptr<PlanGrid> grid_;
-  std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >
-      path_;
-  std::vector<TwoDCell*> cell_path_;
+  std::vector<Eigen::Vector2d> path_;
+  std::vector<PlanCell*> cell_path_;
 };
 
 }  // namespace bewego

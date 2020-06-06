@@ -11,6 +11,10 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 namespace bewego {
 
@@ -79,7 +83,7 @@ void ChronoPrint(const char *msg) {
   double ts;
   int i;
   if (print_flag) {
-    for (i = 0; i < counter_tod; i++) {
+    for (i = 0; i < counter_tod + 1; i++) {
       ChronoTimesSeconds(&ts);
       fprintf(stdout, "Clock = %6.3f sec : ", ts);
       fprintf(stdout, "  ");
