@@ -6,26 +6,22 @@
 namespace bewego {
 
 class ValueIteration {
-public:
-    ValueIteration() : 
-        theta_(1e-6),
-        max_iterations_(1e+2) {}
+ public:
+  ValueIteration() : theta_(1e-6), max_iterations_(1e+3) {}
 
-    Eigen::MatrixXi solve(
-        const Eigen::Vector2i& init,
-        const Eigen::Vector2i& goal,
-        const Eigen::MatrixXd& costmap) const { return Eigen::MatrixXi(); }
+  Eigen::MatrixXi solve(const Eigen::Vector2i& init,
+                        const Eigen::Vector2i& goal,
+                        const Eigen::MatrixXd& costmap) const;
 
-    // returns value
-    Eigen::MatrixXd Run(const Eigen::MatrixXd& costmap) const;
+  // returns value
+  Eigen::MatrixXd Run(const Eigen::MatrixXd& costmap) const;
 
-    void set_theta(double v) { theta_ = v; }
-    void set_max_iterations(double v) { max_iterations_ = v; }
+  void set_theta(double v) { theta_ = v; }
+  void set_max_iterations(double v) { max_iterations_ = v; }
 
-private:
-    double theta_;
-    double max_iterations_;
-
+ private:
+  double theta_;
+  double max_iterations_;
 };
 
-}
+}  // namespace bewego

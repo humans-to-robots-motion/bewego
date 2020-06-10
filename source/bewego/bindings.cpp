@@ -3,9 +3,11 @@
 #include <bewego/atomic_operators.h>
 #include <bewego/differentiable_map.h>
 #include <bewego/planar_grid.h>
+#include <bewego/value_iteration.h>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/eigen.h>
+
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -34,43 +36,32 @@ namespace bewego {
 //! Gives access to some basic functions
 class AStarGrid {
  public:
-  AStarGrid() {
-    problem_ = std::make_shared<AStarProblem>();
-  }
+  AStarGrid() { problem_ = std::make_shared<AStarProblem>(); }
 
   // Getters.
-  double pace() const {
-    return problem_->pace();
-  }
-  std::vector<double> env_size() const {
-     return problem_->env_size();
-  }
+  double pace() const { return problem_->pace(); }
+  std::vector<double> env_size() const { return problem_->env_size(); }
 
-  void init_grid(double p, const std::vector<double>& e){
+  void init_grid(double p, const std::vector<double>& e) {
     problem_->set_pace(p);
     problem_->set_env_size(e);
     problem_->InitGrid();
   }
-  void set_costs(const Eigen::MatrixXd& costs) {
-     problem_->InitCosts(costs);
-  }
+  void set_costs(const Eigen::MatrixXd& costs) { problem_->InitCosts(costs); }
   bool solve(const Eigen::Vector2i& s, const Eigen::Vector2i& g) {
-     return problem_->Solve(s, g);
+    return problem_->Solve(s, g);
   }
-  Eigen::MatrixXi path() const {
-     return problem_->PathCoordinates();
-  }
+  Eigen::MatrixXi path() const { return problem_->PathCoordinates(); }
 
-protected:
-    std::shared_ptr<AStarProblem> problem_;
+ protected:
+  std::shared_ptr<AStarProblem> problem_;
 };
 
-}
+}  // namespace bewego
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
 
 PYBIND11_MODULE(pybewego, m) {
   m.doc() = R"pbdoc(
@@ -107,6 +98,12 @@ PYBIND11_MODULE(pybewego, m) {
       .def("set_costs", &bewego::AStarGrid::set_costs)
       .def("solve", &bewego::AStarGrid::solve)
       .def("path", &bewego::AStarGrid::path);
+
+  py::class_<bewego::ValueIteration>(m, "ValueIteration")
+      .def(py::init<>())
+      .def("set_max_iterations", &bewego::ValueIteration::set_max_iterations)
+      .def("set_theta", &bewego::ValueIteration::set_theta)
+      .def("solve", &bewego::ValueIteration::solve);
 
   m.attr("__version__") = "0.0.1";
 }

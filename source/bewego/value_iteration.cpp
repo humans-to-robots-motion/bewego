@@ -2,7 +2,10 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include "value_iteration.h"
+
 #include <iostream>
+#include <limits>
+#include <vector>
 
 // 1: Procedure Value_Iteration(S,A,P,R,θ)
 // 2:           Inputs
@@ -32,23 +35,22 @@ namespace bewego {
 
 #define SQRT2 1.4142135623730951
 
-void ValueEightConnected(
-    Eigen::VectorXd& neighbor_V,
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXd& cost,
-     uint32_t i, uint32_t j) {
-  neighbor_V[0] = cost(i + 1, j) + V(i + 1, j);
-  neighbor_V[1] = cost(i - 1, j) + V(i - 1, j);
-  neighbor_V[2] = cost(i, j + 1) + V(i, j + 1);
-  neighbor_V[3] = cost(i, j - 1) + V(i, j - 1);
-  neighbor_V[4] = cost(i + 1, j + 1) * SQRT2 + V(i + 1, j + 1);
-  neighbor_V[5] = cost(i - 1, j - 1) * SQRT2 + V(i - 1, j - 1);
-  neighbor_V[6] = cost(i - 1, j + 1) * SQRT2 + V(i - 1, j + 1);
-  neighbor_V[7] = cost(i + 1, j - 1) * SQRT2 + V(i + 1, j - 1);
+std::vector<int> X = {1, -1, 0, 0, 1, -1, -1, 1};
+std::vector<int> Y = {0, 0, 1, -1, 1, -1, 1, -1};
+
+void ValueEightConnected(Eigen::VectorXd &neighbor_V, const Eigen::MatrixXd &V,
+                         const Eigen::MatrixXd &cost, uint32_t i, uint32_t j) {
+  neighbor_V[0] = V(i + X[0], j + Y[0]) + cost(i + X[0], j + Y[0]);
+  neighbor_V[1] = V(i + X[1], j + Y[1]) + cost(i + X[1], j + Y[1]);
+  neighbor_V[2] = V(i + X[2], j + Y[2]) + cost(i + X[2], j + Y[2]);
+  neighbor_V[3] = V(i + X[3], j + Y[3]) + cost(i + X[3], j + Y[3]);
+  neighbor_V[4] = V(i + X[4], j + Y[4]) + cost(i + X[4], j + Y[4]) * SQRT2;
+  neighbor_V[5] = V(i + X[5], j + Y[5]) + cost(i + X[5], j + Y[5]) * SQRT2;
+  neighbor_V[6] = V(i + X[6], j + Y[6]) + cost(i + X[6], j + Y[6]) * SQRT2;
+  neighbor_V[7] = V(i + X[7], j + Y[7]) + cost(i + X[7], j + Y[7]) * SQRT2;
 }
 
-Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd& costmap) const
-{
+Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap) const {
   uint32_t m = costmap.rows();
   uint32_t n = costmap.cols();
   Eigen::MatrixXd V_t = Eigen::MatrixXd::Zero(m, n);
@@ -59,16 +61,52 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd& costmap) const
     diff = 0;
     for (uint32_t i = 1; i < m - 1; i++) {
       for (uint32_t j = 1; j < n - 1; j++) {
-          ValueEightConnected(neighbor_costs, V_t, costmap, i, j);
-          V_t(i, j) = neighbor_costs.minCoeff();
-          diff = std::max(std::abs(V_t(i, j) - V_0(i, j)), diff);
-        }
+        ValueEightConnected(neighbor_costs, V_t, costmap, i, j);
+        V_t(i, j) = neighbor_costs.minCoeff();
+        diff = std::max(std::abs(V_t(i, j) - V_0(i, j)), diff);
+      }
     }
     V_0 = V_t;
+    if (diff < theta_) {
+      break;
+    }
   }
   std::cout << " -- max difference : " << diff << std::endl;
   return V_t;
 }
 
+Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
+                            const Eigen::Vector2i &coord) {
+  uint32_t i = coord.x();
+  uint32_t j = coord.y();
+  uint32_t index;
+  double min_v = std::numeric_limits<double>::max();
+  for (uint32_t k = 0; k < 8; k++) {
+    double value = V(i + X[k], j + Y[k]);
+    if (value < min_v) {
+      min_v = value;
+      index = k;
+    }
+  }
+  return Eigen::Vector2i(i + X[index], j + Y[index]);
 }
 
+Eigen::MatrixXi ValueIteration::solve(const Eigen::Vector2i &init,
+                                      const Eigen::Vector2i &goal,
+                                      const Eigen::MatrixXd &costmap) const {
+  Eigen::MatrixXd V = Run(costmap);
+  std::vector<Eigen::Vector2i> path = {init};
+  while (path.back() == goal) {
+    path.push_back(MinNeighbor(V, path.back()));
+  }
+
+  Eigen::MatrixXi path_m(path.size(), 2);  // Initialize path
+  for (int k = 0; k < path.size(); k++) {
+    path_m(k, 2) = path[k].x();
+    path_m(k, 1) = path[k].y();
+  }
+
+  return path_m;
+}
+
+}  // namespace bewego
