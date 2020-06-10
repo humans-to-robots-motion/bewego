@@ -23,7 +23,6 @@ driectory = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, driectory)
 sys.path.insert(0, driectory + os.sep + "../python")
 sys.path.insert(0, driectory + os.sep + "../../pyrieef")
-sys.path.insert(0, "/Users/jmainpri/Dropbox/Work/workspace/dstar/python")
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -35,11 +34,10 @@ from utils import timer
 import time
 from pybewego import AStarGrid
 from pybewego import ValueIteration
-from pydstar import Dstar2D
 
 show_result = True
 radius = .1
-nb_points = 40
+nb_points = 10
 average_cost = False
 
 
@@ -51,19 +49,14 @@ def trajectory(pixel_map, path):
 
 
 workspace = Workspace()
-workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
-workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
+# workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
+# workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
 phi = CostGridPotential2D(SignedDistanceWorkspaceMap(workspace), 10., .1, 10.)
 costmap = phi(workspace.box.stacked_meshgrid(nb_points))
-print(costmap)
+# print(costmap)
 
-converter = CostmapToSparseGraph(costmap, average_cost)
-graph = converter.convert()
-if average_cost:
-    assert check_symmetric(graph)
-# predecessors = shortest_paths(graph)
 pixel_map = workspace.pixel_map(nb_points)
-np.random.seed(1)
+np.random.seed(2)
 for i in range(100):
     s_w = sample_collision_free(workspace)
     t_w = sample_collision_free(workspace)
@@ -74,74 +67,38 @@ for i in range(100):
     if t[0] == 0 or t[1] == 0:
         continue
 
-    try:
-        time_0 = time.time()
-        print("planning (1)...")
-        path1 = converter.dijkstra_on_map(costmap, s[0], s[1], t[0], t[1])
-    except:
-        continue
-    print("1) took t : {} sec.".format(time.time() - time_0))
-    # try:
-
-    time_0 = time.time()
-    print("planning (2)...")
-    print(costmap.shape)
-    astar = AStarGrid()
-    astar.init_grid(1. / nb_points, [0, 1, 0, 1])
-    astar.set_costs(costmap)
-    assert astar.solve(s, t)
-    path2 = astar.path()
-    print("2) took t : {} sec.".format(time.time() - time_0))
-
-    time_0 = time.time()
-    print("planning (3)...")
-    print(costmap.shape)
-    dstar = Dstar2D()
-    assert dstar.solve(s, t, costmap)
-    path3 = dstar.path().T
-    print("3) took t : {} sec.".format(time.time() - time_0))
-
     time_0 = time.time()
     print("planning (4)...")
     print(costmap.shape)
     print("s : ", s)
     print("t : ", t)
     viter = ValueIteration()
-    path4 = viter.solve(s, t, costmap)
+    viter.set_max_iterations(100)
+    C = np.ones(costmap.shape)
+    C[t[0], t[1]] = 0
+    Vt = viter.run(C, t)
+    V = np.ones(costmap.shape) * Vt.min()
+    V[1:-1, 1:-1] = Vt[1:-1, 1:-1]
+    # path = viter.solve(s, t, costmap)
     print("4) took t : {} sec.".format(time.time() - time_0))
 
     if show_result:
 
         viewer = render.WorkspaceDrawer(
-            rows=1, cols=4, workspace=workspace, wait_for_keyboard=True)
+            rows=1, cols=1, workspace=workspace, wait_for_keyboard=True)
 
         viewer.set_drawing_axis(0)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
+        viewer.draw_ws_img(V, interpolate="none")
         viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory(pixel_map, path1))
-        viewer.draw_ws_point(s_w)
-        viewer.draw_ws_point(t_w)
+        # viewer.draw_ws_line(trajectory(pixel_map, path))
+        # viewer.draw_ws_point(s_w)
+        viewer.draw_ws_point(t_w, "r")
 
-        viewer.set_drawing_axis(1)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
-        viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory(pixel_map, path2), "b")
-        viewer.draw_ws_point(s_w)
-        viewer.draw_ws_point(t_w)
-
-        viewer.set_drawing_axis(2)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
-        viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory(pixel_map, path3), "g")
-        viewer.draw_ws_point(s_w)
-        viewer.draw_ws_point(t_w)
-
-        viewer.set_drawing_axis(3)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
-        viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory(pixel_map, path4), "r")
-        viewer.draw_ws_point(s_w)
-        viewer.draw_ws_point(t_w)
+        # viewer.set_drawing_axis(1)
+        # viewer.draw_ws_img(C, interpolate="none")
+        # viewer.draw_ws_obstacles()
+        # # viewer.draw_ws_point(s_w)
+        # viewer.draw_ws_point(t_w, "r")
 
         viewer.show_once()
 

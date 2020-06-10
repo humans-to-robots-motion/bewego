@@ -103,6 +103,7 @@ PYBIND11_MODULE(pybewego, m) {
       .def(py::init<>())
       .def("set_max_iterations", &bewego::ValueIteration::set_max_iterations)
       .def("set_theta", &bewego::ValueIteration::set_theta)
+      .def("run", &bewego::ValueIteration::Run)
       .def("solve", &bewego::ValueIteration::solve);
 
   m.attr("__version__") = "0.0.1";

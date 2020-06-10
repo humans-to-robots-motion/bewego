@@ -25,7 +25,7 @@
 // 16:           repeat
 // 17:                 k ←k+1
 // 18:                 for each state s do
-// 19:                       Vk[s] = maxa ∑s' P(s'|s,a) (R(s,a,s')+ γVk-1[s'])
+// 19:                       Vk[s] = max_a ∑_s' P(s'|s,a) (R(s,a,s')+ γVk-1[s'])
 // 20:           until ∀s |Vk[s]-Vk-1[s]| < θ
 // 21:           for each state s do
 // 22:                 π[s] = argmaxa ∑s' P(s'|s,a) (R(s,a,s')+ γVk[s'])
@@ -48,31 +48,46 @@ void ValueEightConnected(Eigen::VectorXd &neighbor_V, const Eigen::MatrixXd &V,
   neighbor_V[5] = V(i + X[5], j + Y[5]) + cost(i + X[5], j + Y[5]) * SQRT2;
   neighbor_V[6] = V(i + X[6], j + Y[6]) + cost(i + X[6], j + Y[6]) * SQRT2;
   neighbor_V[7] = V(i + X[7], j + Y[7]) + cost(i + X[7], j + Y[7]) * SQRT2;
+  neighbor_V /= 8;
 }
 
-Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap) const {
+Eigen::MatrixXd ValueIteration::Run(
+    const Eigen::MatrixXd &costmap,
+    const Eigen::Vector2i &goal) const {
   uint32_t m = costmap.rows();
   uint32_t n = costmap.cols();
   Eigen::MatrixXd V_t = Eigen::MatrixXd::Zero(m, n);
   Eigen::MatrixXd V_0 = Eigen::MatrixXd::Zero(m, n);
+  
+  V_0.row(0) = 1000000 * Eigen::VectorXd::Ones(n);
+  V_0.row(m-1) = 1000000 * Eigen::VectorXd::Ones(n);
+  V_0.col(0) = 1000000 * Eigen::VectorXd::Ones(m);
+  V_0.col(n-1) = 1000000 * Eigen::VectorXd::Ones(m);
+
   Eigen::VectorXd neighbor_costs(8);
   double diff = 0;
   for (uint32_t k = 0; k < max_iterations_; k++) {
     diff = 0;
-    for (uint32_t i = 1; i < m - 1; i++) {
-      for (uint32_t j = 1; j < n - 1; j++) {
-        ValueEightConnected(neighbor_costs, V_t, costmap, i, j);
-        V_t(i, j) = neighbor_costs.minCoeff();
-        diff = std::max(std::abs(V_t(i, j) - V_0(i, j)), diff);
+    for (uint32_t i = 1; i < m - 1 ; i++) {
+      for (uint32_t j = 1; j < n - 1 ; j++) {
+        if(i == goal.x() && j == goal.y()) {
+            V_t(i, j) = costmap(i, j);
+        }
+        else {
+            ValueEightConnected(neighbor_costs, V_0, costmap, i, j);
+            V_t(i, j) = neighbor_costs.minCoeff();
+            diff = std::max(std::abs(V_t(i, j) - V_0(i, j)), diff);
+        }
       }
     }
     V_0 = V_t;
     if (diff < theta_) {
+      std::cout << " -- iterations : " << k << std::endl;
       break;
     }
   }
   std::cout << " -- max difference : " << diff << std::endl;
-  return V_t;
+  return V_0;
 }
 
 Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
@@ -94,15 +109,18 @@ Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
 Eigen::MatrixXi ValueIteration::solve(const Eigen::Vector2i &init,
                                       const Eigen::Vector2i &goal,
                                       const Eigen::MatrixXd &costmap) const {
-  Eigen::MatrixXd V = Run(costmap);
+  Eigen::MatrixXd costmap2 = Eigen::MatrixXd::Zero(
+    costmap.rows(), costmap.cols());
+  costmap2(goal.x(), goal.y()) = -1e+3;
+  Eigen::MatrixXd V = Run(costmap2, goal);
   std::vector<Eigen::Vector2i> path = {init};
-  while (path.back() == goal) {
+  while (path.back().x() != goal.x() && path.back().y() != goal.y()) {
     path.push_back(MinNeighbor(V, path.back()));
   }
 
   Eigen::MatrixXi path_m(path.size(), 2);  // Initialize path
   for (int k = 0; k < path.size(); k++) {
-    path_m(k, 2) = path[k].x();
+    path_m(k, 0) = path[k].x();
     path_m(k, 1) = path[k].y();
   }
 
