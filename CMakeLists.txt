@@ -104,6 +104,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/chrono.cpp
     ${bewego_SOURCE_DIR}/astar.cpp
     ${bewego_SOURCE_DIR}/planar_grid.cpp
+    # ${bewego_SOURCE_DIR}/value_iteration.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}

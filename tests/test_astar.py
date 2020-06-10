@@ -60,10 +60,6 @@ def test_solve():
     print(astar.path().shape)
 
 
-def show_solution():
-
-
-
 test_env_size()
 test_pace()
 test_set_costs()

@@ -432,7 +432,10 @@ double PlanState::Length(SearchState* parent) {
       Vector2d pos2 = preced->cell_->Center();
       return preced->g() + (pos1 - pos2).norm();
   }
-  return preced->g() + cell_->getCost();
+  Vector2d pos1 = cell_->Center();
+  Vector2d pos2 = preced->cell_->Center();
+  double d = (pos1 - pos2).norm();
+  return preced->g() + cell_->getCost() * d;
 }
 
 double PlanState::Heuristic(SearchState* parent, SearchState* goal) {

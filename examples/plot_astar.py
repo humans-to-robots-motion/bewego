@@ -23,6 +23,8 @@ driectory = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, driectory)
 sys.path.insert(0, driectory + os.sep + "../python")
 sys.path.insert(0, driectory + os.sep + "../../pyrieef")
+sys.path.insert(0, "/Users/jmainpri/Dropbox/Work/workspace/dstar/python")
+
 import numpy as np
 from numpy.testing import assert_allclose
 from pyrieef.graph.shortest_path import *
@@ -32,11 +34,20 @@ import pyrieef.rendering.workspace_renderer as render
 from utils import timer
 import time
 from pybewego import AStarGrid
+from pydstar import Dstar2D
 
 show_result = True
 radius = .1
-nb_points = 40
+nb_points = 100
 average_cost = False
+
+
+def trajectory(pixel_map, path):
+    trajectory = [None] * len(path)
+    for i, p in enumerate(path):
+        trajectory[i] = pixel_map.grid_to_world(np.array(p))
+    return trajectory
+
 
 workspace = Workspace()
 workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
@@ -64,8 +75,9 @@ for i in range(100):
         path1 = converter.dijkstra_on_map(costmap, s[0], s[1], t[0], t[1])
     except:
         continue
-    print("took t : {} sec.".format(time.time() - time_0))
+    print("1) took t : {} sec.".format(time.time() - time_0))
     # try:
+
     time_0 = time.time()
     print("planning (2)...")
     print(costmap.shape)
@@ -74,34 +86,39 @@ for i in range(100):
     astar.set_costs(costmap)
     assert astar.solve(s, t)
     path2 = astar.path()
-    # except:
-    #     continue
-    print("took t : {} sec.".format(time.time() - time_0))
+    print("2) took t : {} sec.".format(time.time() - time_0))
+
+    time_0 = time.time()
+    print("planning (2)...")
+    print(costmap.shape)
+    dstar = Dstar2D()
+    assert dstar.solve(s, t, costmap)
+    path3 = dstar.path().T
+    print("3) took t : {} sec.".format(time.time() - time_0))
 
     if show_result:
 
-        trajectory1 = [None] * len(path1)
-        for i, p in enumerate(path1):
-            trajectory1[i] = pixel_map.grid_to_world(np.array(p))
-
-        trajectory2 = [None] * len(path2)
-        for i, p in enumerate(path2):
-            trajectory2[i] = pixel_map.grid_to_world(np.array(p))
-
         viewer = render.WorkspaceDrawer(
-            rows=1, cols=2, workspace=workspace, wait_for_keyboard=True)
+            rows=1, cols=3, workspace=workspace, wait_for_keyboard=True)
 
         viewer.set_drawing_axis(0)
         viewer.draw_ws_background(phi, nb_points, interpolate="none")
         viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory1)
+        viewer.draw_ws_line(trajectory(pixel_map, path1))
         viewer.draw_ws_point(s_w)
         viewer.draw_ws_point(t_w)
 
         viewer.set_drawing_axis(1)
         viewer.draw_ws_background(phi, nb_points, interpolate="none")
         viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory2, "b")
+        viewer.draw_ws_line(trajectory(pixel_map, path2), "b")
+        viewer.draw_ws_point(s_w)
+        viewer.draw_ws_point(t_w)
+
+        viewer.set_drawing_axis(2)
+        viewer.draw_ws_background(phi, nb_points, interpolate="none")
+        viewer.draw_ws_obstacles()
+        viewer.draw_ws_line(trajectory(pixel_map, path3), "g")
         viewer.draw_ws_point(s_w)
         viewer.draw_ws_point(t_w)
 
