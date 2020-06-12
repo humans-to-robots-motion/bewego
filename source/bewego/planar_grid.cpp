@@ -11,6 +11,8 @@ using namespace Eigen;
 
 namespace bewego {
 
+#define SQRT2 1.4142135623730951
+
 //------------------------------------------------------------------------------
 // TwoDCell implementation
 //------------------------------------------------------------------------------
@@ -329,10 +331,10 @@ vector<SearchState*> PlanState::Successors(SearchState* s) {
   remove[1] = -1;
   remove[2] = -1;
 
-  Vector2i coord2 = cell_->getCoord();
+  Vector2i coord2 = cell_->coord();
 
   if (s) {
-    Vector2i coord1 = dynamic_cast<PlanState*>(s)->cell_->getCoord();
+    Vector2i coord1 = dynamic_cast<PlanState*>(s)->cell_->coord();
     Vector2i coord = coord1 - coord2;
     int dir = (coord[0] + 1) + (coord[1] + 1) * 3;
 
@@ -432,9 +434,15 @@ double PlanState::Length(SearchState* parent) {
       Vector2d pos2 = preced->cell_->Center();
       return preced->g() + (pos1 - pos2).norm();
   }
-  Vector2d pos1 = cell_->Center();
-  Vector2d pos2 = preced->cell_->Center();
-  double d = (pos1 - pos2).norm();
+  // return preced->g() + cell_->getCost();
+  // Vector2d pos1 = cell_->Center();
+  // Vector2d pos2 = preced->cell_->Center();
+  // double d = (pos1 - pos2).norm();
+  double d = 1;
+  int diff_coord = (cell_->coord() -  preced->cell_->coord()).cwiseAbs().sum();
+  if (diff_coord == 2) {
+    d = sqrt(2);
+  }
   return preced->g() + cell_->getCost() * d;
 }
 
@@ -478,7 +486,7 @@ void AStarProblem::InitCosts(const Eigen::MatrixXd& cost) {
 Eigen::MatrixXi AStarProblem::PathCoordinates() const {
   Eigen::MatrixXi path_coordinates(path_.size(), 2);
   for(size_t i=0; i<cell_path_.size(); i++) {
-    path_coordinates.row(i) = cell_path_[i]->getCoord();
+    path_coordinates.row(i) = cell_path_[i]->coord();
   }
   return path_coordinates;
 }
@@ -542,8 +550,8 @@ bool AStarProblem::Solve(
     return false;
   }
 
-  Eigen::Vector2i s = startCell->getCoord();
-  Eigen::Vector2i g = goalCell->getCoord();
+  Eigen::Vector2i s = startCell->coord();
+  Eigen::Vector2i g = goalCell->coord();
   return Solve(s, g);
 }
 

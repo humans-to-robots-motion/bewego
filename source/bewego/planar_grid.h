@@ -114,7 +114,7 @@ class PlanCell : public TwoDCell {
 
   ~PlanCell() {}
 
-  Eigen::Vector2i getCoord() const { return coord_; }
+  const Eigen::Vector2i& coord() const { return coord_; }
 
   double
   getCost();

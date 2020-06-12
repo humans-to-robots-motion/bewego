@@ -58,6 +58,7 @@ costmap = phi(workspace.box.stacked_meshgrid(nb_points))
 print(costmap)
 
 converter = CostmapToSparseGraph(costmap, average_cost)
+converter.integral_cost = True
 graph = converter.convert()
 if average_cost:
     assert check_symmetric(graph)
@@ -101,22 +102,23 @@ for i in range(100):
     path3 = dstar.path().T
     print("3) took t : {} sec.".format(time.time() - time_0))
 
-    time_0 = time.time()
-    print("planning (4)...")
-    print(costmap.shape)
-    print("s : ", s)
-    print("t : ", t)
-    viter = ValueIteration()
-    path4 = viter.solve(s, t, costmap)
-    print("4) took t : {} sec.".format(time.time() - time_0))
+    # time_0 = time.time()
+    # print("planning (4)...")
+    # print(costmap.shape)
+    # print("s : ", s)
+    # print("t : ", t)
+    # viter = ValueIteration()
+    # path4 = viter.solve(s, t, costmap)
+    # print("4) took t : {} sec.".format(time.time() - time_0))
 
     if show_result:
 
         viewer = render.WorkspaceDrawer(
-            rows=1, cols=4, workspace=workspace, wait_for_keyboard=True)
+            rows=1, cols=3, workspace=workspace, wait_for_keyboard=True)
 
         viewer.set_drawing_axis(0)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
+        # viewer.draw_ws_background(phi, nb_points, interpolate="none")
+        viewer.draw_ws_img(costmap.T, interpolate="none")
         viewer.draw_ws_obstacles()
         viewer.draw_ws_line(trajectory(pixel_map, path1))
         viewer.draw_ws_point(s_w)
@@ -136,12 +138,12 @@ for i in range(100):
         viewer.draw_ws_point(s_w)
         viewer.draw_ws_point(t_w)
 
-        viewer.set_drawing_axis(3)
-        viewer.draw_ws_background(phi, nb_points, interpolate="none")
-        viewer.draw_ws_obstacles()
-        viewer.draw_ws_line(trajectory(pixel_map, path4), "r")
-        viewer.draw_ws_point(s_w)
-        viewer.draw_ws_point(t_w)
+        # viewer.set_drawing_axis(3)
+        # viewer.draw_ws_background(phi, nb_points, interpolate="none")
+        # viewer.draw_ws_obstacles()
+        # viewer.draw_ws_line(trajectory(pixel_map, path4), "r")
+        # viewer.draw_ws_point(s_w)
+        # viewer.draw_ws_point(t_w)
 
         viewer.show_once()
 
