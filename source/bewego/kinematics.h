@@ -47,14 +47,14 @@ public:
   /*!\brief Update this rigid body's post joint 
    * transform (i.e., (frame_in_local_))
    */
-  void SetDoF(double dof_value) {
+  void SetDoF(double v) {
     switch (joint_type) {
       case ROTATIONAL:
         frame_in_local_.linear() =
-            Eigen::AngleAxisd(dof_value, joint_axis_in_local_).toRotationMatrix();
+            Eigen::AngleAxisd(v, joint_axis_in_local_).toRotationMatrix();
         break;
       case TRANSLATIONAL:
-        frame_in_local_.translation() = dof_value * joint_axis_in_local_;
+        frame_in_local_.translation() = v * joint_axis_in_local_;
         break;
       case FIXED:
         // Do nothing.
@@ -66,6 +66,7 @@ public:
   }
 
   /*!\brief Calculate forward kinematics
+   * T_prev is the previous rigid body frame
    */
   const Eigen::Affine3d& Propagate(const Eigen::Affine3d& T_prev) {
     if (joint_type == FIXED) {
@@ -76,6 +77,10 @@ public:
     }
     return frame_in_base_;
   }
+
+  /*!\brief Frame accessor.
+   */
+  const Eigen::Affine3d& frame_in_base() const { return frame_in_base_; }
 
 protected:
 
@@ -99,13 +104,24 @@ class Robot {
 public:
     Robot() {}
 
-    void SetConfiguration(const Eigen::VectorXd& q) {}
-    void ForwardKinematics() {}
+    void SetConfiguration(const Eigen::VectorXd& q) {
+        for(uint32_t i=0; i < kinematic_chain_.size(); i++) {
+            kinematic_chain_[i].SetDoF(q[i]);
+        }
+    }
+    void ForwardKinematics() {
+        auto& parent = kinematic_chain_[0];
+        for(uint32_t i= 1; i<kinematic_chain_.size(); i++) {
+            auto& rigid_body = kinematic_chain_[i];
+            rigid_body.Propagate(parent.frame_in_base());
+            parent = rigid_body;
+        }
+    }
     void Jacobian() {}
 
 protected:
 
-  std::vector<RigidBody> kinematic_tree_;
+  std::vector<RigidBody> kinematic_chain_;
 };
 
 } // namespace bewego
