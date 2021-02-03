@@ -87,7 +87,7 @@ pybind11_add_module(pybewego SHARED source/bewego/bindings.cpp)
 target_link_libraries(pybewego PRIVATE bewego)
 set_target_properties(pybewego
   PROPERTIES PREFIX ""
-  LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/python"
+  LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
 )
 
 ############################
@@ -105,6 +105,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/astar.cpp
     ${bewego_SOURCE_DIR}/planar_grid.cpp
     ${bewego_SOURCE_DIR}/value_iteration.cpp
+    ${bewego_SOURCE_DIR}/kinematics.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}

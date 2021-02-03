@@ -19,48 +19,7 @@
 
 import os
 import sys
-import numpy as np
 driectory = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, driectory)
 sys.path.insert(0, driectory + os.sep + "../pybewego")
-from pybewego import AStarGrid
-
-
-def test_env_size():
-    astar = AStarGrid()
-    v1 = [0, 1, 0, 1]
-    v2 = astar.env_size()
-    assert np.linalg.norm((np.array(v1) - np.array(v2))) < 1e-10
-
-
-def test_pace():
-    astar = AStarGrid()
-    v1 = .05
-    v2 = astar.pace()
-    d = abs(v1 - v2)
-    print(d)
-    assert d < 1e-10
-
-
-def test_set_costs():
-    costs = np.random.random((100, 100))
-    astar = AStarGrid()
-    print("Init Grid...")
-    astar.init_grid(.01, [0, 1, 0, 1])
-    astar.set_costs(costs)
-
-
-def test_solve():
-    costs = 10. * np.random.random((40, 40))
-    astar = AStarGrid()
-    print("Init Grid...")
-    astar.init_grid(.025, [0, 1, 0, 1])
-    astar.set_costs(costs)
-    assert astar.solve([2, 2], [38, 38])
-    print(astar.path().shape)
-
-
-test_env_size()
-test_pace()
-test_set_costs()
-test_solve()
+sys.path.insert(0, driectory + os.sep + "..")

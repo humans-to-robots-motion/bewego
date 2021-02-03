@@ -4,6 +4,7 @@
 #include <bewego/differentiable_map.h>
 #include <bewego/planar_grid.h>
 #include <bewego/value_iteration.h>
+#include <bewego/geometry.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -89,6 +90,11 @@ PYBIND11_MODULE(pybewego, m) {
         Test the identity map
         Some other explanation about the subtract function.
     )pbdoc");
+
+  m.def("quaternion_to_matrix", &QuaternionToMatrix, R"pbdoc(
+        Returns the rotation matrix corresponding to a Quaternion
+    )pbdoc");
+
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")
       .def(py::init<>())
