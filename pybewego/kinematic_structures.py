@@ -64,5 +64,5 @@ class RigidBody:
         out += " - limit (h) : " + str(self.joint_bounds.high) + '\n'
         out += " - body name : " + str(self.name) + '\n'
         out += " - axis : " + str(self.joint_axis_in_local) + '\n'
-        out += " - frame_in_local : " + '\n' + str(self.frame_in_local) + '\n'
+        out += " - local_in_prev : " + '\n' + str(self.local_in_prev) + '\n'
         return out
