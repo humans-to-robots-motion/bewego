@@ -56,14 +56,14 @@ def test_bewego_forward_kinematics():
 
 def test_random_forward_kinematics():
     np.random.seed(0)
-    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 3))
-    r1 = PybulletRobot("../data/r2_robot.urdf")
+    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
+    r1 = PybulletRobot("../data/r3_robot.urdf")
     r2 = r1.create_robot()
     for q in configurations:
         r1.set_and_update(q)
-        p1 = r1.get_position(2)
+        p1 = r1.get_position(3)
         r2.set_and_update(q)
-        p2 = r2.get_position(2)
+        p2 = r2.get_position(3)
         assert_allclose(p1[:2], p2[:2], atol=1e-6)
 
     # bewego rootine is 5 ~ 10 X faster than pybullet
@@ -72,13 +72,13 @@ def test_random_forward_kinematics():
     t0 = time.time()
     for q in configurations:
         r1.set_and_update(q)
-        p1 = r1.get_position(2)
+        p1 = r1.get_position(3)
     print("time 1 : ", time.time() - t0)
 
     t0 = time.time()
     for q in configurations:
         r2.set_and_update(q)
-        p2 = r2.get_position(2)
+        p2 = r2.get_position(3)
     print("time 2 : ", time.time() - t0)
 
 
@@ -118,9 +118,30 @@ def test_jacobian():
     print("time 2 : ", time.time() - t0)
 
 
+def test_forward_kinematics_baxter():
+    r1 = PybulletRobot(
+        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf",
+        "baxter_right_arm.json")
+    r2 = r1.create_robot()
+
+    r1.set_and_update([0] * r1._njoints)
+    r2.set_and_update([0] * r1._njoints)
+
+    base = r1.get_position(r1.base_joint_id)
+    r2.set_base_transform(base)
+
+    p1 = r1.get_position(19)
+    p2 = r2.get_position(19)
+    assert_allclose(p1, p2, atol=1e-6)
+
+    # J = robot.get_jacobian(20)
+    # print(J.shape)
+
+
 def test_jacobian_baxter():
     robot = PybulletRobot(
-        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf")
+        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf",
+        "baxter_right_arm.json")
     # robot.set_and_update()
     print(len(robot.get_configuration()))
     robot.set_and_update([0] * 56)
@@ -132,4 +153,5 @@ def test_jacobian_baxter():
 # test_bewego_forward_kinematics()
 # test_random_forward_kinematics()
 # test_jacobian()
-test_jacobian_baxter()
+test_forward_kinematics_baxter()
+# test_jacobian_baxter()

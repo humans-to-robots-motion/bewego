@@ -55,11 +55,11 @@ class ScalarBound {
  */
 class RigidBody {
  public:
-  enum JointType { ROTATIONAL, TRANSLATIONAL, FIXED } joint_type;
+  enum JointType { ROTATIONAL = 0, TRANSLATIONAL=1, FIXED=4 } joint_type;
 
   RigidBody() {}
   RigidBody(const std::string& name, const std::string& joint_name,
-            const Eigen::Affine3d& local_in_prev,
+            uint32_t joint_type_id, const Eigen::Affine3d& local_in_prev,
             const Eigen::Vector3d& joint_axis_in_local);
 
   /*!\brief Update this rigid body's post joint
@@ -127,16 +127,18 @@ class RigidBody {
  */
 class Robot {
  public:
-  Robot() { kinematic_chain_.clear(); }
+  Robot() { 
+    base_ = Eigen::Affine3d::Identity();
+    kinematic_chain_.clear(); }
 
   void AddRigidBody(const std::string& name, const std::string& joint_name,
-                    const Eigen::Matrix4d& local_in_prev,
+                    uint32_t joint_type, const Eigen::Matrix4d& local_in_prev,
                     const Eigen::Vector3d& joint_axis_in_local) {
-    Eigen::Affine3d T;
-    T.matrix() = local_in_prev;
+    Eigen::Affine3d t;
+    t.matrix() = local_in_prev;
 
     kinematic_chain_.push_back(
-        RigidBody(name, joint_name, T, joint_axis_in_local));
+        RigidBody(name, joint_name, joint_type, t, joint_axis_in_local));
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
@@ -151,13 +153,16 @@ class Robot {
   }
 
   void ForwardKinematics() {
-    kinematic_chain_[0].Propagate(Eigen::Affine3d::Identity());
+    kinematic_chain_[0].Propagate(base_);
     for (uint32_t i = 1; i < kinematic_chain_.size(); i++) {
       auto& child = kinematic_chain_[i];
       auto& parent = kinematic_chain_[i - 1];
       child.Propagate(parent.frame_in_base());
     }
   }
+
+  // Sets the transform from base
+  void set_base_transform(const Eigen::Matrix4d& t) { base_ = t; }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::MatrixXd JacobianPosition(int link_index) const;
@@ -169,6 +174,7 @@ class Robot {
 
  protected:
   std::vector<RigidBody> kinematic_chain_;
+  Eigen::Affine3d base_;
 };
 
 }  // namespace bewego

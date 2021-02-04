@@ -25,12 +25,19 @@ from kinematic_structures import RigidBody
 from kinematic_structures import transform
 import numpy as np
 from pybewego import Robot
+import json
+import os
+
+
+def assets_data_dir():
+    return os.path.abspath(os.path.dirname(__file__)) + os.sep + "../data"
 
 
 def print_joint_info(info):
     print("Joint info: " + str(info))
     print(" - joint name : ", info[1])      # name of the joint in URDF
     print(" - type : ", info[2])            # p.JOINT_REVOLUTE or p.PRISMATIC
+    print(" - q idx : ", info[3])           # Index in config
     print(" - limit (l) : ", info[8])       # lower limit
     print(" - limit (h) : ", info[9])       # higher limit
     print(" - body name : ", info[12])
@@ -46,30 +53,55 @@ class PybulletRobot:
     Parses the URDF using pybullet
     """
 
-    def __init__(self, filename):
+    def __init__(self, urdf_file, json_config=None):
         self._p = bc.BulletClient(connection_mode=pybullet.DIRECT)
-        self._robot_id = self._p.loadURDF(filename)
-        self.rigid_bodies = []
-
-        # load robot
+        self._robot_id = self._p.loadURDF(urdf_file)
         self._njoints = self._p.getNumJoints(self._robot_id)
         print("number joints: " + str(self._njoints))
+        self.rigid_bodies = []
+        self.active_joint_names = None
+        if json_config is not None:
+            self._load_config_from_file(json_config)
+        self._parse_rigid_bodies()
+
+    def _load_config_from_file(self, json_config):
+        """ 
+        Loads a configuration from a json file
+        filename assets_data_dir() + "/baxter_right_arm.json"
+        """
+        filename = assets_data_dir() + os.sep + json_config
+        with open(filename, "r") as read_file:
+            config = json.loads(read_file.read())
+            self.config_name = config["name"]
+            self.keypoints = config["keypoints"]
+            self.active_joint_names = config["joint_names"]
+            self.active_dofs = config["active_dofs"]
+            self.scale = config["scale"]
+            self.base_joint_id = config["base_joint_id"]
+        print(self.active_dofs)
+
+    def _parse_rigid_bodies(self):
+        """ 
+        Get the joint info into a rigid body datastructure
+        """
         for i in range(self._njoints):
             info = self._p.getJointInfo(self._robot_id, i)
-            # print_joint_info(info)
             print("joint id : ", i)
+            print_joint_info(info)
             rigid_body = RigidBody()
             rigid_body.type = info[2]
-            rigid_body.name = info[12]
+            rigid_body.name = str(info[12],'utf-8')
             rigid_body.joint_bounds = ScalarBounds(info[8], info[9])
-            rigid_body.joint_name = info[1]
+            rigid_body.joint_name = str(info[1],'utf-8')
             rigid_body.joint_axis_in_local = np.asarray(info[13])
             rigid_body.local_in_prev = transform(
                 np.asarray(info[14]),
                 np.asarray(info[15])
             )
-            print(rigid_body)
-            self.rigid_bodies.append(rigid_body)
+            # print(rigid_body.name)
+            append = self.active_joint_names is None
+            if append or (rigid_body.name in self.active_joint_names):
+                self.rigid_bodies.append(rigid_body)
 
     def create_robot(self):
         robot = Robot()
@@ -77,6 +109,7 @@ class PybulletRobot:
             robot.add_rigid_body(
                 body.name,
                 body.joint_name,
+                body.type,
                 body.local_in_prev,
                 body.joint_axis_in_local)
         return robot
@@ -116,5 +149,4 @@ class PybulletRobot:
         q, dq, tau = self.get_motor_joint_states()
         jac = np.array(self._p.calculateJacobian(
             self._robot_id, idx, com, q, dq, tau)[0])
-        print(len(q))
         return jac

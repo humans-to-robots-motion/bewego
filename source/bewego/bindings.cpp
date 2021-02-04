@@ -102,7 +102,8 @@ PYBIND11_MODULE(pybewego, m) {
       .def("add_rigid_body", &bewego::Robot::AddRigidBody)
       .def("set_and_update", &bewego::Robot::SetAndUpdate)
       .def("get_position", &bewego::Robot::get_position)
-      .def("get_jacobian", &bewego::Robot::JacobianPosition);
+      .def("get_jacobian", &bewego::Robot::JacobianPosition)
+      .def("set_base_transform", &bewego::Robot::set_base_transform);
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")
       .def(py::init<>())

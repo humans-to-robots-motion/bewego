@@ -1,0 +1,42 @@
+{
+    "name": 
+        "baxter_right_arm",
+
+    "keypoints":
+        {
+            "p1":  [0, 0],
+            "p2":  [0, 1],
+            "p3":  [0, 8],
+            "p4":  [1, 8],
+            "p5":  [1, 1],
+            "p6":  [8, 1],
+            "p7":  [1, 0],
+            "p8":  [8, 0]
+        },
+
+    "base_joint_id": 11,
+
+    "joint_names":
+      [ 
+        "right_upper_shoulder",
+        "right_lower_shoulder",
+        "right_upper_elbow",
+        "right_lower_elbow",
+        "right_upper_forearm",
+        "right_lower_forearm",
+        "right_wrist"
+      ],
+
+    "active_dofs":
+        [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+        ],
+
+    "scale": 0.1
+}
