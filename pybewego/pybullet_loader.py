@@ -90,9 +90,9 @@ class PybulletRobot:
             print_joint_info(info)
             rigid_body = RigidBody()
             rigid_body.type = info[2]
-            rigid_body.name = str(info[12],'utf-8')
+            rigid_body.name = str(info[12], 'utf-8')
             rigid_body.joint_bounds = ScalarBounds(info[8], info[9])
-            rigid_body.joint_name = str(info[1],'utf-8')
+            rigid_body.joint_name = str(info[1], 'utf-8')
             rigid_body.joint_axis_in_local = np.asarray(info[13])
             rigid_body.local_in_prev = transform(
                 np.asarray(info[14]),
@@ -140,9 +140,13 @@ class PybulletRobot:
         return np.array(self._p.getLinkState(self._robot_id, idx)[0])
 
     def get_rotation(self, idx):
-        link_rot = self._p.getLinkState(self._robot_id, idx)[1]
-        R = self._p.getMatrixFromQuaternion(link_rot)
+        q = self._p.getLinkState(self._robot_id, idx)[1]
+        R = self._p.getMatrixFromQuaternion(q)
         return np.reshape(np.array(R, (3, 3)))
+
+    def get_transform(self, idx):
+        state = self._p.getLinkState(self._robot_id, idx)
+        return transform(state[0], state[1])
 
     def get_jacobian(self, idx):
         com = [0., 0., 0.]
