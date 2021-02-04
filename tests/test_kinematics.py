@@ -21,6 +21,7 @@
 from test_imports import *
 from pybewego.pybullet_loader import *
 from numpy.testing import assert_allclose
+import time
 
 
 def test_import_planar():
@@ -61,6 +62,21 @@ def test_random_forward_kinematics():
         r2.set_and_update(q)
         p2 = r2.get_position(2)
         assert_allclose(p1[:2], p2[:2], atol=1e-6)
+
+    t0 = time.time()
+    for q in configurations:
+        r1.set_and_update(q)
+        p1 = r1.get_position(2)
+    print("time 1 : ", time.time() - t0)
+
+    t0 = time.time()
+    for q in configurations:
+        r2.set_and_update(q)
+        p2 = r2.get_position(2)
+    print("time 2 : ", time.time() - t0)
+
+    # My FK rootine is 5 ~ 10 X faster than pybullet
+    # for this the code has to be compiled in Release or RelWithDebInfo.
 
 
 def test_jacobian():

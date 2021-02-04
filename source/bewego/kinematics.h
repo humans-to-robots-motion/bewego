@@ -146,11 +146,10 @@ class Robot {
 
   void ForwardKinematics() {
     kinematic_chain_[0].Propagate(Eigen::Affine3d::Identity());
-    Eigen::Affine3d parent_in_base = kinematic_chain_[0].frame_in_base();
     for (uint32_t i = 1; i < kinematic_chain_.size(); i++) {
-      auto& rigid_body = kinematic_chain_[i];
-      rigid_body.Propagate(parent_in_base);
-      parent_in_base = rigid_body.frame_in_base();
+      auto& child = kinematic_chain_[i];
+      auto& parent = kinematic_chain_[i - 1];
+      child.Propagate(parent.frame_in_base());
     }
   }
   void Jacobian() {}
