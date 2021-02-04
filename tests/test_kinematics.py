@@ -50,6 +50,19 @@ def test_bewego_forward_kinematics():
     print("p : ", p)
 
 
+def test_random_forward_kinematics():
+    np.random.seed(0)
+    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 3))
+    r1 = PybulletRobot("../data/r2_robot.urdf")
+    r2 = r1.create_robot()
+    for q in configurations:
+        r1.set_and_update(q)
+        p1 = r1.get_position(2)
+        r2.set_and_update(q)
+        p2 = r2.get_position(2)
+        assert_allclose(p1[:2], p2[:2], atol=1e-6)
+
+
 def test_jacobian():
     robot = PybulletRobot("../data/r2_robot.urdf")
     q = [2, 1, 3]
@@ -60,4 +73,5 @@ def test_jacobian():
 
 test_pybullet_forward_kinematics()
 test_bewego_forward_kinematics()
+test_random_forward_kinematics()
 # test_jacobian()

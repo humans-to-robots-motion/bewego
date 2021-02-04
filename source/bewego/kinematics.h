@@ -8,6 +8,9 @@
 #include <iostream>
 #include <vector>
 
+using std::cout;
+using std::endl;
+
 namespace bewego {
 
 /*!\brief Represents bounds \in [lower, upper].
@@ -95,6 +98,7 @@ class RigidBody {
   /*!\brief Frame accessor.
    */
   const Eigen::Affine3d& frame_in_base() const { return frame_in_base_; }
+  const Eigen::Affine3d& local_in_prev() const { return local_in_prev_; }
 
  protected:
   std::string name_;          // Rigid body name in URDF.
@@ -109,6 +113,8 @@ class RigidBody {
   // If it's axis aligned, then we can skip some computation.
   Eigen::Vector3d joint_axis_in_local_;
   Eigen::Vector3d joint_axis_in_base_;
+
+  bool debug_;
 };
 
 /*!\brief Represents a chain of rigid bodies
@@ -117,10 +123,9 @@ class Robot {
  public:
   Robot() { kinematic_chain_.clear(); }
 
-  void AddRigidBody(
-      const std::string& name, const std::string& joint_name,
-      const Eigen::Matrix4d& local_in_prev,
-      const Eigen::Vector3d& joint_axis_in_local) {
+  void AddRigidBody(const std::string& name, const std::string& joint_name,
+                    const Eigen::Matrix4d& local_in_prev,
+                    const Eigen::Vector3d& joint_axis_in_local) {
     Eigen::Affine3d T;
     T.matrix() = local_in_prev;
 
@@ -140,12 +145,11 @@ class Robot {
   }
 
   void ForwardKinematics() {
-    auto& parent = kinematic_chain_[0];
-    parent.Propagate(Eigen::Affine3d::Identity());
+    kinematic_chain_[0].Propagate(Eigen::Affine3d::Identity());
     for (uint32_t i = 1; i < kinematic_chain_.size(); i++) {
       auto& child = kinematic_chain_[i];
+      auto& parent = kinematic_chain_[i - 1];
       child.Propagate(parent.frame_in_base());
-      parent = child;
     }
   }
   void Jacobian() {}
