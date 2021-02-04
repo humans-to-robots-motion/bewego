@@ -57,7 +57,9 @@ class PybulletRobot:
         for i in range(self._njoints):
             info = self._p.getJointInfo(self._robot_id, i)
             # print_joint_info(info)
+            print("joint id : ", i)
             rigid_body = RigidBody()
+            rigid_body.type = info[2]
             rigid_body.name = info[12]
             rigid_body.joint_bounds = ScalarBounds(info[8], info[9])
             rigid_body.joint_name = info[1]
@@ -79,6 +81,18 @@ class PybulletRobot:
                 body.joint_axis_in_local)
         return robot
 
+    def get_motor_joint_states(self):
+        joint_states = self._p.getJointStates(
+            self._robot_id, range(self._njoints))
+        joint_infos = [self._p.getJointInfo(self._robot_id, i)
+                       for i in range(self._njoints)]
+        joint_states = [j for j, i in zip(
+            joint_states, joint_infos) if i[3] > -1]
+        joint_positions = [state[0] for state in joint_states]
+        joint_velocities = [state[1] for state in joint_states]
+        joint_torques = [state[3] for state in joint_states]
+        return joint_positions, joint_velocities, joint_torques
+
     def set_and_update(self, q):
         assert len(q) == self._njoints
         q = np.asarray(q).reshape(self._njoints, 1)
@@ -87,7 +101,7 @@ class PybulletRobot:
 
     def get_configuration(self):
         return np.asarray([i[0] for i in self._p.getJointStates(
-            self._robot_id, range(self._p.getNumJoints(self._robot_id)))])
+            self._robot_id, range(self._njoints))])
 
     def get_position(self, idx):
         return np.array(self._p.getLinkState(self._robot_id, idx)[0])
@@ -98,8 +112,9 @@ class PybulletRobot:
         return np.reshape(np.array(R, (3, 3)))
 
     def get_jacobian(self, idx):
-        q = list(self.get_configuration())
-        zero_vec = [0.] * len(q)
-        jac = np.array(self._p.calculateJacobian(self._robot_id, idx, [
-                       0., 0., 0.], q, zero_vec, zero_vec)[0])
+        com = [0., 0., 0.]
+        q, dq, tau = self.get_motor_joint_states()
+        jac = np.array(self._p.calculateJacobian(
+            self._robot_id, idx, com, q, dq, tau)[0])
+        print(len(q))
         return jac

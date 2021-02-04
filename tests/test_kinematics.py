@@ -24,6 +24,9 @@ from numpy.testing import assert_allclose
 import time
 
 
+DATADIR = "../../pybullet_robots/data/"
+
+
 def test_import_planar():
     PybulletRobot("../data/r2_robot.urdf")
 
@@ -63,6 +66,9 @@ def test_random_forward_kinematics():
         p2 = r2.get_position(2)
         assert_allclose(p1[:2], p2[:2], atol=1e-6)
 
+    # bewego rootine is 5 ~ 10 X faster than pybullet
+    # for this the code has to be compiled in Release or RelWithDebInfo.
+
     t0 = time.time()
     for q in configurations:
         r1.set_and_update(q)
@@ -75,19 +81,55 @@ def test_random_forward_kinematics():
         p2 = r2.get_position(2)
     print("time 2 : ", time.time() - t0)
 
-    # My FK rootine is 5 ~ 10 X faster than pybullet
-    # for this the code has to be compiled in Release or RelWithDebInfo.
-
 
 def test_jacobian():
-    robot = PybulletRobot("../data/r2_robot.urdf")
-    q = [2, 1, 3]
-    robot.set_and_update(q)
-    robot.get_jacobian(2)
-    print("jacobian ok!")
+    r1 = PybulletRobot("../data/r2_robot.urdf")
+    r2 = r1.create_robot()
+
+    q = [1, 2, 0]
+
+    r1.set_and_update(q)
+    J = r1.get_jacobian(2)
+    print("Jacobian (r1) : \n", J)
+
+    r2.set_and_update(q)
+    J = r2.get_jacobian(2)
+    print("Jacobian (r2) : \n", J)
+
+    np.random.seed(0)
+    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 3))
+    for q in configurations:
+        r1.set_and_update(q)
+        p1 = r1.get_jacobian(2)
+        r2.set_and_update(q)
+        p2 = r2.get_jacobian(2)
+        assert_allclose(p1[:2], p2[:2], atol=1e-6)
+
+    t0 = time.time()
+    for q in configurations:
+        r1.set_and_update(q)
+        p1 = r1.get_jacobian(2)
+    print("time 1 : ", time.time() - t0)
+
+    t0 = time.time()
+    for q in configurations:
+        r2.set_and_update(q)
+        p2 = r2.get_jacobian(2)
+    print("time 2 : ", time.time() - t0)
 
 
-test_pybullet_forward_kinematics()
-test_bewego_forward_kinematics()
-test_random_forward_kinematics()
+def test_jacobian_baxter():
+    robot = PybulletRobot(
+        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf")
+    # robot.set_and_update()
+    print(len(robot.get_configuration()))
+    robot.set_and_update([0] * 56)
+    J = robot.get_jacobian(20)
+    print(J.shape)
+
+
+# test_pybullet_forward_kinematics()
+# test_bewego_forward_kinematics()
+# test_random_forward_kinematics()
 # test_jacobian()
+test_jacobian_baxter()

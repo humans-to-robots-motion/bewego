@@ -28,4 +28,15 @@ RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
   }
 }
 
+Eigen::MatrixXd Robot::JacobianPosition(int link_index) const {
+  Eigen::MatrixXd J(3, kinematic_chain_.size());
+  auto x = kinematic_chain_[link_index].joint_origin_in_base();
+  for (int j = J.cols() - 1; j >= 0; j--) {
+    auto joint_origin = kinematic_chain_[j].joint_origin_in_base();
+    auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
+    J.col(j) = joint_axis.cross(x - joint_origin);
+  }
+  return J;
+}
+
 }  // namespace bewego

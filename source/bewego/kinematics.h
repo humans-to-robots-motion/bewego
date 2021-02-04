@@ -99,6 +99,12 @@ class RigidBody {
    */
   const Eigen::Affine3d& frame_in_base() const { return frame_in_base_; }
   const Eigen::Affine3d& local_in_prev() const { return local_in_prev_; }
+  const Eigen::Vector3d& joint_axis_in_base() const {
+    return joint_axis_in_base_;
+  }
+  Eigen::Vector3d joint_origin_in_base() const {
+    return frame_in_base_.translation();
+  }
 
  protected:
   std::string name_;          // Rigid body name in URDF.
@@ -152,8 +158,11 @@ class Robot {
       child.Propagate(parent.frame_in_base());
     }
   }
-  void Jacobian() {}
 
+  // Assumes that Forward Kinematics has been called.
+  Eigen::MatrixXd JacobianPosition(int link_index) const;
+
+  // Assumes that Forward Kinematics has been called.
   Eigen::Vector3d get_position(uint32_t idx) const {
     return kinematic_chain_[idx].frame_in_base().translation();
   }
