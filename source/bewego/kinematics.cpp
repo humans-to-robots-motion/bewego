@@ -8,12 +8,14 @@ using std::endl;
 namespace bewego {
 
 RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
-                     uint32_t joint_type_id,
+                     uint32_t joint_type_id, 
+                     double dof_lower_limit,
+                     double dof_upper_limit,
                      const Eigen::Affine3d& local_in_prev,
                      const Eigen::Vector3d& joint_axis_in_local)
     : debug_(true),
       name_(name),
-      joint_bounds_(0, 0),
+      joint_bounds_(dof_lower_limit, dof_upper_limit),
       joint_name_(joint_name),
       joint_type(JointType(joint_type_id)),
       frame_in_base_(Eigen::Affine3d::Identity()),

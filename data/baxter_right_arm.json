@@ -15,6 +15,7 @@
         },
 
     "base_joint_id": 11,
+    "end_effector_id" : 18,
 
     "joint_names":
       [ 
@@ -26,6 +27,17 @@
         "right_lower_forearm",
         "right_wrist"
       ],
+
+    "joint_ids":
+        [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+        ],
 
     "active_dofs":
         [
