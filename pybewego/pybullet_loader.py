@@ -88,21 +88,24 @@ class PybulletRobot:
         """
         for i in range(self._njoints):
             info = self._p.getJointInfo(self._robot_id, i)
-            print("joint id : ", i)
-            print_joint_info(info)
             rigid_body = RigidBody()
             rigid_body.type = info[2]
             rigid_body.name = str(info[12], 'utf-8')
             rigid_body.joint_bounds = ScalarBounds(info[8], info[9])
             rigid_body.joint_name = str(info[1], 'utf-8')
             rigid_body.joint_axis_in_local = np.asarray(info[13])
-            rigid_body.local_in_prev = transform(
-                np.asarray(info[14]),
-                np.asarray(info[15])
-            )
             # print(rigid_body.name)
             append = self.active_joint_names is None
             if append or (rigid_body.name in self.active_joint_names):
+                print("joint id : ", i)
+                print_joint_info(info)
+                state = self._p.getLinkState(self._robot_id, i - 1)
+                t_com_l = transform(state[2], state[3])
+                print("t_com_l : \n", t_com_l)
+                rigid_body.local_in_prev = t_com_l @ transform(
+                    np.asarray(info[14]),
+                    np.asarray(info[15]))
+                # rigid_body.local_in_prev[:3, :3] = -1. * rigid_body.local_in_prev[:3, :3]
                 self.rigid_bodies.append(rigid_body)
 
     def create_robot(self):
@@ -112,18 +115,18 @@ class PybulletRobot:
                 body.name,
                 body.joint_name,
                 body.type,
-                body.joint_bounds.lower,
-                body.joint_bounds.upper,
+                body.joint_bounds.low,
+                body.joint_bounds.high,
                 body.local_in_prev,
                 body.joint_axis_in_local)
         return robot
 
     def sample_config(self):
         """ Samples a configuration in dof bounds for the active DoFs """
-        q = np.array(len(self.rigid_bodies))
+        q = np.empty(len(self.rigid_bodies))
         for i, body in enumerate(self.rigid_bodies):
-            l = body.joint_bounds.lower
-            h = body.joint_bounds.upper
+            l = body.joint_bounds.low
+            h = body.joint_bounds.high
             q[i] = np.random.uniform(low=l, high=h)
         return q
 
@@ -139,9 +142,11 @@ class PybulletRobot:
         joint_torques = [state[3] for state in joint_states]
         return joint_positions, joint_velocities, joint_torques
 
-    def set_and_update(self, q, dofs=range(self._njoints)):
-        q = np.asarray(q).reshape(self._njoints, 1)
-        self._p.resetJointStatesMultiDof(self._robot_id, dofs, q)
+    def set_and_update(self, q, joint_ids=None):
+        if joint_ids is None:
+            joint_ids = range(self._njoints)
+        q = np.asarray(q).reshape(len(joint_ids), 1)
+        self._p.resetJointStatesMultiDof(self._robot_id, joint_ids, q)
 
     def get_configuration(self):
         return np.asarray([i[0] for i in self._p.getJointStates(
@@ -173,13 +178,19 @@ class PybulletRobot:
 
         @return Rotation matrix
         """
+        # info = self._p.getJointInfo(self._robot_id, idx)
+        # q_joint = info[15]
+        # R_joint = self._p.getMatrixFromQuaternion(q_joint)
+        # R_joint = np.reshape(np.array(R_joint), (3, 3))
+        # print(R_joint)
+
         state = self._p.getLinkState(self._robot_id, idx)
         q_com_w = state[1]
-        R_com_w = self._p.getMatrixFromQuaternion(q)
-        R_com_w = np.reshape(np.array(R), (3, 3))
+        R_com_w = self._p.getMatrixFromQuaternion(q_com_w)
+        R_com_w = np.reshape(np.array(R_com_w), (3, 3))
         q_com_l = state[3]
-        R_com_l = self._p.getMatrixFromQuaternion(q)
-        R_com_l = np.reshape(np.array(R), (3, 3))
+        R_com_l = self._p.getMatrixFromQuaternion(q_com_l)
+        R_com_l = np.reshape(np.array(R_com_l), (3, 3))
         return R_com_w @ R_com_l.T
 
     def get_position(self, idx):

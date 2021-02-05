@@ -182,6 +182,16 @@ class Robot {
     return kinematic_chain_[idx].frame_in_base().translation();
   }
 
+  // Assumes that Forward Kinematics has been called.
+  Eigen::Matrix3d get_rotation(uint32_t idx) const {
+    return kinematic_chain_[idx].frame_in_base().linear();
+  }
+
+  // Assumes that Forward Kinematics has been called.
+  Eigen::Matrix4d get_transform(uint32_t idx) const {
+    return kinematic_chain_[idx].frame_in_base().matrix();
+  }
+
  protected:
   std::vector<RigidBody> kinematic_chain_;
   Eigen::Affine3d base_;

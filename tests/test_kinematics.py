@@ -122,14 +122,11 @@ def test_forward_kinematics_baxter():
     r1 = PybulletRobot(
         DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf",
         "baxter_right_arm.json")
-
-    r1.set_and_update(np.random.rand(r1._njoints))
-
     print("config : ", r1.get_configuration())
+    r1.set_and_update([0] * r1._njoints)
     base = r1.get_transform(r1.base_joint_id)
     r2 = r1.create_robot()
     r2.set_base_transform(base)
-    r2.set_and_update([0] * len(r1.active_dofs))
     print(base)
 
     configurations = [None] * 100
@@ -137,11 +134,14 @@ def test_forward_kinematics_baxter():
         configurations[i] = r1.sample_config()
 
     for q in configurations:
+        np.set_printoptions(suppress=True)
         r1.set_and_update(q, r1.active_joint_ids)
-        r2.set_and_update([0] * len(r1.active_joint_ids))
-        p1 = r1.get_position(r1.end_effector_id)
-        p2 = r2.get_position(7)
+        r2.set_and_update(q)
+        p1 = r1.get_rotation(13)
+        p2 = r2.get_rotation(1)
         assert_allclose(p1, p2, atol=1e-6)
+        print("p1 : ", p1)
+        print("p2 : ", p2)
 
 
 def test_jacobian_baxter():

@@ -102,6 +102,8 @@ PYBIND11_MODULE(pybewego, m) {
       .def("add_rigid_body", &bewego::Robot::AddRigidBody)
       .def("set_and_update", &bewego::Robot::SetAndUpdate)
       .def("get_position", &bewego::Robot::get_position)
+      .def("get_rotation", &bewego::Robot::get_rotation)
+      .def("get_transform", &bewego::Robot::get_transform)
       .def("get_jacobian", &bewego::Robot::JacobianPosition)
       .def("set_base_transform", &bewego::Robot::set_base_transform);
 
