@@ -17,9 +17,9 @@ Eigen::Matrix3d QuaternionToMatrix(const Eigen::VectorXd& q) {
 Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
   assert(rpy.size() == 3);
   Eigen::Quaterniond q;
-  q = Eigen::AngleAxisd(rpy.x(), Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(rpy.y(), Eigen::Vector3d::UnitY()) * 
-      Eigen::AngleAxisd(rpy.z(), Eigen::Vector3d::UnitZ());
+  q = Eigen::AngleAxisd(rpy[0], Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(rpy[1], Eigen::Vector3d::UnitY()) * 
+      Eigen::AngleAxisd(rpy[2], Eigen::Vector3d::UnitZ());
   Eigen::Vector4d quaternion;
   quaternion[0] = q.x();
   quaternion[1] = q.y();

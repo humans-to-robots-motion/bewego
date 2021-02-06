@@ -88,9 +88,7 @@ class RigidBody:
 
 class Kinematics:
 
-    def __init__(self,
-                 urdf_file=None,
-                 data_fixed=None):
+    def __init__(self, urdf_file):
         urdf_root = ET.parse(urdf_file).getroot()
         self.links = {}
         self.joints = {}
@@ -102,7 +100,7 @@ class Kinematics:
             elif child.tag == "joint":
                 joint = RigidBody()
                 joint.type = child.attrib["type"]
-                joint.name = child.attrib["name"]
+                joint.joint_name = child.attrib["name"]
                 joint.id = jointid
                 for jel in child:
                     if jel.tag == "parent":
@@ -110,66 +108,73 @@ class Kinematics:
                         self.links[jel.attrib["link"]][
                             "childs"].append(child.attrib["name"])
                     elif jel.tag == "child":
-                        joint.child = jel.attrib["link"]
+                        joint.name = jel.attrib["link"]
                         self.links[jel.attrib["link"]][
                             "parents"].append(child.attrib["name"])
                     elif jel.tag == "origin":
                         splits = jel.attrib["xyz"].split()
-                        origin_p = np.array([
+                        position = np.array([
                             float(splits[0]),
                             float(splits[1]),
                             float(splits[2])])
-                        splits = jel.attrib["rpy"].split()
-                        origin_r = np.array([
-                            float(splits[0]),
-                            float(splits[1]),
-                            float(splits[2])])
+                        quaternion = np.array([0, 0, 0, 1])
+                        if "rpy" in jel.attrib:
+                            splits = jel.attrib["rpy"].split()
+                            quaternion = euler_to_quaternion(np.array([
+                                float(splits[0]),
+                                float(splits[1]),
+                                float(splits[2])]))
+                        joint.local_in_prev = transform(position, quaternion)
                     elif jel.tag == "axis":
                         splits = jel.attrib["xyz"].split()
-                        joint.axis = np.array([
+                        joint.joint_axis_in_local = np.array([
                             float(splits[0]),
                             float(splits[1]),
                             float(splits[2])])
                     else:
-                        #print('WARNING: Tag "' + jel.tag + '" not supported')
+                        print('WARNING: Tag "' + jel.tag + '" not supported')
                         pass
                 self.joints[child.attrib["name"]] = joint
+                print(joint)
         for l in self.links:
             if self.links[l]["parents"] == []:
                 self.baselink = l
 
     #@tf.function
-    def forward(self, jointstates):
-        pos = tf.constant([0., 0., 0.])
-        rot = tf.constant([0., 0., 0., 1.])
-        link = self.baselink
-        link_states = []
+    # def forward(self, jointstates):
+    #     pos = tf.constant([0., 0., 0.])
+    #     rot = tf.constant([0., 0., 0., 1.])
+    #     link = self.baselink
+    #     link_states = []
 
-        def computeChilds(link, pos, rot):
-            for jointname in self.links[link]["childs"]:
-                joint = self.joints[jointname]
-                newlink = joint.child
-                if joint.id >= 0:
-                    if joint.type == "revolute":
-                        newpos = pos + tfg.quaternion.rotate(joint.origin, rot)
-                        newrot = tfg.quaternion.multiply(
-                            rot, tfg.quaternion.from_euler(joint.axis * jointstates[joint.id]))
-                    elif joint.type == "prismatic":
-                        newpos = pos + tfg.quaternion.rotate(joint.origin, rot) + tfg.quaternion.rotate(
-                            joint.axis * jointstates[joint.id], rot)
-                        newrot = rot
-                else:
-                    if joint.type == "revolute":
-                        newpos = pos + tfg.quaternion.rotate(joint.origin, rot)
-                        newrot = tfg.quaternion.multiply(
-                            rot, tfg.quaternion.from_euler(joint.axis * joint.jointstate))
-                    elif joint.type == "prismatic":
-                        newpos = pos + tfg.quaternion.rotate(
-                            joint.origin, rot) + tfg.quaternion.rotate(joint.axis * joint.jointstate, rot)
-                        newrot = rot
-                link_states.append((newlink, newpos, newrot))
-                computeChilds(newlink, newpos, newrot)
-
-        computeChilds(link, pos, rot)
-
-        return link_states
+    #     def computeChilds(link, pos, rot):
+    #         for jointname in self.links[link]["childs"]:
+    #             joint = self.joints[jointname]
+    #             newlink = joint.child
+    #             if joint.id >= 0:
+    #                 if joint.type == "revolute":
+    #                     newpos = pos + tfg.quaternion.rotate(
+    #                         joint.origin, rot)
+    #                     newrot = tfg.quaternion.multiply(
+    #                         rot, tfg.quaternion.from_euler(
+    #                             joint.axis * jointstates[joint.id]))
+    #                 elif joint.type == "prismatic":
+    #                     newpos = pos + tfg.quaternion.rotate(
+    #                         joint.origin, rot) + tfg.quaternion.rotate(
+    #                         joint.axis * jointstates[joint.id], rot)
+    #                     newrot = rot
+    #             else:
+    #                 if joint.type == "revolute":
+    #                     newpos = pos + tfg.quaternion.rotate(joint.origin, rot)
+    #                     newrot = tfg.quaternion.multiply(
+    #                         rot, tfg.quaternion.from_euler(
+    #                             joint.axis * joint.jointstate))
+    #                 elif joint.type == "prismatic":
+    #                     newpos = pos + tfg.quaternion.rotate(
+    #                         joint.origin, rot) + tfg.quaternion.rotate(
+    #                         joint.axis * joint.jointstate, rot)
+    #                     newrot = rot
+    #             link_states.append((newlink, newpos, newrot))
+    #             computeChilds(newlink, newpos, newrot)
+    #     computeChilds(link, pos, rot)
+    #     return link_states

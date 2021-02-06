@@ -21,6 +21,7 @@
 from test_imports import *
 import pybewego
 from pybewego.pybullet_loader import *
+from pybewego.kinematic_structures import Kinematics
 from numpy.testing import assert_allclose
 import time
 
@@ -38,6 +39,12 @@ def test_geometry():
     q1 = robot._p.getQuaternionFromEuler(rpy)
     q2 = pybewego.euler_to_quaternion(rpy)
     assert_allclose(q1, q2, atol=1e-6)
+
+
+def test_parser():
+    urdf = "../data/r2_robot.urdf"
+    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+    kinematics = Kinematics(urdf)
 
 
 def test_pybullet_forward_kinematics():
@@ -178,7 +185,8 @@ def test_jacobian_baxter():
     print(J.shape)
 
 
-test_geometry()
+# test_geometry()
+test_parser()
 # test_pybullet_forward_kinematics()
 # test_bewego_forward_kinematics()
 # test_random_forward_kinematics()
