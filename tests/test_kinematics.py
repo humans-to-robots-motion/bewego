@@ -141,7 +141,10 @@ def test_forward_kinematics_baxter():
     print("config : ", r1.get_configuration())
     r1.set_and_update([0] * r1._njoints)
     base = r1.get_transform(r1.base_joint_id)
-    r2 = r1.create_robot()
+
+    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+    kinematics = Kinematics(urdf)
+    r2 = kinematics.create_robot(r1.active_joint_names)
     r2.set_base_transform(base)
     print(base)
 
@@ -155,23 +158,14 @@ def test_forward_kinematics_baxter():
         r1.set_and_update(q, r1.active_joint_ids)
         r2.set_and_update(q)
 
-        p1 = r1.get_transform(12)
-        p2 = r2.get_transform(0)
-        assert_allclose(p1, p2, atol=1e-6)
-        print("p1 : \n", p1)
-        print("p2 : \n", p2)
+        for i in range(7):
 
-        p1 = r1.get_transform(13)
-        p2 = r2.get_transform(1)
-        assert_allclose(p1, p2, atol=1e-6)
-        print("p1 : \n", p1)
-        print("p2 : \n", p2)
-
-        # p1 = r1.get_transform(14)
-        # p2 = r2.get_transform(2)
-        # assert_allclose(p1, p2, atol=1e-6)
-        # print("p1 : \n", p1)
-        # print("p2 : \n", p2)
+            print(i)
+            p1 = r1.get_transform(12 + i)
+            p2 = r2.get_transform(i)
+            assert_allclose(p1, p2, atol=1e-6)
+            print("p1 : \n", p1)
+            print("p2 : \n", p2)
 
 
 def test_jacobian_baxter():
@@ -186,10 +180,10 @@ def test_jacobian_baxter():
 
 
 # test_geometry()
-test_parser()
+# test_parser()
 # test_pybullet_forward_kinematics()
 # test_bewego_forward_kinematics()
 # test_random_forward_kinematics()
 # test_jacobian()
-# test_forward_kinematics_baxter()
+test_forward_kinematics_baxter()
 # test_jacobian_baxter()

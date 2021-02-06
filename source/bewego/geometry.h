@@ -15,11 +15,14 @@ Eigen::Matrix3d QuaternionToMatrix(const Eigen::VectorXd& q) {
 }
 
 Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
+  // This is supposed to be the URDF convention
+  // tested against pybullet. If it's correct there it
+  // it should be ok.
   assert(rpy.size() == 3);
   Eigen::Quaterniond q;
-  q = Eigen::AngleAxisd(rpy[0], Eigen::Vector3d::UnitX()) *
+  q = Eigen::AngleAxisd(rpy[2], Eigen::Vector3d::UnitZ()) *
       Eigen::AngleAxisd(rpy[1], Eigen::Vector3d::UnitY()) * 
-      Eigen::AngleAxisd(rpy[2], Eigen::Vector3d::UnitZ());
+      Eigen::AngleAxisd(rpy[0], Eigen::Vector3d::UnitX());
   Eigen::Vector4d quaternion;
   quaternion[0] = q.x();
   quaternion[1] = q.y();
