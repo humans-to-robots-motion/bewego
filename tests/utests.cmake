@@ -7,7 +7,14 @@ else()
     message("gtest library not found !!! setting it up at link target")
     set(GTEST_LIBRARY gtest)
 endif()
+
 add_executable(atomic_operators_utest tests/atomic_operators_utest.cpp)
 target_link_libraries(atomic_operators_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET atomic_operators_utest)
+
+
+add_executable(geometry_utest tests/geometry_utest.cpp)
+target_link_libraries(geometry_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
+include(GoogleTest)
+gtest_add_tests(TARGET geometry_utest)

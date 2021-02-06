@@ -64,6 +64,17 @@ class PybulletRobot:
             self._load_config_from_file(json_config)
         self._parse_rigid_bodies()
 
+    def _euler_pyb(self, q):
+        print(self._p.getEulerFromQuaternion(q))
+
+    def _transform_pyb(self, p, q):
+        R = self._p.getMatrixFromQuaternion(q)
+        R = np.reshape(np.array(R), (3, 3))
+        t = np.eye(4)
+        t[:3, :3] = R
+        t[:3, 3] = np.array(p)
+        return t
+
     def _load_config_from_file(self, json_config):
         """
         Loads a configuration from a json file
@@ -97,15 +108,19 @@ class PybulletRobot:
             # print(rigid_body.name)
             append = self.active_joint_names is None
             if append or (rigid_body.name in self.active_joint_names):
-                print("joint id : ", i)
-                print_joint_info(info)
-                state = self._p.getLinkState(self._robot_id, i - 1)
-                t_com_l = transform(state[2], state[3])
-                print("t_com_l : \n", t_com_l)
-                rigid_body.local_in_prev = t_com_l @ transform(
-                    np.asarray(info[14]),
-                    np.asarray(info[15]))
-                # rigid_body.local_in_prev[:3, :3] = -1. * rigid_body.local_in_prev[:3, :3]
+                if i > 0:
+                    print("joint id : ", i)
+                    print_joint_info(info)
+                    state = self._p.getLinkState(self._robot_id, i - 1)
+                    t_com_l = self._transform_pyb(state[2], state[3])
+                    print("t_com_l : \n", t_com_l)
+                else:
+                    t_com_l = np.eye(4)
+                rigid_body.local_in_prev = t_com_l @ self._transform_pyb(
+                            np.asarray(info[14]),
+                            np.asarray(info[15]))
+                print("rpy : ", self._euler_pyb(info[15]))
+                print("local_in_prev : \n", rigid_body.local_in_prev)
                 self.rigid_bodies.append(rigid_body)
 
     def create_robot(self):
@@ -161,11 +176,14 @@ class PybulletRobot:
         t_com_w : position of COM in world cooridnates
         t_com_l : position of COM in world cooridnates
 
+        # t_com_l = transform(state[2], state[3])
+        # print("t_com_l (1) : \n", t_com_l)
+        # return transform(state[0], state[1]) @ np.linalg.inv(t_com_l)
+
         @return Rotation matrix
         """
         state = self._p.getLinkState(self._robot_id, idx)
-        t_com_l = transform(state[2], state[3])
-        return transform(state[0], state[1]) @ np.linalg.inv(t_com_l)
+        return transform(state[4], state[5])
 
     def get_rotation(self, idx):
         """

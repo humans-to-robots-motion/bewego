@@ -92,6 +92,7 @@ class RigidBody {
     if (joint_type == FIXED) {
       frame_in_base_ = T_prev * local_in_prev_;
     } else {
+       cout << "local_in_prev_ (2) : " << endl << local_in_prev_.matrix() << endl;
       frame_in_base_ = T_prev * local_in_prev_ * frame_in_local_;
       joint_axis_in_base_ = frame_in_base_.linear() * joint_axis_in_local_;
     }

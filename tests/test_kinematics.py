@@ -19,6 +19,7 @@
 
 # import numpy as np
 from test_imports import *
+import pybewego
 from pybewego.pybullet_loader import *
 from numpy.testing import assert_allclose
 import time
@@ -29,6 +30,14 @@ DATADIR = "../../pybullet_robots/data/"
 
 def test_import_planar():
     PybulletRobot("../data/r2_robot.urdf")
+
+
+def test_geometry():
+    robot = PybulletRobot("../data/r2_robot.urdf")
+    rpy = np.random.random(3)
+    q1 = robot._p.getQuaternionFromEuler(rpy)
+    q2 = pybewego.euler_to_quaternion(rpy)
+    assert_allclose(q1, q2, atol=1e-6)
 
 
 def test_pybullet_forward_kinematics():
@@ -135,13 +144,27 @@ def test_forward_kinematics_baxter():
 
     for q in configurations:
         np.set_printoptions(suppress=True)
+
         r1.set_and_update(q, r1.active_joint_ids)
         r2.set_and_update(q)
-        p1 = r1.get_rotation(13)
-        p2 = r2.get_rotation(1)
+
+        p1 = r1.get_transform(12)
+        p2 = r2.get_transform(0)
         assert_allclose(p1, p2, atol=1e-6)
-        print("p1 : ", p1)
-        print("p2 : ", p2)
+        print("p1 : \n", p1)
+        print("p2 : \n", p2)
+
+        p1 = r1.get_transform(13)
+        p2 = r2.get_transform(1)
+        assert_allclose(p1, p2, atol=1e-6)
+        print("p1 : \n", p1)
+        print("p2 : \n", p2)
+
+        # p1 = r1.get_transform(14)
+        # p2 = r2.get_transform(2)
+        # assert_allclose(p1, p2, atol=1e-6)
+        # print("p1 : \n", p1)
+        # print("p2 : \n", p2)
 
 
 def test_jacobian_baxter():
@@ -155,9 +178,10 @@ def test_jacobian_baxter():
     print(J.shape)
 
 
+test_geometry()
 # test_pybullet_forward_kinematics()
 # test_bewego_forward_kinematics()
 # test_random_forward_kinematics()
 # test_jacobian()
-test_forward_kinematics_baxter()
+# test_forward_kinematics_baxter()
 # test_jacobian_baxter()

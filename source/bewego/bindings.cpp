@@ -97,6 +97,10 @@ PYBIND11_MODULE(pybewego, m) {
         Returns the rotation matrix corresponding to a Quaternion
     )pbdoc");
 
+  m.def("euler_to_quaternion", &EulerToQuaternion, R"pbdoc(
+        Returns the quaternion corresponding to euler
+    )pbdoc");
+
   py::class_<bewego::Robot>(m, "Robot")
       .def(py::init<>())
       .def("add_rigid_body", &bewego::Robot::AddRigidBody)
