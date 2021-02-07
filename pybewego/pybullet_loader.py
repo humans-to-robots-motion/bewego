@@ -20,17 +20,10 @@
 
 import pybullet_utils.bullet_client as bc
 import pybullet
-from kinematic_structures import ScalarBounds
-from kinematic_structures import RigidBody
-from kinematic_structures import transform
+from kinematics import *
 import numpy as np
 from pybewego import Robot
-import json
 import os
-
-
-def assets_data_dir():
-    return os.path.abspath(os.path.dirname(__file__)) + os.sep + "../data"
 
 
 def print_joint_info(info):
@@ -57,11 +50,11 @@ class PybulletRobot:
         self._p = bc.BulletClient(connection_mode=pybullet.DIRECT)
         self._robot_id = self._p.loadURDF(urdf_file)
         self._njoints = self._p.getNumJoints(self._robot_id)
-        print("number joints: " + str(self._njoints))
         self.rigid_bodies = []
         self.active_joint_names = None
         if json_config is not None:
-            self._load_config_from_file(json_config)
+            self.config = RobotConfig(json_config)
+            self.active_joint_names = self.config.active_joint_names
         self._parse_rigid_bodies()
 
     def _euler_pyb(self, q):
@@ -74,24 +67,6 @@ class PybulletRobot:
         t[:3, :3] = R
         t[:3, 3] = np.array(p)
         return t
-
-    def _load_config_from_file(self, json_config):
-        """
-        Loads a configuration from a json file
-        filename assets_data_dir() + "/baxter_right_arm.json"
-        """
-        filename = assets_data_dir() + os.sep + json_config
-        with open(filename, "r") as read_file:
-            config = json.loads(read_file.read())
-            self.config_name = config["name"]
-            self.keypoints = config["keypoints"]
-            self.active_joint_names = config["joint_names"]
-            self.active_joint_ids = config["joint_ids"]
-            self.active_dofs = config["active_dofs"]
-            self.scale = config["scale"]
-            self.base_joint_id = config["base_joint_id"]
-            self.end_effector_id = config["end_effector_id"]
-        print(self.active_dofs)
 
     def _parse_rigid_bodies(self):
         """
@@ -109,21 +84,18 @@ class PybulletRobot:
             append = self.active_joint_names is None
             if append or (rigid_body.name in self.active_joint_names):
                 if i > 0:
-                    print("joint id : ", i)
-                    print_joint_info(info)
                     state = self._p.getLinkState(self._robot_id, i - 1)
                     t_com_l = self._transform_pyb(state[2], state[3])
-                    print("t_com_l : \n", t_com_l)
                 else:
                     t_com_l = np.eye(4)
+
                 rigid_body.local_in_prev = t_com_l @ self._transform_pyb(
-                            np.asarray(info[14]),
-                            np.asarray(info[15]))
-                print("rpy : ", self._euler_pyb(info[15]))
-                print("local_in_prev : \n", rigid_body.local_in_prev)
+                    np.asarray(info[14]),
+                    np.asarray(info[15]))
                 self.rigid_bodies.append(rigid_body)
 
     def create_robot(self):
+        """ Creates a Bewego robot kinematics object """
         robot = Robot()
         for body in self.rigid_bodies:
             robot.add_rigid_body(
@@ -223,6 +195,5 @@ class PybulletRobot:
     def get_jacobian(self, idx):
         com = [0., 0., 0.]
         q, dq, tau = self.get_motor_joint_states()
-        jac = np.array(self._p.calculateJacobian(
-            self._robot_id, idx, com, q, dq, tau)[0])
-        return jac
+        jac = self._p.calculateJacobian(self._robot_id, idx, com, q, dq, tau)
+        return np.array(jac)[0]

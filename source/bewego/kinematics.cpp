@@ -8,12 +8,11 @@ using std::endl;
 namespace bewego {
 
 RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
-                     uint32_t joint_type_id, 
-                     double dof_lower_limit,
+                     uint32_t joint_type_id, double dof_lower_limit,
                      double dof_upper_limit,
                      const Eigen::Affine3d& local_in_prev,
                      const Eigen::Vector3d& joint_axis_in_local)
-    : debug_(true),
+    : debug_(false),
       name_(name),
       joint_bounds_(dof_lower_limit, dof_upper_limit),
       joint_name_(joint_name),
@@ -34,14 +33,15 @@ RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
 }
 
 Eigen::MatrixXd Robot::JacobianPosition(int link_index) const {
-  Eigen::MatrixXd J(3, kinematic_chain_.size());
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, kinematic_chain_.size());
   auto x = kinematic_chain_[link_index].joint_origin_in_base();
-  for (int j = J.cols() - 1; j >= 0; j--) {
+  for (int j = 0; j < J.cols(); j++) {
+    if (link_index == j) break;
     auto joint_origin = kinematic_chain_[j].joint_origin_in_base();
     auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
     J.col(j) = joint_axis.cross(x - joint_origin);
   }
   return J;
-}
+}  // namespace bewego
 
 }  // namespace bewego

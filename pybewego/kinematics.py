@@ -23,6 +23,12 @@ from pybewego import Robot
 
 import numpy as np
 import xml.etree.ElementTree as ET
+import json
+import os
+
+
+def assets_data_dir():
+    return os.path.abspath(os.path.dirname(__file__)) + os.sep + "../data"
 
 
 def transform(pos, quat):
@@ -132,18 +138,18 @@ class Kinematics:
                             float(splits[1]),
                             float(splits[2])])
                     else:
-                        print('WARNING: Tag "' + jel.tag + '" not supported')
+                        # print('WARNING: Tag "' + jel.tag + '" not supported')
                         pass
                 self.joints[joint.name] = joint
-                print(joint)
+                # print(joint)
         for l in self.links:
             if self.links[l]["parents"] == []:
                 self.baselink = l
 
     def create_robot(self, joints):
         robot = Robot()
-        for key in joints:
-            body = self.joints[key]
+        for j in joints:
+            body = self.joints[j]
             robot.add_rigid_body(
                 body.name,
                 body.joint_name,
@@ -153,3 +159,23 @@ class Kinematics:
                 body.local_in_prev,
                 body.joint_axis_in_local)
         return robot
+
+
+class RobotConfig:
+
+    def __init__(self, json_config):
+        """
+        Loads a configuration from a json file
+        filename assets_data_dir() + "/baxter_right_arm.json"
+        """
+        filename = assets_data_dir() + os.sep + json_config
+        with open(filename, "r") as read_file:
+            config = json.loads(read_file.read())
+            self.name = config["name"]
+            self.keypoints = config["keypoints"]
+            self.active_joint_names = config["joint_names"]
+            self.active_joint_ids = config["joint_ids"]
+            self.active_dofs = config["active_dofs"]
+            self.scale = config["scale"]
+            self.base_joint_id = config["base_joint_id"]
+            self.end_effector_id = config["end_effector_id"]

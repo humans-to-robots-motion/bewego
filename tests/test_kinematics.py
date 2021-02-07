@@ -21,7 +21,8 @@
 from test_imports import *
 import pybewego
 from pybewego.pybullet_loader import *
-from pybewego.kinematic_structures import Kinematics
+from pybewego.kinematics import *
+from pyrieef.geometry.differentiable_geometry import *
 from numpy.testing import assert_allclose
 import time
 
@@ -116,10 +117,10 @@ def test_jacobian():
     configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 3))
     for q in configurations:
         r1.set_and_update(q)
-        p1 = r1.get_jacobian(2)
+        J1 = r1.get_jacobian(2)
         r2.set_and_update(q)
-        p2 = r2.get_jacobian(2)
-        assert_allclose(p1[:2], p2[:2], atol=1e-6)
+        J2 = r2.get_jacobian(2)
+        assert_allclose(J1, J2, atol=1e-6)
 
     t0 = time.time()
     for q in configurations:
@@ -135,18 +136,14 @@ def test_jacobian():
 
 
 def test_forward_kinematics_baxter():
-    r1 = PybulletRobot(
-        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf",
-        "baxter_right_arm.json")
-    print("config : ", r1.get_configuration())
-    r1.set_and_update([0] * r1._njoints)
-    base = r1.get_transform(r1.base_joint_id)
-
     urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+    r1 = PybulletRobot(urdf, "baxter_right_arm.json")
+    r1.set_and_update([0] * r1._njoints)
+    base = r1.get_transform(r1.config.base_joint_id)
+
     kinematics = Kinematics(urdf)
-    r2 = kinematics.create_robot(r1.active_joint_names)
+    r2 = kinematics.create_robot(r1.config.active_joint_names)
     r2.set_base_transform(base)
-    print(base)
 
     configurations = [None] * 100
     for i in range(len(configurations)):
@@ -154,36 +151,66 @@ def test_forward_kinematics_baxter():
 
     for q in configurations:
         np.set_printoptions(suppress=True)
-
-        r1.set_and_update(q, r1.active_joint_ids)
+        r1.set_and_update(q, r1.config.active_joint_ids)
         r2.set_and_update(q)
-
-        for i in range(7):
-
-            print(i)
-            p1 = r1.get_transform(12 + i)
-            p2 = r2.get_transform(i)
+        for dof_idx, joint_idx in zip(range(6), r1.config.active_joint_ids):
+            p1 = r1.get_transform(joint_idx)
+            p2 = r2.get_transform(dof_idx)
             assert_allclose(p1, p2, atol=1e-6)
-            print("p1 : \n", p1)
-            print("p2 : \n", p2)
+
+    t0 = time.time()
+    for q in configurations:
+        r1.set_and_update(q, r1.config.active_joint_ids)
+        p1 = r1.get_transform(6)
+    print("time 1 : ", time.time() - t0)
+
+    t0 = time.time()
+    for q in configurations:
+        r2.set_and_update(q)
+        p2 = r2.get_transform(6)
+    print("time 2 : ", time.time() - t0)
 
 
 def test_jacobian_baxter():
-    robot = PybulletRobot(
-        DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf",
-        "baxter_right_arm.json")
-    # robot.set_and_update()
-    print(len(robot.get_configuration()))
-    robot.set_and_update([0] * 56)
-    J = robot.get_jacobian(20)
-    print(J.shape)
+    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+
+    r1 = PybulletRobot(urdf, "baxter_right_arm.json")
+    print(len(r1.get_configuration()))
+    r1.set_and_update([0] * 56)
+    base = r1.get_transform(r1.base_joint_id)
+
+    kinematics = Kinematics(urdf)
+    r2 = kinematics.create_robot(r1.config.active_joint_names)
+    r2.set_and_update([0] * 7)
+    r2.set_base_transform(base)
+
+    J1 = r1.get_jacobian(18)  # [:, range(7, 14)]
+    J2 = r2.get_jacobian(6)
+
+    print(J1.shape)
+    print(J2.shape)
+
+    print("J1 : ", J1)
+    print("J2 : ", J2)
+
+    assert_allclose(J1, J2, atol=1e-6)
+
+def test_differentiable_jacobian():
+    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+    config = RobotConfig("baxter_right_arm.json")
+    kinematics = Kinematics(urdf)
+    robot = kinematics.create_robot(config.active_joint_names)
+    robot.set_and_update([0] * 7)
+    robot.set_base_transform(np.eye(4))
+    print("Ok!")
 
 
-# test_geometry()
-# test_parser()
-# test_pybullet_forward_kinematics()
-# test_bewego_forward_kinematics()
-# test_random_forward_kinematics()
-# test_jacobian()
+test_geometry()
+test_parser()
+test_pybullet_forward_kinematics()
+test_bewego_forward_kinematics()
+test_random_forward_kinematics()
+test_jacobian()
 test_forward_kinematics_baxter()
 # test_jacobian_baxter()
+test_differentiable_jacobian()

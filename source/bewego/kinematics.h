@@ -92,7 +92,6 @@ class RigidBody {
     if (joint_type == FIXED) {
       frame_in_base_ = T_prev * local_in_prev_;
     } else {
-       cout << "local_in_prev_ (2) : " << endl << local_in_prev_.matrix() << endl;
       frame_in_base_ = T_prev * local_in_prev_ * frame_in_local_;
       joint_axis_in_base_ = frame_in_base_.linear() * joint_axis_in_local_;
     }
@@ -101,6 +100,7 @@ class RigidBody {
 
   /*!\brief Frame accessor.
    */
+  const std::string& joint_name() const { return joint_name_; }
   const Eigen::Affine3d& frame_in_base() const { return frame_in_base_; }
   const Eigen::Affine3d& local_in_prev() const { return local_in_prev_; }
   const Eigen::Vector3d& joint_axis_in_base() const {
