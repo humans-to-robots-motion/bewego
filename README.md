@@ -15,5 +15,4 @@ Compile and execute tests
     cmake ..
     make
     make test
-    cd ../tests
-    python test.py
+    pytest ../tests

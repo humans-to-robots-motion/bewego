@@ -29,7 +29,8 @@ from numpy.testing import assert_allclose
 import time
 
 
-DATADIR = "../../pybullet_robots/data/"
+directory = os.path.abspath(os.path.dirname(__file__))
+DATADIR = directory + "/../../pybullet_robots/data/"
 
 
 def test_import_planar():
