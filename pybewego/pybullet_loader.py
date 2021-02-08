@@ -51,10 +51,9 @@ class PybulletRobot:
         self._robot_id = self._p.loadURDF(urdf_file)
         self._njoints = self._p.getNumJoints(self._robot_id)
         self.rigid_bodies = []
-        self.active_joint_names = None
+        self.config = None
         if json_config is not None:
             self.config = RobotConfig(json_config)
-            self.active_joint_names = self.config.active_joint_names
         self._parse_rigid_bodies()
 
     def _euler_pyb(self, q):
@@ -81,8 +80,9 @@ class PybulletRobot:
             rigid_body.joint_name = str(info[1], 'utf-8')
             rigid_body.joint_axis_in_local = np.asarray(info[13])
             # print(rigid_body.name)
-            append = self.active_joint_names is None
-            if append or (rigid_body.name in self.active_joint_names):
+            append = self.config is None
+            if append or (rigid_body.name in self.config.active_joint_names):
+                print_joint_info(info)
                 if i > 0:
                     state = self._p.getLinkState(self._robot_id, i - 1)
                     t_com_l = self._transform_pyb(state[2], state[3])

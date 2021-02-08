@@ -21,6 +21,8 @@ from pybewego import quaternion_to_matrix
 from pybewego import euler_to_quaternion
 from pybewego import Robot
 
+from pyrieef.geometry.differentiable_geometry import *
+
 import numpy as np
 import xml.etree.ElementTree as ET
 import json
@@ -162,12 +164,13 @@ class Kinematics:
 
 
 class RobotConfig:
+    """
+    Loads a configuration from a json file
+    filename assets_data_dir() + "/baxter_right_arm.json"
+    """
 
     def __init__(self, json_config):
-        """
-        Loads a configuration from a json file
-        filename assets_data_dir() + "/baxter_right_arm.json"
-        """
+
         filename = assets_data_dir() + os.sep + json_config
         with open(filename, "r") as read_file:
             config = json.loads(read_file.read())
@@ -179,3 +182,40 @@ class RobotConfig:
             self.scale = config["scale"]
             self.base_joint_id = config["base_joint_id"]
             self.end_effector_id = config["end_effector_id"]
+
+
+class ForwardKinematics(DifferentiableMap):
+    """ simple forward kinematics function """
+
+    def __init__(self, robot, eef_id, dofs, subset=None):
+        self._robot = robot
+        self._eef_id = eef_id
+        self._dofs = dofs
+        self._n = len(dofs)
+        self._subset = subset
+
+    def output_dimension(self):
+        return 3
+
+    def input_dimension(self):
+        return self._n
+
+    def set_and_update(self, q):
+        if self._subset is not None:
+            self._robot.set_and_update(q, self._dofs)
+        else:
+            self._robot.set_and_update(q)
+
+    def get_jacobian(self):
+        J = self._robot.get_jacobian(self._eef_id)
+        if self._subset is None:
+            return J
+        return J[:, self._subset]
+
+    def forward(self, q):
+        self.set_and_update(q)
+        return self._robot.get_position(self._eef_id)
+
+    def jacobian(self, q):
+        self.set_and_update(q)
+        return self.get_jacobian()

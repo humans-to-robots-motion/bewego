@@ -171,20 +171,44 @@ def test_forward_kinematics_baxter():
     print("time 2 : ", time.time() - t0)
 
 
+def test_differentiable_jacobian():
+    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
+    config = RobotConfig("baxter_right_arm.json")
+    kinematics = Kinematics(urdf)
+    robot = kinematics.create_robot(config.active_joint_names)
+    robot.set_base_transform(np.eye(4))
+    fk = ForwardKinematics(robot, 6, range(7))
+    assert check_jacobian_against_finite_difference(fk, verbose=False)
+
+
 def test_jacobian_baxter():
     urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
 
     r1 = PybulletRobot(urdf, "baxter_right_arm.json")
     print(len(r1.get_configuration()))
     r1.set_and_update([0] * 56)
-    base = r1.get_transform(r1.base_joint_id)
+    base = r1.get_transform(r1.config.base_joint_id)
 
     kinematics = Kinematics(urdf)
     r2 = kinematics.create_robot(r1.config.active_joint_names)
-    r2.set_and_update([0] * 7)
     r2.set_base_transform(base)
 
-    J1 = r1.get_jacobian(18)  # [:, range(7, 14)]
+    np.set_printoptions(suppress=True)
+
+    fk = ForwardKinematics(r2, 6, range(7))
+    assert check_jacobian_against_finite_difference(fk, verbose=False)
+    # print("Finite difference r2 ok !")
+
+    fk = ForwardKinematics(r1, 19,
+                           r1.config.active_joint_ids,
+                           r1.config.active_dofs)
+    assert check_jacobian_against_finite_difference(fk, True, 1e-3)
+    print("Finite difference r1 ok !")
+
+    r1.set_and_update([0] * 56)
+    r2.set_and_update([0] * 7)
+
+    J1 = r1.get_jacobian(19)[:, r1.config.active_dofs]
     J2 = r2.get_jacobian(6)
 
     print(J1.shape)
@@ -195,22 +219,13 @@ def test_jacobian_baxter():
 
     assert_allclose(J1, J2, atol=1e-6)
 
-def test_differentiable_jacobian():
-    urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
-    config = RobotConfig("baxter_right_arm.json")
-    kinematics = Kinematics(urdf)
-    robot = kinematics.create_robot(config.active_joint_names)
-    robot.set_and_update([0] * 7)
-    robot.set_base_transform(np.eye(4))
-    print("Ok!")
 
-
-test_geometry()
-test_parser()
-test_pybullet_forward_kinematics()
-test_bewego_forward_kinematics()
-test_random_forward_kinematics()
-test_jacobian()
-test_forward_kinematics_baxter()
-# test_jacobian_baxter()
-test_differentiable_jacobian()
+# test_geometry()
+# test_parser()
+# test_pybullet_forward_kinematics()
+# test_bewego_forward_kinematics()
+# test_random_forward_kinematics()
+# test_jacobian()
+# test_forward_kinematics_baxter()
+# test_differentiable_jacobian()
+test_jacobian_baxter()
