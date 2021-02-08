@@ -20,9 +20,7 @@
 import os
 import sys
 import numpy as np
-driectory = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, driectory)
-sys.path.insert(0, driectory + os.sep + "../pybewego")
+import conftest
 from pybewego import AStarGrid
 
 

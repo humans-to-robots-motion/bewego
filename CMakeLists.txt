@@ -83,9 +83,9 @@ endif(catkin_FOUND)
 ############################
 set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
 add_subdirectory(pybind11)
-pybind11_add_module(pybewego SHARED source/bewego/bindings.cpp)
-target_link_libraries(pybewego PRIVATE bewego)
-set_target_properties(pybewego
+pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
+target_link_libraries(_pybewego PRIVATE bewego)
+set_target_properties(_pybewego
   PROPERTIES PREFIX ""
   LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
 )

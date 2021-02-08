@@ -82,7 +82,7 @@ class PybulletRobot:
             # print(rigid_body.name)
             append = self.config is None
             if append or (rigid_body.name in self.config.active_joint_names):
-                print_joint_info(info)
+                # print_joint_info(info)
                 if i > 0:
                     state = self._p.getLinkState(self._robot_id, i - 1)
                     t_com_l = self._transform_pyb(state[2], state[3])

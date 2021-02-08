@@ -66,7 +66,7 @@ class AStarGrid {
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-PYBIND11_MODULE(pybewego, m) {
+PYBIND11_MODULE(_pybewego, m) {
   m.doc() = R"pbdoc(
         Pybind11 example plugin
         -----------------------
@@ -109,6 +109,8 @@ PYBIND11_MODULE(pybewego, m) {
       .def("get_rotation", &bewego::Robot::get_rotation)
       .def("get_transform", &bewego::Robot::get_transform)
       .def("get_jacobian", &bewego::Robot::JacobianPosition)
+      .def("get_jacobian_axis", &bewego::Robot::JacobianAxis)
+      .def("get_jacobian_frame", &bewego::Robot::JacobianFrame)
       .def("set_base_transform", &bewego::Robot::set_base_transform);
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")

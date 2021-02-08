@@ -185,17 +185,49 @@ class RobotConfig:
 
 
 class ForwardKinematics(DifferentiableMap):
-    """ simple forward kinematics function """
+    """ 
+    Simple forward kinematics as a differentiable map
 
-    def __init__(self, robot, eef_id, dofs, subset=None):
+        This class allows to test the kinematic Jacobians
+        against finite differences.
+
+    Parameters
+    ----------
+        robot : kinematics
+        eef_id : End Effector ID
+                 Example, dof od for pybewego or joint id for pybullet
+        dofs : list of dof ids
+        output : position, axis, frame
+        subset : subset of ids that to take in the Jacobian
+        axis : x,y,z
+    """
+
+    def __init__(self, robot, eef_id, dofs,
+                 output="position",
+                 subset=None,
+                 axis="x"):
         self._robot = robot
         self._eef_id = eef_id
         self._dofs = dofs
         self._n = len(dofs)
         self._subset = subset
+        self._output = output
+
+        if self._output == "position":
+            self._m = 3
+        elif self._output == "axis":
+            self._m = 3
+            axes = {
+                "x": 0,
+                "y": 1,
+                "z": 2
+            }
+            self._axis = axes[axis]
+        elif self._output == "frame":
+            self._m = 12
 
     def output_dimension(self):
-        return 3
+        return self._m
 
     def input_dimension(self):
         return self._n
@@ -207,14 +239,27 @@ class ForwardKinematics(DifferentiableMap):
             self._robot.set_and_update(q)
 
     def get_jacobian(self):
-        J = self._robot.get_jacobian(self._eef_id)
+        if self._output == "position":
+            J = self._robot.get_jacobian(self._eef_id)
+        elif self._output == "axis":
+            J = self._robot.get_jacobian_axis(self._eef_id, self._axis)
+        elif self._output == "frame":
+            J = self._robot.get_jacobian_frame(self._eef_id)
+
         if self._subset is None:
             return J
         return J[:, self._subset]
 
     def forward(self, q):
         self.set_and_update(q)
-        return self._robot.get_position(self._eef_id)
+        if self._output == "position":
+            return self._robot.get_position(self._eef_id)
+        elif self._output == "axis":
+            t = self._robot.get_transform(self._eef_id)
+            return t[:3, self._axis]
+        elif self._output == "frame":
+            t = self._robot.get_transform(self._eef_id)
+            return np.hstack([t[:3, 3], t[:3, 0], t[:3, 1], t[:3, 2]])
 
     def jacobian(self, q):
         self.set_and_update(q)

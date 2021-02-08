@@ -19,8 +19,8 @@
 
 import os
 import sys
-driectory = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, driectory)
-sys.path.insert(0, driectory + os.sep + "../pybewego")
-sys.path.insert(0, driectory + os.sep + "..")
-sys.path.insert(0, driectory + os.sep + "../../pyrieef")
+directory = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, directory)
+sys.path.insert(0, directory + os.sep + "../pybewego")
+sys.path.insert(0, directory + os.sep + "..")
+sys.path.insert(0, directory + os.sep + "../../pyrieef")

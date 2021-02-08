@@ -17,9 +17,11 @@
 #
 #                                            Jim Mainprice on Sat Jun 6 2020
 
-# import numpy as np
-from test_imports import *
-import pybewego
+import os
+import sys
+import numpy as np
+import conftest
+from pybewego import *
 from pybewego.pybullet_loader import *
 from pybewego.kinematics import *
 from pyrieef.geometry.differentiable_geometry import *
@@ -38,7 +40,7 @@ def test_geometry():
     robot = PybulletRobot("../data/r2_robot.urdf")
     rpy = np.random.random(3)
     q1 = robot._p.getQuaternionFromEuler(rpy)
-    q2 = pybewego.euler_to_quaternion(rpy)
+    q2 = euler_to_quaternion(rpy)
     assert_allclose(q1, q2, atol=1e-6)
 
 
@@ -177,8 +179,24 @@ def test_differentiable_jacobian():
     kinematics = Kinematics(urdf)
     robot = kinematics.create_robot(config.active_joint_names)
     robot.set_base_transform(np.eye(4))
-    fk = ForwardKinematics(robot, 6, range(7))
-    assert check_jacobian_against_finite_difference(fk, verbose=False)
+    output_options = ["position", "axis", "frame"]
+    for o in output_options:
+        for link_id in range(7):
+            if o == "axis":
+                for k in ["x", "y", "z"]:
+                    fk = ForwardKinematics(
+                        robot, link_id, range(7),
+                        output=o,
+                        axis=k)
+                    assert check_jacobian_against_finite_difference(
+                        fk, verbose=False)
+            else:
+                fk = ForwardKinematics(
+                    robot, link_id, range(7),
+                    output=o)
+                assert check_jacobian_against_finite_difference(
+                    fk, verbose=False)
+    print("FK OK!")
 
 
 def test_jacobian_baxter():
@@ -196,26 +214,20 @@ def test_jacobian_baxter():
     np.set_printoptions(suppress=True)
 
     fk = ForwardKinematics(r2, 6, range(7))
-    assert check_jacobian_against_finite_difference(fk, verbose=False)
-    # print("Finite difference r2 ok !")
+    assert check_jacobian_against_finite_difference(
+        fk, verbose=False)
 
     fk = ForwardKinematics(r1, 19,
-                           r1.config.active_joint_ids,
-                           r1.config.active_dofs)
-    assert check_jacobian_against_finite_difference(fk, True, 1e-3)
-    print("Finite difference r1 ok !")
+                           dofs=r1.config.active_joint_ids,
+                           subset=r1.config.active_dofs)
+    assert check_jacobian_against_finite_difference(
+        fk, verbose=False, tolerance=1e-3)
 
     r1.set_and_update([0] * 56)
     r2.set_and_update([0] * 7)
 
     J1 = r1.get_jacobian(19)[:, r1.config.active_dofs]
     J2 = r2.get_jacobian(6)
-
-    print(J1.shape)
-    print(J2.shape)
-
-    print("J1 : ", J1)
-    print("J2 : ", J2)
 
     assert_allclose(J1, J2, atol=1e-6)
 
@@ -227,5 +239,5 @@ def test_jacobian_baxter():
 # test_random_forward_kinematics()
 # test_jacobian()
 # test_forward_kinematics_baxter()
-# test_differentiable_jacobian()
+test_differentiable_jacobian()
 test_jacobian_baxter()

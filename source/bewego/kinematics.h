@@ -59,10 +59,8 @@ class RigidBody {
 
   RigidBody() {}
   RigidBody(const std::string& name, const std::string& joint_name,
-            uint32_t joint_type_id, 
-            double dof_lower_limit, 
-            double dof_upper_limit,
-            const Eigen::Affine3d& local_in_prev,
+            uint32_t joint_type_id, double dof_lower_limit,
+            double dof_upper_limit, const Eigen::Affine3d& local_in_prev,
             const Eigen::Vector3d& joint_axis_in_local);
 
   /*!\brief Update this rigid body's post joint
@@ -135,21 +133,17 @@ class Robot {
     kinematic_chain_.clear();
   }
 
-  void AddRigidBody(const std::string& name, 
-                    const std::string& joint_name,
-                    uint32_t joint_type, 
-                    double dof_lower_limit, 
+  void AddRigidBody(const std::string& name, const std::string& joint_name,
+                    uint32_t joint_type, double dof_lower_limit,
                     double dof_upper_limit,
                     const Eigen::Matrix4d& local_in_prev,
                     const Eigen::Vector3d& joint_axis_in_local) {
     Eigen::Affine3d t;
     t.matrix() = local_in_prev;
 
-    kinematic_chain_.push_back(
-        RigidBody(name, joint_name, joint_type, 
-            dof_lower_limit,
-            dof_upper_limit,
-            t, joint_axis_in_local));
+    kinematic_chain_.push_back(RigidBody(name, joint_name, joint_type,
+                                         dof_lower_limit, dof_upper_limit, t,
+                                         joint_axis_in_local));
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
@@ -177,6 +171,12 @@ class Robot {
 
   // Assumes that Forward Kinematics has been called.
   Eigen::MatrixXd JacobianPosition(int link_index) const;
+
+  // Assumes that Forward Kinematics has been called.
+  Eigen::MatrixXd JacobianAxis(int link_index, int axis_index) const;
+
+  // Assumes that Forward Kinematics has been called.
+  Eigen::MatrixXd JacobianFrame(int link_index) const;
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Vector3d get_position(uint32_t idx) const {

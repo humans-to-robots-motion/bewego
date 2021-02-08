@@ -36,12 +36,48 @@ Eigen::MatrixXd Robot::JacobianPosition(int link_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, kinematic_chain_.size());
   auto x = kinematic_chain_[link_index].joint_origin_in_base();
   for (int j = 0; j < J.cols(); j++) {
-    if (link_index == j) break;
-    auto joint_origin = kinematic_chain_[j].joint_origin_in_base();
-    auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
+    const auto& joint_origin = kinematic_chain_[j].joint_origin_in_base();
+    const auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
     J.col(j) = joint_axis.cross(x - joint_origin);
+    if (link_index == j) break;
   }
   return J;
-}  // namespace bewego
+}
+
+Eigen::MatrixXd Robot::JacobianAxis(int link_index, int axis_index) const {
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, kinematic_chain_.size());
+  const Eigen::Vector3d& link_axis =
+      kinematic_chain_[link_index].frame_in_base().linear().col(axis_index);
+  for (int j = 0; j < J.cols(); j++) {
+    const auto& joint_origin = kinematic_chain_[j].joint_origin_in_base();
+    const auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
+    J.col(j) = joint_axis.cross(link_axis);
+    if (link_index == j) break;
+  }
+
+  return J;
+}
+
+Eigen::MatrixXd Robot::JacobianFrame(int link_index) const {
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3 * 4, kinematic_chain_.size());
+  auto x = kinematic_chain_[link_index].joint_origin_in_base();
+  const auto& link_rotation_in_base =
+      kinematic_chain_[link_index].frame_in_base().linear();
+  for (int j = 0; j < J.cols(); j++) {
+    const auto& joint_origin = kinematic_chain_[j].joint_origin_in_base();
+    const auto& joint_axis = kinematic_chain_[j].joint_axis_in_base();
+
+    // Jacobian of Position
+    J.col(j).head(3) = joint_axis.cross(x - joint_origin);
+
+    // Jacobians of Axes
+    for (int k = 0; k < 3; ++k) {
+      const auto& link_axis = link_rotation_in_base.col(k);
+      J.col(j).segment((k + 1) * 3, 3) = joint_axis.cross(link_axis);
+    }
+    if (link_index == j) break;
+  }
+  return J;
+}
 
 }  // namespace bewego

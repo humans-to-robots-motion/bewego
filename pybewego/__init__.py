@@ -1,1 +1,1 @@
-from .pybewego import *
+from ._pybewego import *
