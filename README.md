@@ -16,3 +16,10 @@ Compile and execute tests
     make
     make test
     pytest ../tests
+
+
+TODO
+
+- Need to clearly state dependencies and
+  installation proceedure (pyrieef, pybullet_robots, etc.)
+- Right now they have to be cloned next to bewego
