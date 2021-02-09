@@ -82,4 +82,6 @@ class DifferentiableMap {
   bool CheckHessian(double precision = 1e-12) const;
 };
 
+using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
+
 }  // namespace bewego
