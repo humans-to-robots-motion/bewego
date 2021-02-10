@@ -4,6 +4,8 @@
 
 #include <bewego/differentiable_map.h>
 
+#include <vector>
+
 namespace bewego {
 
 /** Simple zero map : f(x) = 0 **/
@@ -141,6 +143,45 @@ class ExpTestFunction : public DifferentiableMap {
     v(0) = exp(-pow(2.0 * q[0], 2) - pow(0.5 * q[1], 2));
     return v;
   }
+};
+
+/**
+    Takes only some outputs
+    n is the input dimension, indices are the output
+**/
+class RangeSubspaceMap : public DifferentiableMap {
+ public:
+  RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
+      : dim_(n), indices_(indices) {}
+
+  uint32_t output_dimension() const { return indices_.size(); }
+  uint32_t input_dimension() const { return dim_; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    Eigen::VectorXd x_sub(indices_.size());
+    for (int i = 0; i < x_sub.size(); i++) {
+      x_sub[i] = x[indices_[i]];
+    }
+    return x_sub;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
+    Eigen::MatrixXd J(output_dimension(), input_dimension());
+    for (int i = 0; i < J.rows(); i++) {
+      J.row(i) = I.row(indices_[i]);
+    }
+    return J;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+  }
+
+ protected:
+  uint32_t dim_;
+  std::vector<uint32_t> indices_;
 };
 
 }  // namespace bewego

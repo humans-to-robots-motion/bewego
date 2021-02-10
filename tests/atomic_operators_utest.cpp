@@ -63,6 +63,26 @@ TEST(atomic_operators, squared_norm) {
   }
 }
 
+TEST(atomic_operators, range_subspace_map) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  uint32_t n = 10;
+  std::vector<uint32_t> indices;
+
+  indices = {2, 3, 7};  // output_dimension = 3
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    f = std::make_shared<RangeSubspaceMap>(n, indices);
+    ASSERT_TRUE(f->CheckJacobian(precision));
+  }
+
+  indices = {5};  // output_dimension = 1
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    f = std::make_shared<RangeSubspaceMap>(n, indices);
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
+  }
+}
+
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

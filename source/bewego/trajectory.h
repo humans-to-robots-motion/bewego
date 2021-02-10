@@ -142,7 +142,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     }
 
     // returns a list of all cliques
-    std::vector<Eigen::VectorXd> AllCliques(x) {
+    std::vector<Eigen::VectorXd> AllCliques(const Eigen::VectorXd& x) {
         n = self._clique_element_dim
         dim = self._clique_dim
         clique_begin_ids = list(range(0, n * self._nb_cliques, n))
@@ -158,25 +158,26 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     }
 
     // Register function f
-    void register_function_for_all_cliques(self, f) {
+    void RegisterFunctionForAllAliques(f) {
         assert f.input_dimension() == self._clique_dim
         for t in range(self._nb_cliques):
             self._functions[t].append(f)
     }
 
     // Register function f
-    void register_function_last_clique(self, f) {
+    void RegisterFunctionLastClique(f) {
         assert f.input_dimension() == self._clique_dim
         T = self._nb_cliques - 1
         self._functions[T].append(f)
     }
 
-    def center_of_clique_map(self):
-        """ x_{t} """
+    // x_{t}
+    void CenterOfCliqueMap(self) {
         dim = self._clique_element_dim
         return RangeSubspaceMap(
             dim * self._nb_clique_elements,
             list(range(dim, (self._nb_clique_elements - 1) * dim)))
+    }
 
     def right_most_of_clique_map(self):
         """ x_{t+1} """
