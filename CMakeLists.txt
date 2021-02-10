@@ -106,7 +106,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/planar_grid.cpp
     ${bewego_SOURCE_DIR}/value_iteration.cpp
     ${bewego_SOURCE_DIR}/kinematics.cpp
-    # ${bewego_SOURCE_DIR}/trajectory.cpp
+    ${bewego_SOURCE_DIR}/trajectory.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}

@@ -1,1 +1,1 @@
-#include <trajectory.h>
+#include <bewego/trajectory.h>

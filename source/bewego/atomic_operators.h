@@ -149,9 +149,9 @@ class ExpTestFunction : public DifferentiableMap {
     Takes only some outputs
     n is the input dimension, indices are the output
 **/
-class RangeSubspace : public DifferentiableMap {
+class RangeSubspaceMap : public DifferentiableMap {
  public:
-  RangeSubspace(uint32_t n, const std::vector<uint32_t>& indices)
+  RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
       : dim_(n), indices_(indices) {}
 
   uint32_t output_dimension() const { return indices_.size(); }
@@ -189,9 +189,9 @@ class RangeSubspace : public DifferentiableMap {
  *
  *   y(x) = \sum_{i=1}^N f_i(x)
  */
-class Sum : public DifferentiableMap {
+class SumMap : public DifferentiableMap {
  public:
-  Sum(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
+  SumMap(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
     assert(maps_->size() > 0);
     for (uint32_t i = 0; i < maps_->size(); i++) {
       assert(maps_->at(i)->input_dimension() == input_dimension());
@@ -226,8 +226,7 @@ class Sum : public DifferentiableMap {
     return H;
   }
 
-  DifferentiableMapPtr map(uint32_t i) const { return (*maps_)[i]; }
-  uint32_t num_maps() const { return maps_->size(); }
+  const VectorOfMaps& terms() const { return (*maps_); }
 
   virtual uint32_t input_dimension() const {
     return maps_->back()->input_dimension();

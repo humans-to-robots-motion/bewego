@@ -6,6 +6,7 @@
 #include <bewego/value_iteration.h>
 #include <bewego/geometry.h>
 #include <bewego/kinematics.h>
+#include <bewego/util.h>
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
