@@ -71,15 +71,31 @@ TEST(atomic_operators, range_subspace_map) {
 
   indices = {2, 3, 7};  // output_dimension = 3
   for (uint32_t i = 0; i < NB_TESTS; i++) {
-    f = std::make_shared<RangeSubspaceMap>(n, indices);
+    f = std::make_shared<RangeSubspace>(n, indices);
     ASSERT_TRUE(f->CheckJacobian(precision));
   }
 
   indices = {5};  // output_dimension = 1
   for (uint32_t i = 0; i < NB_TESTS; i++) {
-    f = std::make_shared<RangeSubspaceMap>(n, indices);
+    f = std::make_shared<RangeSubspace>(n, indices);
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
+  }
+}
+
+TEST(atomic_operators, sum_map) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  auto maps = std::make_shared<VectorOfMaps>();
+  for (uint32_t i = 0; i < 3; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(3, 2);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(3);
+    maps->push_back(std::make_shared<AffineMap>(a, b));
+  }
+
+  f = std::make_shared<Sum>(maps);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(f->CheckJacobian(precision));
   }
 }
 

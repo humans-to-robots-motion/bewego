@@ -83,5 +83,6 @@ class DifferentiableMap {
 };
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
+using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
 
 }  // namespace bewego

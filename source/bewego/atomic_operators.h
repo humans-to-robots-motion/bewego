@@ -149,9 +149,9 @@ class ExpTestFunction : public DifferentiableMap {
     Takes only some outputs
     n is the input dimension, indices are the output
 **/
-class RangeSubspaceMap : public DifferentiableMap {
+class RangeSubspace : public DifferentiableMap {
  public:
-  RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
+  RangeSubspace(uint32_t n, const std::vector<uint32_t>& indices)
       : dim_(n), indices_(indices) {}
 
   uint32_t output_dimension() const { return indices_.size(); }
@@ -182,6 +182,62 @@ class RangeSubspaceMap : public DifferentiableMap {
  protected:
   uint32_t dim_;
   std::vector<uint32_t> indices_;
+};
+
+/**
+ * \brief Represents the sum of a set of maps f_i.
+ *
+ *   y(x) = \sum_{i=1}^N f_i(x)
+ */
+class Sum : public DifferentiableMap {
+ public:
+  Sum(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
+    assert(maps_->size() > 0);
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      assert(maps_->at(i)->input_dimension() == input_dimension());
+      assert(maps_->at(i)->output_dimension() == output_dimension());
+    }
+  }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    Eigen::VectorXd y(Eigen::VectorXd::Zero(output_dimension()));
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      y += maps_->at(i)->Forward(x);
+    }
+    return y;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    Eigen::MatrixXd J(
+        Eigen::MatrixXd::Zero(output_dimension(), input_dimension()));
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      J += maps_->at(i)->Jacobian(x);
+    }
+    return J;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    Eigen::MatrixXd H(
+        Eigen::MatrixXd::Zero(input_dimension(), input_dimension()));
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      H += maps_->at(i)->Hessian(x);
+    }
+    return H;
+  }
+
+  DifferentiableMapPtr map(uint32_t i) const { return (*maps_)[i]; }
+  uint32_t num_maps() const { return maps_->size(); }
+
+  virtual uint32_t input_dimension() const {
+    return maps_->back()->input_dimension();
+  }
+  virtual uint32_t output_dimension() const {
+    return maps_->back()->output_dimension();
+  }
+
+ protected:
+  std::shared_ptr<const VectorOfMaps> maps_;
 };
 
 }  // namespace bewego

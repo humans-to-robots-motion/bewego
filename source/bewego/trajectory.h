@@ -53,7 +53,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         nb_cliques_(uint32_t(input_size_ / clique_element_dim - 2))
         {
             functions_.resize(nb_cliques_);
-            for( i=0; i<_nb_cliques; i++) {
+            for( i=0; i<nb_cliques_; i++) {
                 functions_[i] = []
             }
         }
@@ -172,41 +172,45 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     }
 
     // x_{t}
-    void CenterOfCliqueMap(self) {
+    DifferentiableMapPtr CenterOfCliqueMap() {
         dim = self._clique_element_dim
-        return RangeSubspaceMap(
+        return std::make_shared<RangeSubspaceMap>(
             dim * self._nb_clique_elements,
-            list(range(dim, (self._nb_clique_elements - 1) * dim)))
+            list(range(dim, (self._nb_clique_elements - 1) * dim)));
     }
 
-    def right_most_of_clique_map(self):
-        """ x_{t+1} """
+    // x_{t+1}
+    DifferentiableMapPtr right_most_of_clique_map() {
         dim = self._clique_element_dim
         return RangeSubspaceMap(
             dim * self._nb_clique_elements,
             list(range((self._nb_clique_elements - 1) * dim,
-                       self._nb_clique_elements * dim)))
+                       self._nb_clique_elements * dim)));
+    }
 
-    def right_of_clique_map(self):
-        """ x_{t} ; x_{t+1} """
+    // x_{t} ; x_{t+1}
+    DifferentiableMapPtr right_of_clique_map() {
         dim = self._clique_element_dim
         return RangeSubspaceMap(
             dim * self._nb_clique_elements,
             list(range(dim, self._nb_clique_elements * dim)))
+    }
 
-    def left_most_of_clique_map(self):
-        """ x_{t-1} """
+    // x_{t-1}
+    DifferentiableMapPtr left_most_of_clique_map() {
         dim = self._clique_element_dim
         return RangeSubspaceMap(
             dim * self._nb_clique_elements,
-            list(range(0, dim)))
+            list(range(0, dim)));
+    }
 
-    def left_of_clique_map(self):
-        """ x_{t-1} ; x_{t} """
+    // x_{t-1} ; x_{t}
+    DifferentiableMapPtr LeftOfCliqueMap() {
         dim = self._clique_element_dim
         return RangeSubspaceMap(
             dim * self._nb_clique_elements,
-            list(range(0, (self._nb_clique_elements - 1) * dim)))
+            list(range(0, (self._nb_clique_elements - 1) * dim)));
+    }
 
 private:
 
@@ -218,9 +222,8 @@ private:
 
 };
 
-
-class TrajectoryObjectiveFunction(DifferentiableMap):
-    """ Wraps the active part of the Clique Function Network
+/**
+    Wraps the active part of the Clique Function Network
 
         The idea is that the finite differences are approximated using
         cliques so for the first clique, these values are quite off.
@@ -229,307 +232,50 @@ class TrajectoryObjectiveFunction(DifferentiableMap):
         computed for that configuration.
 
         TODO Test...
-        """
+*/
+class TrajectoryObjectiveFunction(DifferentiableMap) {
 
-    def __init__(self, q_init, function_network):
+    TrajectoryObjectiveFunction(q_init, function_network) {
         self._q_init = q_init
         self._n = q_init.size
         self._function_network = function_network
+    }
 
-    def full_vector(self, x_active):
+    Eigen::VectorXd full_vector(self, x_active) {
         assert x_active.size == (
             self._function_network.input_dimension() - self._n)
         x_full = np.zeros(self._function_network.input_dimension())
         x_full[:self._n] = self._q_init
         x_full[self._n:] = x_active
         return x_full
+    }
 
-    def output_dimension(self):
+    uint32_t output_dimension(self) {
         return self._function_network.output_dimension()
+    }
 
-    def input_dimension(self):
+    uint32_t input_dimension(self) {
         return self._function_network.input_dimension() - self._n
+    }
 
-    def forward(self, x):
+    Eigen::VectorXd Forward(self, x) {
         x_full = self.full_vector(x)
         return min(1e100, self._function_network(x_full))
+    }
 
-    def jacobian(self, x):
+    Eigen::MatrixX Jacobian(self, x) {
         x_full = self.full_vector(x)
         return self._function_network.jacobian(x_full)[0, self._n:]
+    }
 
-    def hessian(self, x):
+    Eigen::MatrixX Hessian(self, x) {
         x_full = self.full_vector(x)
         H = self._function_network.hessian(x_full)[self._n:, self._n:]
         return np.array(H)
+    }
 
-
-class Trajectory:
-    """
-        Implement a trajectory as a single vector of configuration,
-        returns cliques of configurations
-        Note there is T active configuration in the trajectory
-        indices
-                0 and T + 1
-            are supposed to be inactive.
-        """
-
-    def __init__(self, T=0, n=2, q_init=None, x=None):
-        assert n > 0
-        if q_init is not None and x is not None:
-            assert x.size % q_init.size == 0
-            self._n = q_init.size
-            self._T = int((x.size / q_init.size) - 1)
-            self._x = np.zeros(self._n * (self._T + 2))
-            self._x[:self._n] = q_init
-            self._x[self._n:] = x
-        else:
-            assert T > 0
-            self._n = n
-            self._T = T
-            self._x = np.zeros(self._n * (self._T + 2))
-
-    def __str__(self):
-        ss = ""
-        ss += " - n : " + str(self._n) + "\n"
-        ss += " - T : " + str(self._T) + "\n"
-        ss += " - x : \n" + str(self._x) + "\n"
-        ss += " - x.shape : " + str(self._x.shape)
-        return ss
-
-    def n(self):
-        return self._n
-
-    def T(self):
-        return self._T
-
-    def x(self):
-        return self._x
-
-    def set(self, x):
-        assert x.shape[0] == self._n * (self._T + 2)
-        self._x = x.copy()
-
-    def active_segment(self):
-        """
-        The active segment of the trajectory
-        removes the first configuration on the trajectory
-        """
-        return self._x[self._n:]
-
-    def initial_configuration(self):
-        """ first configuration """
-        return self.configuration(0)
-
-    def final_configuration(self):
-        """ last active configuration """
-        return self.configuration(self._T)
-
-    def configuration(self, i):
-        """  mutable : traj.configuration(3)[:] = np.ones(2) """
-        assert i >= 0 and i <= (self._T + 1)
-        beg_idx = self._n * i
-        end_idx = self._n * (i + 1)
-        return self._x[beg_idx:end_idx]
-
-    def velocity(self, i, dt):
-        """
-        returns velocity at index i
-            WARNING It is not the same convention as for the clique
-                    Here we suppose the velocity at q_init to be 0,
-                    so the finite difference is left sided (q_t - q_t-1)/dt
-                    This is different from the right sided version
-                    (q_t+1 - q_t)/dt implemented in the cost term module.
-
-            With left side FD we directly get the integration scheme:
-
-                q_{t+1} = q_t + v_t * dt + a_t * dt^2
-
-            where v_t and a_t are velocity and acceleration
-            at index t, with v_0 = 0.
-            """
-        if i == 0:
-            return np.zeros(self._n)
-        q_i_1 = self.configuration(i - 1)
-        q_i_2 = self.configuration(i)
-        return (q_i_2 - q_i_1) / dt
-
-    def acceleration(self, i, dt):
-        """
-        returns acceleration at index i
-            Note that we suppose velocity at q_init to be 0 """
-        id_init = 0 if i == 0 else i - 1
-        q_i_0 = self.configuration(id_init)
-        q_i_1 = self.configuration(i)
-        q_i_2 = self.configuration(i + 1)
-        return (q_i_2 - 2 * q_i_1 + q_i_0) / (dt**2)
-
-    def state(self, i, dt):
-        """ return a tuple of configuration and velocity at index i """
-        q_t = self.configuration(i)
-        v_t = self.velocity(i, dt)
-        return np.hstack([q_t, v_t])
-
-    def clique(self, i):
-        """ returns a clique of 3 configurations """
-        assert i >= 1 and i <= (self._T)
-        beg_idx = self._n * (i - 1)
-        end_idx = self._n * (i + 2)
-        return self._x[beg_idx:end_idx]
-
-    def list_configurations(self):
-        """ returns a list of configurations """
-        nb_config = self.T() + 1
-        line = [None] * nb_config
-        for t in range(nb_config):
-            line[t] = self.configuration(t)
-        return line
-
-    def continuous_trajectory(self):
-        """ returns an object of contunious type """
-        trajectory = ContinuousTrajectory(self.T(), self.n())
-        trajectory._x = self._x
-        return trajectory
-
-
-class ContinuousTrajectory(Trajectory):
-    """ Implements a trajectory that can be continously interpolated """
-
-    def configuration_at_parameter(self, s):
-        """ The trajectory is indexed by s \in [0, 1] """
-        d_param = s * self.length()
-        q_prev = self.configuration(0)
-        dist = 0.
-        for i in range(1, self._T + 1):
-            q_curr = self.configuration(i)
-            d = np.linalg.norm(q_curr - q_prev)
-            if d_param <= (d + dist):
-                return interpolate(q_prev, q_curr, d_param - dist, d)
-            dist += d
-            q_prev = q_curr
-        return None
-
-    def length(self):
-        """ length in configuration space """
-        length = 0.
-        q_prev = self.configuration(0)
-        for i in range(1, self._T + 1):
-            q_curr = self.configuration(i)
-            length += np.linalg.norm(q_curr - q_prev)
-            q_prev = q_curr
-        return length
-
-
-class ConstantAccelerationTrajectory(ContinuousTrajectory):
-    """ Implements a trajectory that can be continously interpolated """
-
-    def __init__(self, T=0, n=2, dt=0.1, q_init=None, x=None):
-        Trajectory.__init__(self, T=T, n=n, q_init=q_init, x=x)
-        self._dt = float(dt)
-
-    def config_at_time(self, t):
-        """ Get the id of the segment and then interpolate
-            using quadric interpolation """
-        alpha_t = t / self._dt
-        s_id = int(alpha_t)
-        s_t = alpha_t - float(s_id)
-        return self._config_along_segment(s_id, s_t * self._dt)
-
-    def _config_along_segment(self, s_id, t):
-        """ Implements a quadric interpolation """
-        assert t >= 0 and t <= self._dt
-        if s_id == 0:
-            i = 1
-            t_0 = t
-        else:
-            i = s_id
-            t_0 = t + self._dt
-        q_t = self.configuration(i - 1)
-        v_t = self.velocity(i, self._dt)
-        a_t = self.acceleration(i, self._dt)
-        return q_t + v_t * t_0 + .5 * a_t * t_0 * (t_0 - self._dt)
-
-
-class CubicSplineTrajectory(ContinuousTrajectory):
-    """
-    Implements a trajectory that can be continously interpolated
-
-    Velocities and accelerations are computed using finite differences
-        which is why we set an epsilon parameter.
-
-    The trajectory is defined for a time interval
-        t \in [0., dt * (T + 1)]
-
-    A trajectory is always defined from index 0 to T included
-    The final configuration of the trajectory is thus the
-    one indexed T and there an extra one for convinience in trajectory
-    optimization algorithm (for finite differences).
-    Hence when we define a spline we need to specify T configurations
-    over a time interval that finishes at dt * (T+1).
-    """
-
-    def __init__(self, T=0, n=2, dt=0.1, q_init=None, x=None):
-        Trajectory.__init__(self, T=T, n=n, q_init=q_init, x=x)
-        self._dt = float(dt)
-        self._f = []
-        self._epsilon = 1e-6
-
-    def time_indices(self):
-        return np.linspace(0., self._T * self._dt, self._T + 1)
-
-    def initialize_spline(self):
-        time = self.time_indices()
-        configurations = np.array(self.list_configurations())
-        self._f = []
-        for d in range(self._n):
-            self._f.append(interp1d(
-                time, configurations[:, d], kind='cubic'))
-
-    def __call__(self, t):
-        return self.config_at_time(t)
-
-    def config_at_time(self, t):
-        assert self._n == len(self._f)
-        assert t >= 0.
-        assert t <= self._dt * (self._T + 1)
-        q = np.zeros((self._n))
-        for d in range(self._n):
-            q[d] = self._f[d](t)
-        return q
-
-    def velocity(self, t):
-        assert t >= 0.
-        assert t <= self._dt * (self._T + 1)
-        if t > (self._dt * (self._T + 1) - self._epsilon):
-            return np.zeros(self._n)
-        q0 = self.config_at_time(t)
-        q1 = self.config_at_time(t + self._epsilon)
-        v = (q1 - q0) / self._epsilon
-        return v
-
-    def acceleration(self, t):
-        assert t >= 0.
-        assert t <= self._dt * (self._T + 1)
-        if t < self._epsilon or t > self._dt * (self._T + 1) - self._epsilon:
-            return np.zeros(self._n)
-        q0 = self.config_at_time(t - self._epsilon)
-        q1 = self.config_at_time(t)
-        q2 = self.config_at_time(t + self._epsilon)
-        return (q2 - 2 * q1 + q0) / (self._epsilon**2)
-
-
-def linear_interpolation_trajectory(q_init, q_goal, T):
-    assert q_init.size == q_goal.size
-    trajectory = Trajectory(T, q_init.size)
-    for i in range(T + 2):
-        alpha = float(i) / float(T)
-        trajectory.configuration(i)[:] = (1 - alpha) * q_init + alpha * q_goal
-        # print "config[{}] : {}".format(i, trajectory.configuration(i))
-    return trajectory
-
-
-def no_motion_trajectory(q_init, T):
-    trajectory = Trajectory(T, q_init.size)
-    for i in range(T + 2):
-        trajectory.configuration(i)[:] = q_init
-    return trajectory
+protected:
+    uint32_t q_init_;
+    uint32_t n_;
+    uint32_t function_network_;
+};
