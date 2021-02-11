@@ -91,6 +91,9 @@ class AffineMap : public DifferentiableMap {
     return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
   }
 
+   const Eigen::MatrixXd& a() const { return a_; }
+   const Eigen::VectorXd& b() const { return b_; }
+
  protected:
   Eigen::MatrixXd a_;
   Eigen::VectorXd b_;
