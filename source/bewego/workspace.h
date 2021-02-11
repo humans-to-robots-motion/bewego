@@ -25,6 +25,7 @@
 
 #pragma once
 #include <bewego/differentiable_map.h>
+
 #include <Eigen/Geometry>
 
 namespace bewego {
@@ -35,19 +36,18 @@ struct WorkspaceObject {
 
 class Workspace {
  public:
-  Workspace(
-      const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
+  Workspace(const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
       : objects_(objects) {}
 
-    VectorOfMaps ExtractSurfaceFunctions() const {
-      VectorOfMaps signed_distance_functions;
+  VectorOfMaps ExtractSurfaceFunctions() const {
+    VectorOfMaps signed_distance_functions;
     for (auto& obj : objects_) {
       signed_distance_functions.push_back(obj->ConstraintFunction());
     }
     return signed_distance_functions;
-    }
+  }
 
-protected:
+ protected:
   std::vector<std::shared_ptr<const WorkspaceObject>> objects_;
 };
 

@@ -106,6 +106,86 @@ class DifferentiableMap {
   bool CheckHessian(double precision = 1e-12) const;
 };
 
+/**
+    f round g : f(g(q))
+
+    This function should be called pullback if we approxiate
+    higher order (i.e., hessians) derivaties by pullback, here it's
+    computing the true 1st order derivative of the composition.
+*/
+class Compose : public DifferentiableMap {
+  Compose(std::shared_ptr<const DifferentiableMap> f,
+          std::shared_ptr<const DifferentiableMap> g) {
+    // Make sure the composition makes sense
+    assert(g->output_dimension() == f->input_dimension());
+    f_ = f;
+    g_ = g;
+  }
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return g_->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    return (*f_)((*g_)(q));
+  }
+
+  /**
+      d/dq f(g(q)), applies chain rule.
+
+            * J_f(g(q)) J_g
+
+      If J is the jacobian of a function f(x), J_f = d/dx f(x)
+        then the jacobian of the "pullback" of f defined on the
+        range space of a map g, f(g(q)) is
+                d/dq f(g(q)) = J_f(g(q)) J_g
+        This method computes and
+        returns this "pullback gradient" J_f (g(q)) J_g(q).
+        WARNING: J_f is assumed to be a jacobian np.matrix object
+    */
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    return Evaluate(q).second;
+  }
+
+  /**
+      d^2/dq^2 f(g(q)), applies chain rule.
+
+            * J_g' H_f J_g + H_g J_f,
+
+        so far only works if f and g are functions, not maps.
+        https://en.wikipedia.org/wiki/Chain_rule (Higher derivatives)
+
+        WARNING: If n > 1, where g : R^m -> R^n, we approximate the hessian
+                 to the first term. This equivalent to considering H_g = 0
+                 It can be seen as operating a pullback of the curvature
+                 tensor of f by g.
+
+          https://en.wikipedia.org/wiki/Pullback_(differential_geometry)
+    */
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& q) {
+    auto x = (*g_)(q);
+    auto J_g = g_->Jacobian(q);
+    Eigen::MatrixXd H = J_g.transpose() * f_->Hessian(x) * J_g;
+
+    if (g_->output_dimension() == 1) {
+      H += f_->Jacobian(x) * Eigen::VectorXd::Ones(input_dimension()) *
+           g_->Hessian(q);
+    }
+    return H;
+  }
+
+  // d/dq f(g(q)), applies chain rule.
+  std::pair<Eigen::VectorXd, Eigen::MatrixXd> Evaluate(
+      const Eigen::VectorXd& q) const {
+    auto g = g_->Evaluate(q);
+    auto f_o_g = f_->Evaluate(g.first);
+    return std::make_pair(f_o_g.first, f_o_g.second * g.second);
+  }
+
+ protected:
+  std::shared_ptr<const DifferentiableMap> f_;
+  std::shared_ptr<const DifferentiableMap> g_;
+};
+
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
 using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
 

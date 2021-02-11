@@ -26,14 +26,56 @@
 #pragma once
 
 #include <bewego/trajectory.h>
+#include <bewego/differentiable_map.h>
 
 namespace bewego {
 
 class MotionOptimizationFactory {
 
-    MotionOptimizationFactory(uint32_t T, uint32_t ) {
+    MotionOptimizationFactory(uint32_t T, uint32_t t) {
 
     }
+
+    void AddSmoothnessTerms(self, deriv_order=2) 
+    {
+
+        if( deriv_order == 1 ) {
+            auto derivative = Pullback(SquaredNormVelocity(
+                self.config_space_dim, self.dt),
+                self.function_network.left_of_clique_map())
+            self.function_network.register_function_for_all_cliques(
+                Scale(derivative, self._velocity_scalar))
+        }
+
+        elif deriv_order == 2:
+            derivative = SquaredNormAcceleration(
+                self.config_space_dim, self.dt)
+            self.function_network.register_function_for_all_cliques(
+                Scale(derivative, self._acceleration_scalar))
+        else:
+            raise ValueError("deriv_order ({}) not suported".format(
+                deriv_order))
+        }
+    }
+
+    def add_isometric_potential_to_all_cliques(self, potential, scalar):
+        """
+        Apply the following euqation to all cliques:
+
+                c(x_t) | d/dt x_t |
+
+            The resulting Riemanian metric is isometric. TODO see paper.
+            Introduced in CHOMP, Ratliff et al. 2009.
+        """
+        cost = Pullback(
+            potential,
+            self.function_network.center_of_clique_map())
+        squared_norm_vel = Pullback(
+            SquaredNormVelocity(self.config_space_dim, self.dt),
+            self.function_network.right_of_clique_map())
+
+        self.function_network.register_function_for_all_cliques(
+            Scale(ProductFunction(cost, squared_norm_vel), scalar))
 
 };
 
