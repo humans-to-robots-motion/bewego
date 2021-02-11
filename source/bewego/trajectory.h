@@ -241,53 +241,177 @@ class CliquesFunctionNetwork : public FunctionNetwork {
 
         TODO Test...
 */
-/**
-class TrajectoryObjectiveFunction(DifferentiableMap) {
+class TrajectoryObjectiveFunction : public DifferentiableMap {
+ public:
+  TrajectoryObjectiveFunction(
+      const Eigen::VectorXd& q_init,
+      std::shared_ptr<const CliquesFunctionNetwork> function_network)
+      : q_init_(q_init),
+        n_(q_init.size()),
+        function_network_(function_network) {}
 
-    TrajectoryObjectiveFunction(q_init, function_network) {
-        self._q_init = q_init
-        self._n = q_init.size
-        self._function_network = function_network
-    }
+  Eigen::VectorXd FullVector(const Eigen::VectorXd& x_active) const {
+    assert(x_active.size() == input_dimension());
+    Eigen::VectorXd x_full(function_network_->input_dimension());
+    x_full.head(n_) = q_init_;
+    x_full.segment(n_, input_dimension()) = x_active;
+    return x_full;
+  }
 
-    Eigen::VectorXd full_vector(self, x_active) {
-        assert x_active.size == (
-            self._function_network.input_dimension() - self._n)
-        x_full = np.zeros(self._function_network.input_dimension())
-        x_full[:self._n] = self._q_init
-        x_full[self._n:] = x_active
-        return x_full
-    }
+  uint32_t output_dimension() const {
+    return function_network_->output_dimension();
+  }
 
-    uint32_t output_dimension(self) {
-        return self._function_network.output_dimension()
-    }
+  uint32_t input_dimension() const {
+    return function_network_->input_dimension() - n_;
+  }
 
-    uint32_t input_dimension(self) {
-        return self._function_network.input_dimension() - self._n
-    }
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    Eigen::VectorXd value(1);
+    value[0] = std::min(1e100, (*function_network_)(FullVector(x))[0]);
+    return value;
+  }
 
-    Eigen::VectorXd Forward(self, x) {
-        x_full = self.full_vector(x)
-        return min(1e100, self._function_network(x_full))
-    }
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    Eigen::MatrixXd J = function_network_->Jacobian(FullVector(x));
+    return J.block(0, n_, 1, input_dimension());
+  }
 
-    Eigen::MatrixX Jacobian(self, x) {
-        x_full = self.full_vector(x)
-        return self._function_network.jacobian(x_full)[0, self._n:]
-    }
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    Eigen::MatrixXd H = function_network_->Hessian(FullVector(x));
+    return H.block(n_, n_, input_dimension(), input_dimension());
+  }
 
-    Eigen::MatrixX Hessian(self, x) {
-        x_full = self.full_vector(x)
-        H = self._function_network.hessian(x_full)[self._n:, self._n:]
-        return np.array(H)
-    }
-
-protected:
-    uint32_t q_init_;
-    uint32_t n_;
-    uint32_t function_network_;
+ protected:
+  Eigen::VectorXd q_init_;
+  uint32_t n_;
+  std::shared_ptr<const CliquesFunctionNetwork> function_network_;
 };
-*/
 
+/**
+        Implement a trajectory as a single vector of configuration,
+        returns cliques of configurations
+        Note there is T active configuration in the trajectory
+        indices
+                0 and T + 1
+            are supposed to be inactive.
+*/
+class Trajectory {
+ public:
+  Trajectory(uint32_t T, uint32_t n) : n_(n), T_(T) {
+    assert(n_ > 0);
+    assert(T_ > 0);
+    x_ = Eigen::VectorXd(n_ * (T_ + 2));
+  }
+
+  Trajectory(uint32_t T, uint32_t n, const Eigen::VectorXd& q_init,
+             const Eigen::VectorXd& x) {
+    assert(n > 0);
+    assert(x.size() % q_init.size() == 0);
+    n_ = q_init.size();
+    T_ = uint32_t((x.size() / q_init.size()) - 1);
+    x_ = Eigen::VectorXd::Zero(n_ * (T_ + 2));
+    x_.head(n_) = q_init;
+    x_.tail(n_ * (T_ + 1)) = x;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Trajectory& traj) {
+    os << " - n : " << traj.n() << "\n"
+       << " - T : " << traj.T() << "\n"
+       << " - x : \n"
+       << traj.x() << "\n"
+       << " - x.size : " << traj.x().size();
+    return os;
+  }
+
+  uint32_t n() const { return n_; }
+  uint32_t T() const { return T_; }
+  Eigen::VectorXd x() const { return x_; }
+
+  void set(const Eigen::VectorXd& x) {
+    assert(x.size() == n_ * (T_ + 2));
+    x_ = x;
+  }
+
+  /**
+  The active segment of the trajectory
+      removes the first configuration on the trajectory */
+  Eigen::VectorXd ActiveSegment() const { return x_.tail(n_ * (T_ + 1)); }
+
+  /** first configuration */
+  Eigen::VectorXd InitialConfiguration() const { return Configuration(0); }
+
+  /** last active configuration */
+  Eigen::VectorXd FinalConfiguration() const { return Configuration(T_); }
+
+  /** mutable : traj.configuration(3)[:] = np.ones(2) */
+  Eigen::VectorXd Configuration(uint32_t i) const {
+    assert(i >= 0 && i <= (T_ + 1));
+    return x_.segment(n_ * i, n_);
+  }
+
+  /**
+  returns velocity at index i
+          WARNING It is not the same convention as for the clique
+                  Here we suppose the velocity at q_init to be 0,
+                  so the finite difference is left sided (q_t - q_t-1)/dt
+                  This is different from the right sided version
+                  (q_t+1 - q_t)/dt implemented in the cost term module.
+
+          With left side FD we directly get the integration scheme:
+
+              q_{t+1} = q_t + v_t * dt + a_t * dt^2
+
+          where v_t and a_t are velocity and acceleration
+          at index t, with v_0 = 0. */
+  Eigen::VectorXd Velocity(uint32_t i, double dt) const {
+    if (i == 0) {
+      return Eigen::VectorXd::Zero(n_);
+    }
+    auto q_i_1 = Configuration(i - 1);
+    auto q_i_2 = Configuration(i);
+    return (q_i_2 - q_i_1) / dt;
+  }
+
+  /** Returns acceleration at index i
+          Note that we suppose velocity at q_init to be 0 */
+  Eigen::VectorXd Acceleration(uint32_t i, double dt) const {
+    uint32_t id_init = 0 ? i == 0 : i - 1;
+    auto q_i_0 = Configuration(id_init);
+    auto q_i_1 = Configuration(i);
+    auto q_i_2 = Configuration(i + 1);
+    return (q_i_2 - 2 * q_i_1 + q_i_0) / (dt * dt);
+  }
+
+  /** Return a tuple of configuration and velocity at index i */
+  Eigen::VectorXd State(uint32_t i, double dt) const {
+    auto q_t = Configuration(i);
+    auto v_t = Velocity(i, dt);
+    Eigen::VectorXd s_t(2 * n_);
+    s_t.head(n_) = q_t;
+    s_t.tail(n_) = v_t;
+    return s_t;
+  }
+
+  /** Returns a clique of 3 configurations */
+  Eigen::VectorXd Clique(uint32_t i) const {
+    assert(i >= 1 && i <= T_);
+    return x_.segment(n_ * (i - 1), 3 * n_);
+  }
+
+  /** Returns a list of configurations */
+  std::vector<Eigen::VectorXd> Configurations() const {
+    uint32_t nb_config = T_ + 1;
+    std::vector<Eigen::VectorXd> line(nb_config);
+    for (uint32_t t = 0; t < nb_config; t++) {
+      line[t] = Configuration(t);
+    }
+    return line;
+  }
+
+ protected:
+  uint32_t n_;
+  uint32_t T_;
+  Eigen::VectorXd x_;
+};
 }  // namespace bewego
