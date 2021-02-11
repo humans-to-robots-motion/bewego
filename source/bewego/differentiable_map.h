@@ -27,6 +27,7 @@
 
 #include <Eigen/Core>
 #include <cassert>
+#include <vector>
 
 namespace bewego {
 

@@ -25,13 +25,30 @@
 
 #pragma once
 #include <bewego/differentiable_map.h>
-
 #include <Eigen/Geometry>
 
 namespace bewego {
 
 struct WorkspaceObject {
   virtual DifferentiableMapPtr ConstraintFunction() const = 0;
+};
+
+class Workspace {
+ public:
+  Workspace(
+      const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
+      : objects_(objects) {}
+
+    VectorOfMaps ExtractSurfaceFunctions() const {
+      VectorOfMaps signed_distance_functions;
+    for (auto& obj : objects_) {
+      signed_distance_functions.push_back(obj->ConstraintFunction());
+    }
+    return signed_distance_functions;
+    }
+
+protected:
+  std::vector<std::shared_ptr<const WorkspaceObject>> objects_;
 };
 
 // Evaluates the distance to an N-sphere
@@ -43,8 +60,7 @@ struct WorkspaceObject {
 class SphereDistance : public DifferentiableMap {
  public:
   // Constructor.
-  SphereDistance(const Eigen::VectorXd& origin,
-                 double radius,
+  SphereDistance(const Eigen::VectorXd& origin, double radius,
                  double dist_cutoff = std::numeric_limits<double>::max())
       : origin_(origin), radius_(radius), dist_(dist_cutoff) {}
   virtual ~SphereDistance() {}
@@ -73,8 +89,7 @@ class SphereDistance : public DifferentiableMap {
     return H;
   }
 
-  virtual double Evaluate(const Eigen::VectorXd& x,
-                          Eigen::VectorXd* g,
+  virtual double Evaluate(const Eigen::VectorXd& x, Eigen::VectorXd* g,
                           Eigen::MatrixXd* H) const;
   virtual double Evaluate(const Eigen::VectorXd& x, Eigen::VectorXd* g) const;
   virtual double Evaluate(const Eigen::VectorXd& x) const;
@@ -108,22 +123,21 @@ class RectangleDistance : public DifferentiableMap {
  public:
   // Creates a distance function to the point x0. The dimensionality of x0
   // defines the dimensionality of this function.
-  RectangleDistance(
-      const Eigen::VectorXd& center, const Eigen::VectorXd& dimension,
-      double orientation,
-      double dist_cutoff = std::numeric_limits<double>::max())
-      : RectangleDistance(
-            center, dimension,
-            Eigen::Rotation2Dd(orientation).toRotationMatrix(), dist_cutoff) {
+  RectangleDistance(const Eigen::VectorXd& center,
+                    const Eigen::VectorXd& dimension, double orientation,
+                    double dist_cutoff = std::numeric_limits<double>::max())
+      : RectangleDistance(center, dimension,
+                          Eigen::Rotation2Dd(orientation).toRotationMatrix(),
+                          dist_cutoff) {
     // CHECK_EQ(dim_, 2);
   }
 
   // Creates a distance function to the point x0. The dimensionality of x0
   // defines the dimensionality of this function.
-  RectangleDistance(
-      const Eigen::VectorXd& center, const Eigen::VectorXd& dimension,
-      const Eigen::MatrixXd orientation,
-      double dist_cutoff = std::numeric_limits<double>::max()) {
+  RectangleDistance(const Eigen::VectorXd& center,
+                    const Eigen::VectorXd& dimension,
+                    const Eigen::MatrixXd orientation,
+                    double dist_cutoff = std::numeric_limits<double>::max()) {
     dim_ = uint32_t(center.size());
     center_ = center;
     dimensions_ = dimension;
