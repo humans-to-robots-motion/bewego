@@ -29,6 +29,9 @@
 #include <bewego/atomic_operators.h>
 #include <bewego/differentiable_map.h>
 #include <bewego/util.h>
+// #include <iostream>
+// using std::cout;
+// using std::endl;
 
 namespace bewego {
 
@@ -65,7 +68,7 @@ public:
     a_.block(0, 0, dim, dim) = identity;
     a_.block(0, dim, dim, dim) = -2 * identity;
     a_.block(0, 2 * dim, dim, dim) = identity;
-    a_ /= dt;
+    a_ /= (dt * dt);
   }
 };
 

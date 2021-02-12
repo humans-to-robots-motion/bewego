@@ -25,6 +25,10 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/differentiable_map.h>
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 namespace bewego {
 
 Eigen::MatrixXd DifferentiableMap::FiniteDifferenceJacobian(
@@ -79,13 +83,25 @@ Eigen::MatrixXd DifferentiableMap::FiniteDifferenceHessian(
 /** check against finite differences */
 bool DifferentiableMap::CheckJacobian(double precision) const {
   Eigen::VectorXd x = Eigen::VectorXd::Random(input_dimension());
-  return Jacobian(x).isApprox(FiniteDifferenceJacobian(*this, x), precision);
+  Eigen::MatrixXd J = Jacobian(x);
+  Eigen::MatrixXd J_diff = FiniteDifferenceJacobian(*this, x);
+  if (debug_) {
+    cout << "J : " << endl << J << endl;
+    cout << "J_diff : " << endl << J_diff << endl;
+  }
+  return J.isApprox(J_diff, precision);
 }
 
 /** check against finite differences */
 bool DifferentiableMap::CheckHessian(double precision) const {
   Eigen::VectorXd x = Eigen::VectorXd::Random(input_dimension());
-  return Hessian(x).isApprox(FiniteDifferenceHessian(*this, x), precision);
+  Eigen::MatrixXd H = Hessian(x);
+  Eigen::MatrixXd H_diff = FiniteDifferenceHessian(*this, x);
+  if (debug_) {
+    cout << "H : " << endl << H << endl;
+    cout << "H_diff : " << endl << H_diff << endl;
+  }
+  return H.isApprox(H_diff, precision);
 }
 
 }  // namespace bewego

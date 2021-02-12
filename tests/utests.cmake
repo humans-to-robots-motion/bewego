@@ -18,3 +18,8 @@ add_executable(geometry_utest tests/geometry_utest.cpp)
 target_link_libraries(geometry_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET geometry_utest)
+
+add_executable(cost_terms_utest tests/cost_terms_utest.cpp)
+target_link_libraries(cost_terms_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
+include(GoogleTest)
+gtest_add_tests(TARGET cost_terms_utest)

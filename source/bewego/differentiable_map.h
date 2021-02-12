@@ -33,6 +33,8 @@ namespace bewego {
 
 class DifferentiableMap {
  public:
+  DifferentiableMap() : debug_(false) {}
+
   virtual uint32_t output_dimension() const = 0;
   virtual uint32_t input_dimension() const = 0;
 
@@ -104,6 +106,12 @@ class DifferentiableMap {
 
   /** check against finite differences */
   bool CheckHessian(double precision = 1e-12) const;
+
+  /** Print check Jacobian and Hessian info */
+  void set_debug(bool v) { debug_ = v; }
+
+ protected:
+  bool debug_;
 };
 
 /**
