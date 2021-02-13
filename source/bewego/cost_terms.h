@@ -37,7 +37,7 @@ namespace bewego {
 
 /*!\brief Define velocities where clique = [ x_t ; x_{t+1} ] */
 class FiniteDifferencesVelocity : public AffineMap {
-public:
+ public:
   FiniteDifferencesVelocity(uint32_t dim, double dt)
       : AffineMap(Eigen::MatrixXd::Zero(dim, 2 * dim),
                   Eigen::VectorXd::Zero(dim)) {
@@ -55,7 +55,7 @@ public:
 
 /*!\brief Define accelerations where clique = [ x_{t-1} ; x_{t} ; x_{t+1} ] */
 class FiniteDifferencesAcceleration : public AffineMap {
-public:
+ public:
   FiniteDifferencesAcceleration(uint32_t dim, double dt)
       : AffineMap(Eigen::MatrixXd::Zero(dim, 3 * dim),
                   Eigen::VectorXd::Zero(dim)) {
@@ -86,7 +86,7 @@ class SquaredNormDerivative : public DifferentiableMap {
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& clique) const {
-    return (*derivative_)(clique)*derivative_->a();
+    return (*derivative_)(clique).transpose() * derivative_->a();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& clique) const {
@@ -111,7 +111,7 @@ class SquaredNormAcceleration : public SquaredNormDerivative {
  public:
   SquaredNormAcceleration(uint32_t dim, double dt)
       : SquaredNormDerivative(dim) {
-    derivative_ = std::make_shared<FiniteDifferencesVelocity>(dim, dt);
+    derivative_ = std::make_shared<FiniteDifferencesAcceleration>(dim, dt);
   }
 };
 
