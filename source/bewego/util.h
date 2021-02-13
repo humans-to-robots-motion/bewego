@@ -27,6 +27,7 @@
 
 #include <stdexcept>
 #include <vector>
+#include <Eigen/Core>
 
 namespace bewego {
 namespace util {
@@ -56,6 +57,14 @@ template <typename IntType>
 std::vector<IntType> range(IntType stop) {
   return range(IntType(0), stop, IntType(1));
 }
+
+/// Float \in [0, 1]
+/// set the seed with: std::srand((unsigned int) time(0));
+double Rand();
+
+/// Vector \in [0, 1]
+/// set the seed with: std::srand((unsigned int) time(0));
+Eigen::VectorXd Random(uint32_t dim);
 
 }  // namespace util
 }  // namespace bewego

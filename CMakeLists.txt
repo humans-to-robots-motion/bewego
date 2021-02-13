@@ -75,6 +75,16 @@ else(catkin_FOUND)
     message("Building without catkin")
 endif(catkin_FOUND)
 
+find_package(gtest QUIET)
+enable_testing()
+if(GTEST_LIBRARY)
+    message(${GTEST_INCLUDE_DIRS})
+    include_directories(${GTEST_INCLUDE_DIRS})
+else()
+    message("gtest library not found !!! setting it up at link target")
+    set(GTEST_LIBRARY gtest)
+endif()
+
 # message("where to compile : ${CMAKE_CURRENT_BINARY_DIR}")
 # message("where to compile : ${PROJECT_SOURCE_DIR}")
 
@@ -109,10 +119,12 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/trajectory.cpp
     ${bewego_SOURCE_DIR}/cost_terms.cpp
     ${bewego_SOURCE_DIR}/workspace.cpp
+    ${bewego_SOURCE_DIR}/util.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
     ${bewego_SOURCES})
+target_link_libraries(${bewego_LIBRARY} PRIVATE ${GTEST_LIBRARY})
 
 ############################
 # Tests                    #

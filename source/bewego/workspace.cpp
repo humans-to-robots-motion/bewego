@@ -28,6 +28,7 @@
 #include <iostream>
 using namespace bewego;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 //------------------------------------------------------------------------------
@@ -232,3 +233,9 @@ DifferentiableMapPtr Rectangle::ConstraintFunction() const {
   return std::make_shared<RectangleDistance>(center_, dimensions_, orientation_,
                                              1e-2);
 }
+
+// std::shared_ptr<WorkspacePotentalPrimitive> ConstructPrimitveWorkspaceFromFile(
+//     std::string filename) {
+//   auto objects = LoadPrimitvesFromFile(filename);
+//   return std::make_shared<WorkspacePotentalPrimitive>(objects);
+// }

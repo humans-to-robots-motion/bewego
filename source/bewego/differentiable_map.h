@@ -25,6 +25,8 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <Eigen/Core>
 #include <cassert>
 #include <vector>
@@ -192,6 +194,40 @@ class Compose : public DifferentiableMap {
  protected:
   std::shared_ptr<const DifferentiableMap> f_;
   std::shared_ptr<const DifferentiableMap> g_;
+};
+
+/**
+ * Fill up the function_tests_ vector with test points
+ * RunTests will check that the gradient and hessian are correctly
+ * implemented against finte difference.
+ */
+class DifferentialMapTest : public testing::Test {
+ public:
+  DifferentialMapTest()
+      : gradient_precision_(1e-6), hessian_precision_(1e-6), verbose_(false) {}
+
+  /** \brief Returns true if implementation is the same as finite difference */
+  void FiniteDifferenceTest(std::shared_ptr<const DifferentiableMap> phi,
+                            const Eigen::VectorXd& x) const;
+
+  /** \brief Run test procedure on all function tests in function_tests_. */
+  void RunTests() const;
+
+  bool verbose() const { return verbose_; }
+  void set_verbose(bool v) { verbose_ = v; }
+  void set_precisions(double gradient_precision, double hessian_precision) {
+    gradient_precision_ = gradient_precision;
+    hessian_precision_ = hessian_precision;
+  }
+
+ protected:
+  std::vector<
+      std::pair<std::shared_ptr<const DifferentiableMap>, Eigen::VectorXd>>
+      function_tests_;
+
+  double gradient_precision_;
+  double hessian_precision_;
+  bool verbose_;
 };
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;

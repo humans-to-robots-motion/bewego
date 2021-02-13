@@ -104,4 +104,37 @@ bool DifferentiableMap::CheckHessian(double precision) const {
   return H.isApprox(H_diff, precision);
 }
 
+void DifferentialMapTest::FiniteDifferenceTest(
+    std::shared_ptr<const DifferentiableMap> f,
+    const Eigen::VectorXd& x) const {
+  Eigen::MatrixXd J, J_diff;
+  Eigen::MatrixXd H, H_diff;
+
+  J  = f->Jacobian(x);
+  H  = f->Hessian(x);
+
+  J_diff = DifferentiableMap::FiniteDifferenceJacobian(*f, x);
+  H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
+
+  double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
+  double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
+
+  if (verbose_) {
+    cout << "J : " << endl << J << endl;
+    cout << "J_diff : " << endl << J_diff << endl;
+    cout << "H : " << endl << H << endl;
+    cout << "H_diff : " << endl << H_diff << endl;
+  }
+
+  EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
+  EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+}
+
+void DifferentialMapTest::RunTests() const {
+  for (uint32_t i = 0; i < function_tests_.size(); ++i) {
+    auto test = function_tests_[i];
+    FiniteDifferenceTest(test.first, test.second);
+  }
+}
+
 }  // namespace bewego

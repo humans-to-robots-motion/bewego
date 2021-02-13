@@ -13,7 +13,6 @@ target_link_libraries(atomic_operators_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET atomic_operators_utest)
 
-
 add_executable(geometry_utest tests/geometry_utest.cpp)
 target_link_libraries(geometry_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
@@ -23,3 +22,8 @@ add_executable(cost_terms_utest tests/cost_terms_utest.cpp)
 target_link_libraries(cost_terms_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET cost_terms_utest)
+
+add_executable(workspace_utest tests/workspace_utest.cpp)
+target_link_libraries(workspace_utest ${GTEST_LIBRARY} ${PROJECT_NAME})
+include(GoogleTest)
+gtest_add_tests(TARGET workspace_utest)
