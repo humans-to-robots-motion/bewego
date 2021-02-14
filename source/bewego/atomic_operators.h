@@ -152,7 +152,7 @@ class QuadricMap : public DifferentiableMap {
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    return H_ * x + b_;
+    return (H_ * x + b_).transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
@@ -167,8 +167,8 @@ class QuadricMap : public DifferentiableMap {
  protected:
   Eigen::MatrixXd a_;
   Eigen::VectorXd b_;
-  Eigen::MatrixXd H_;
   Eigen::VectorXd c_;
+  Eigen::MatrixXd H_;
 };
 
 /** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
