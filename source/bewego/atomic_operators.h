@@ -122,6 +122,55 @@ class AffineMap : public DifferentiableMap {
   Eigen::VectorXd b_;
 };
 
+/** Here we implement a quadric funciton of the form:
+        f(x) = 1/2 x^T A x + bx + c */
+class QuadricMap : public DifferentiableMap {
+ public:
+  QuadricMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b, double c)
+      : a_(a), b_(b), c_(Eigen::VectorXd::Constant(1, c)) {
+    assert(a_.rows() == a_.cols());
+    assert(a_.rows() == b_.size());
+    H_ = .5 * (a_ + a_.transpose());
+  }
+
+  QuadricMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b,
+             const Eigen::VectorXd& c)
+      : a_(a), b_(b), c_(c) {
+    assert(c_.size() == 1);
+    assert(a_.rows() == a_.cols());
+    assert(a_.rows() == b_.size());
+    H_ = .5 * (a_ + a_.transpose());
+  }
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return b_.size(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return .5 * x.transpose() * a_ * x + b_.transpose() * x + c_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return H_ * x + b_;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return H_;
+  }
+
+  const Eigen::MatrixXd& a() const { return a_; }
+  const Eigen::VectorXd& b() const { return b_; }
+  double c() const { return c_[0]; }
+
+ protected:
+  Eigen::MatrixXd a_;
+  Eigen::VectorXd b_;
+  Eigen::MatrixXd H_;
+  Eigen::VectorXd c_;
+};
+
 /** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
 class SquaredNorm : public DifferentiableMap {
  public:
@@ -276,8 +325,8 @@ class ProductMap : public DifferentiableMap {
   ProductMap(DifferentiableMapPtr f1, DifferentiableMapPtr f2)
       : g_(f1), h_(f2) {
     assert(f1->input_dimension() == f2->input_dimension());
-    assert(f2->output_dimension() == 1);
     assert(f1->output_dimension() == 1);
+    assert(f2->output_dimension() == 1);
   }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
@@ -293,9 +342,13 @@ class ProductMap : public DifferentiableMap {
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    // TODO AND TEST.
-    Eigen::MatrixXd H(1, 1);
-    return H;
+    assert(x.size() == input_dimension());
+    double v1 = (*g_)(x)[0];
+    double v2 = (*h_)(x)[0];
+    Eigen::MatrixXd J1 = g_->Jacobian(x);
+    Eigen::MatrixXd J2 = h_->Jacobian(x);
+    Eigen::MatrixXd H = v1 * h_->Hessian(x) + v2 * g_->Hessian(x);
+    return H + J1.transpose() * J2 + J2.transpose() * J1;
   }
 
   virtual uint32_t input_dimension() const { return g_->input_dimension(); }

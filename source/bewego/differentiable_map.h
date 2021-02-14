@@ -41,12 +41,12 @@ class DifferentiableMap {
   virtual uint32_t input_dimension() const = 0;
 
   /** Method called when call object */
-  Eigen::VectorXd operator()(const Eigen::VectorXd& q) const {
-    return Forward(q);
+  Eigen::VectorXd operator()(const Eigen::VectorXd& x) const {
+    return Forward(x);
   }
 
   /** Should return an array or single value */
-  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& q) const = 0;
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const = 0;
 
   /** Should return an array or single value
           n : input dimension
@@ -55,9 +55,9 @@ class DifferentiableMap {
       for addition and substraction, of course gradients are
       only availables if the output dimension is one.
   */
-  virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& q) const {
+  virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
-    return Jacobian(q).row(0);
+    return Jacobian(x).row(0);
   }
 
   /** Should return a matrix or single value of
@@ -65,8 +65,8 @@ class DifferentiableMap {
           by default the method returns the finite difference jacobian.
           WARNING the object returned by this function is a numpy matrix.
   */
-  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
-    return FiniteDifferenceJacobian(*this, q);
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return FiniteDifferenceJacobian(*this, x);
   }
 
   /** Should return the hessian matrix
@@ -77,8 +77,8 @@ class DifferentiableMap {
           in the case of multiple output, we exclude this case for now.
           WARNING the object returned by this function is a numpy matrix.
           */
-  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& q) const {
-    return FiniteDifferenceHessian(*this, q);
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return FiniteDifferenceHessian(*this, x);
   }
 
   /** Evaluates the map and jacobian simultaneously. The default
@@ -87,21 +87,31 @@ class DifferentiableMap {
           more efficient
           */
   std::pair<Eigen::VectorXd, Eigen::MatrixXd> Evaluate(
-      const Eigen::VectorXd& q) const {
-    return std::make_pair(Forward(q), Jacobian(q));
+      const Eigen::VectorXd& x) const {
+    return std::make_pair(Forward(x), Jacobian(x));
+  }
+
+  /** Evaluates the map and jacobian simultaneously. The default
+          implementation simply calls both forward and Getjacobian()
+          separately but overriding this method can make the evaluation
+          more efficient
+          */
+  std::tuple<Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd> EvaluateAll(
+      const Eigen::VectorXd& x) const {
+    return std::make_tuple(Forward(x), Jacobian(x), Hessian(x));
   }
 
   /** Takes an object f that has a forward method returning
       a numpy array when querried.
       */
   static Eigen::MatrixXd FiniteDifferenceJacobian(const DifferentiableMap& f,
-                                                  const Eigen::VectorXd& q);
+                                                  const Eigen::VectorXd& x);
 
   /** Takes an object f that has a forward method returning
       a numpy array when querried.
       */
   static Eigen::MatrixXd FiniteDifferenceHessian(const DifferentiableMap& f,
-                                                 const Eigen::VectorXd& q);
+                                                 const Eigen::VectorXd& x);
 
   /** check against finite differences */
   bool CheckJacobian(double precision = 1e-12) const;

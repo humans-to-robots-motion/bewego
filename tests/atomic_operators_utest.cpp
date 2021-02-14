@@ -52,6 +52,21 @@ TEST(atomic_operators, affine_map) {
   }
 }
 
+TEST(atomic_operators, quadric_map) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(3, 3);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(3);
+    Eigen::VectorXd c = Eigen::VectorXd::Random(1);
+    f = std::make_shared<QuadricMap>(a, b, c);
+    f->set_debug(true);
+
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
+  }
+}
+
 TEST(atomic_operators, squared_norm) {
   std::srand(SEED);
   const double precision = 1e-10;
@@ -96,6 +111,23 @@ TEST(atomic_operators, sum_map) {
   f = std::make_shared<SumMap>(maps);
   for (uint32_t i = 0; i < NB_TESTS; i++) {
     ASSERT_TRUE(f->CheckJacobian(precision));
+  }
+}
+
+TEST(atomic_operators, product_map) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  auto maps = std::make_shared<VectorOfMaps>();
+  for (uint32_t i = 0; i < 2; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(1, 5);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(1);
+    maps->push_back(std::make_shared<AffineMap>(a, b));
+  }
+
+  f = std::make_shared<ProductMap>((*maps)[0], (*maps)[1]);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
   }
 }
 
