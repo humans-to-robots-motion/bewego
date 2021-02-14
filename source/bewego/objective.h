@@ -25,58 +25,64 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <bewego/trajectory.h>
 #include <bewego/differentiable_map.h>
+#include <bewego/trajectory.h>
+
+#include <iostream>
 
 namespace bewego {
 
 class MotionOptimizationFactory {
+  MotionOptimizationFactory(uint32_t T, uint32_t t) {}
 
-    MotionOptimizationFactory(uint32_t T, uint32_t t) {
+  /** Apply the following euqation to all cliques:
 
+              | d^n/dt^n x_t |^2
+
+      where n is either 
+        1: velocity
+        2: accleration
+   */
+  void AddSmoothnessTerms(uint32_t deriv_order = 2, double scalar) {
+    if (deriv_order == 1) {
+      auto derivative = std::make_shared<Compose>(
+          std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
+          function_network_->LeftOfCliqueMap());
+      function_network_->RegisterFunctionForAllCliques(
+          std::make_shared<Scale>(derivative, scalar));
+    } else if (deriv_order == 2) {
+      auto derivative =
+          std::make_shared<SquaredNormAcceleration>(config_space_dim_, dt_);
+      function_network_.RegisterFunctionForAllCliques(
+          std::make_shared<Scale>(derivative, scalar));
+      else {
+        std::cerr << "deriv_order (" << deriv_order << ") not suported"
+                  << std::endl;
+      }
     }
+  }
 
-    void AddSmoothnessTerms(self, deriv_order=2) 
-    {
+  /** Apply the following euqation to all cliques:
 
-        if( deriv_order == 1 ) {
-            auto derivative = Pullback(SquaredNormVelocity(
-                self.config_space_dim, self.dt),
-                self.function_network.left_of_clique_map())
-            self.function_network.register_function_for_all_cliques(
-                Scale(derivative, self._velocity_scalar))
-        }
+              c(x_t) | d/dt x_t |
 
-        elif deriv_order == 2:
-            derivative = SquaredNormAcceleration(
-                self.config_space_dim, self.dt)
-            self.function_network.register_function_for_all_cliques(
-                Scale(derivative, self._acceleration_scalar))
-        else:
-            raise ValueError("deriv_order ({}) not suported".format(
-                deriv_order))
-        }
-    }
+          The resulting Riemanian metric is isometric. TODO see paper.
+          Introduced in CHOMP, Ratliff et al. 2009. */
+  void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
+                                         double scalar) {
+    auto cost = std::make_shared<Compose>(
+        potential, function_network_->CenterOfCliqueMap());
+    auto squared_norm_vel = std::make_shared<Compose>(
+        std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
+        function_network_->RightOfCliqueMap());
+    function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
+        std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
+  }
 
-    def add_isometric_potential_to_all_cliques(self, potential, scalar):
-        """
-        Apply the following euqation to all cliques:
-
-                c(x_t) | d/dt x_t |
-
-            The resulting Riemanian metric is isometric. TODO see paper.
-            Introduced in CHOMP, Ratliff et al. 2009.
-        """
-        cost = Pullback(
-            potential,
-            self.function_network.center_of_clique_map())
-        squared_norm_vel = Pullback(
-            SquaredNormVelocity(self.config_space_dim, self.dt),
-            self.function_network.right_of_clique_map())
-
-        self.function_network.register_function_for_all_cliques(
-            Scale(ProductFunction(cost, squared_norm_vel), scalar))
-
+ protected:
+  std::shared_ptr<CliquesFunctionNetwork> function_network_;
+  double dt_;
+  double config_space_dim_;
 };
 
-}
+}  // namespace bewego

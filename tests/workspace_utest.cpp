@@ -12,29 +12,41 @@ using std::endl;
 const double error = 1e-05;
 const double nb_test_points = 10;
 
-TEST(RectangleDistance, Main) {
-  Eigen::Vector2d center(0, 0);
-  Eigen::Vector2d dimension(.1, .1);  // half dim
-  double d = std::sqrt(2. * .1 * .1);
+class SphereDistanceTest : public DifferentialMapTest {
+ public:
+  virtual void SetUp() {
+    std::srand(1);
+    function_tests_.clear();
+    Add2DPoints();
+    Add3DPoints();
+  }
 
-  std::vector<std::pair<Eigen::Vector2d, double>> points_dist;
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, 0.), .1));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.0, .2), .1));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(0., .05), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.01), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(0.01, .05), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, .2), d));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(-.2, -.2), d));
-
-  for (uint32_t i = 0; i < 20; i++) {
-    for (const auto& query : points_dist) {
-      double theta = 2 * M_PI * util::Rand();
-      auto r = std::make_shared<RectangleDistance>(center, dimension, theta);
-      auto p = Eigen::Rotation2Dd(theta) * query.first;
-      EXPECT_NEAR(r->Evaluate(p), query.second, 1e-12);
+  void Add2DPoints() {
+    uint32_t dim = 2;
+    Eigen::Vector2d center(.5, .5);
+    double radius(.1);
+    auto sphere = std::make_shared<SphereDistance>(center, radius);
+    for (uint32_t i = 0; i < 5; ++i) {
+      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
     }
   }
+
+  void Add3DPoints() {
+    uint32_t dim = 3;
+    Eigen::Vector3d center(.5, .5, .5);
+    double radius(.1);
+    auto sphere = std::make_shared<SphereDistance>(center, radius);
+    for (uint32_t i = 0; i < 5; ++i) {
+      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
+    }
+  }
+};
+
+TEST_F(SphereDistanceTest, Evaluation) {
+  set_verbose(false);
+  set_precisions(error, 1e-3);
+  // set_precisions(error, std::numeric_limits<double>::max());
+  RunTests();
 }
 
 class RectangleDistanceTest : public DifferentialMapTest {
@@ -87,42 +99,29 @@ TEST_F(RectangleDistanceTest, Evaluation) {
   RunTests();
 }
 
-class SphereDistanceTest : public DifferentialMapTest {
- public:
-  virtual void SetUp() {
-    std::srand(1);
-    function_tests_.clear();
-    Add2DPoints();
-    Add3DPoints();
-  }
+TEST(RectangleDistance, Main) {
+  Eigen::Vector2d center(0, 0);
+  Eigen::Vector2d dimension(.1, .1);  // half dim
+  double d = std::sqrt(2. * .1 * .1);
 
-  void Add2DPoints() {
-    uint32_t dim = 2;
-    Eigen::Vector2d center(.5, .5);
-    double radius(.1);
-    auto sphere = std::make_shared<SphereDistance>(center, radius);
-    for (uint32_t i = 0; i < 5; ++i) {
-      Eigen::VectorXd p = util::Random(dim);
-      function_tests_.push_back(std::make_pair(sphere, p));
+  std::vector<std::pair<Eigen::Vector2d, double>> points_dist;
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, 0.), .1));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(.0, .2), .1));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.), -.05));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(0., .05), -.05));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.01), -.05));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(0.01, .05), -.05));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, .2), d));
+  points_dist.push_back(std::make_pair(Eigen::Vector2d(-.2, -.2), d));
+
+  for (uint32_t i = 0; i < 20; i++) {
+    for (const auto& query : points_dist) {
+      double theta = 2 * M_PI * util::Rand();
+      auto r = std::make_shared<RectangleDistance>(center, dimension, theta);
+      auto p = Eigen::Rotation2Dd(theta) * query.first;
+      EXPECT_NEAR(r->Evaluate(p), query.second, 1e-12);
     }
   }
-
-  void Add3DPoints() {
-    uint32_t dim = 3;
-    Eigen::Vector3d center(.5, .5, .5);
-    double radius(.1);
-    auto sphere = std::make_shared<SphereDistance>(center, radius);
-    for (uint32_t i = 0; i < 5; ++i) {
-      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
-    }
-  }
-};
-
-TEST_F(SphereDistanceTest, Evaluation) {
-  set_verbose(false);
-  set_precisions(error, 1e-3);
-  // set_precisions(error, std::numeric_limits<double>::max());
-  RunTests();
 }
 
 int main(int argc, char** argv) {

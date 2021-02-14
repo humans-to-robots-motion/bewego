@@ -114,8 +114,8 @@ class AffineMap : public DifferentiableMap {
     return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
   }
 
-   const Eigen::MatrixXd& a() const { return a_; }
-   const Eigen::VectorXd& b() const { return b_; }
+  const Eigen::MatrixXd& a() const { return a_; }
+  const Eigen::VectorXd& b() const { return b_; }
 
  protected:
   Eigen::MatrixXd a_;
@@ -264,6 +264,46 @@ class SumMap : public DifferentiableMap {
 
  protected:
   std::shared_ptr<const VectorOfMaps> maps_;
+};
+
+/**
+ * \brief Represents the sum of a set of maps f_i.
+ *
+ *   f(x) = g(x) h(x)
+ */
+class ProductMap : public DifferentiableMap {
+ public:
+  ProductMap(DifferentiableMapPtr f1, DifferentiableMapPtr f2)
+      : g_(f1), h_(f2) {
+    assert(f1->input_dimension() == f2->input_dimension());
+    assert(f2->output_dimension() == 1);
+    assert(f1->output_dimension() == 1);
+  }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    Eigen::VectorXd v1 = (*g_)(x);
+    Eigen::VectorXd v2 = (*h_)(x);
+    return v1 * v2;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    double v1 = (*g_)(x)[0];
+    double v2 = (*h_)(x)[0];
+    return v1 * h_->Jacobian(x) + v2 * g_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    // TODO AND TEST.
+    Eigen::MatrixXd H(1, 1);
+    return H;
+  }
+
+  virtual uint32_t input_dimension() const { return g_->input_dimension(); }
+  virtual uint32_t output_dimension() const { return g_->output_dimension(); }
+
+ protected:
+  DifferentiableMapPtr g_;
+  DifferentiableMapPtr h_;
 };
 
 }  // namespace bewego

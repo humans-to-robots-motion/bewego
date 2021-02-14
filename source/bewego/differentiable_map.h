@@ -124,7 +124,7 @@ class DifferentiableMap {
     computing the true 1st order derivative of the composition.
 */
 class Compose : public DifferentiableMap {
-public:
+ public:
   Compose(std::shared_ptr<const DifferentiableMap> f,
           std::shared_ptr<const DifferentiableMap> g) {
     // Make sure the composition makes sense
@@ -162,21 +162,20 @@ public:
 
             * J_g' H_f J_g + H_g J_f,
 
-        so far only works if f and g are functions, not maps.
         https://en.wikipedia.org/wiki/Chain_rule (Higher derivatives)
 
         WARNING: If n > 1, where g : R^m -> R^n, we approximate the hessian
-                 to the first term. This equivalent to considering H_g = 0
+                 to the first term. This is equivalent to considering H_g = 0
                  It can be seen as operating a pullback of the curvature
                  tensor of f by g.
 
           https://en.wikipedia.org/wiki/Pullback_(differential_geometry)
     */
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& q) {
+    assert(f_->output_dimension() == 1);
     auto x = (*g_)(q);
     auto J_g = g_->Jacobian(q);
     Eigen::MatrixXd H = J_g.transpose() * f_->Hessian(x) * J_g;
-
     if (g_->output_dimension() == 1) {
       H += f_->Jacobian(x) * Eigen::VectorXd::Ones(input_dimension()) *
            g_->Hessian(q);

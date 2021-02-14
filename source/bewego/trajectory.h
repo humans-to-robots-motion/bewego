@@ -188,7 +188,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   }
 
   // Register function f
-  void RegisterFunctionForAllAliques(DifferentiableMapPtr f) {
+  void RegisterFunctionForAllCliques(DifferentiableMapPtr f) {
     assert(f->input_dimension() == clique_dim_);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       RegisterFunctionForClique(t, f);
@@ -289,9 +289,8 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
   }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd value(1);
-    value[0] = std::min(1e100, (*function_network_)(FullVector(x))[0]);
-    return value;
+    return Eigen::VectorXd::Constant(
+        1, std::min(1e100, (*function_network_)(FullVector(x))[0]));
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
