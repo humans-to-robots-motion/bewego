@@ -1,9 +1,9 @@
 // Copyright (c) 2019, University of Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 
-#include <gtest/gtest.h>
-#include <bewego/workspace.h>
 #include <bewego/util.h>
+#include <bewego/workspace.h>
+#include <gtest/gtest.h>
 
 using namespace bewego;
 using std::cout;
@@ -30,8 +30,7 @@ TEST(RectangleDistance, Main) {
   for (uint32_t i = 0; i < 20; i++) {
     for (const auto& query : points_dist) {
       double theta = 2 * M_PI * util::Rand();
-      auto r =
-          std::make_shared<RectangleDistance>(center, dimension, theta);
+      auto r = std::make_shared<RectangleDistance>(center, dimension, theta);
       auto p = Eigen::Rotation2Dd(theta) * query.first;
       EXPECT_NEAR(r->Evaluate(p), query.second, 1e-12);
     }
@@ -82,6 +81,46 @@ class RectangleDistanceTest : public DifferentialMapTest {
 };
 
 TEST_F(RectangleDistanceTest, Evaluation) {
+  set_verbose(false);
+  set_precisions(error, 1e-3);
+  // set_precisions(error, std::numeric_limits<double>::max());
+  RunTests();
+}
+
+class SphereDistanceTest : public DifferentialMapTest {
+ public:
+  virtual void SetUp() {
+    std::srand(1);
+    function_tests_.clear();
+    Add2DPoints();
+    Add3DPoints();
+  }
+
+  void Add2DPoints() {
+    uint32_t dim = 2;
+    Eigen::Vector2d center(.5, .5);
+    double radius(.1);
+    auto sphere = std::make_shared<SphereDistance>(center, radius);
+    for (uint32_t i = 0; i < 5; ++i) {
+      Eigen::VectorXd p = util::Random(dim);
+      auto test = std::make_pair(sphere, p);
+      function_tests_.push_back(test);
+    }
+  }
+
+  void Add3DPoints() {
+    uint32_t dim = 3;
+    Eigen::Vector3d center(.5, .5, .5);
+    double radius(.1);
+    auto sphere = std::make_shared<SphereDistance>(center, radius);
+    for (uint32_t i = 0; i < 5; ++i) {
+      auto test = std::make_pair(sphere, util::Random(dim));
+      function_tests_.push_back(test);
+    }
+  }
+};
+
+TEST_F(SphereDistanceTest, Evaluation) {
   set_verbose(false);
   set_precisions(error, 1e-3);
   // set_precisions(error, std::numeric_limits<double>::max());

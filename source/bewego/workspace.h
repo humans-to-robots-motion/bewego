@@ -66,26 +66,22 @@ class SphereDistance : public DifferentiableMap {
   virtual ~SphereDistance() {}
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
-    dist[0] = Evaluate(x);
-    return dist;
+    return Eigen::VectorXd::Constant(1, Evaluate(x));
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
     Eigen::MatrixXd J(1, input_dimension());
     Eigen::VectorXd g(input_dimension());
     Eigen::MatrixXd H(input_dimension(), input_dimension());
-    dist[0] = Evaluate(x, &g);
+    Evaluate(x, &g);
     J.row(0) = g;
     return J;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
     Eigen::VectorXd g(input_dimension());
     Eigen::MatrixXd H(input_dimension(), input_dimension());
-    dist[0] = Evaluate(x, &g, &H);
+    Evaluate(x, &g, &H);
     return H;
   }
 
@@ -148,26 +144,22 @@ class RectangleDistance : public DifferentiableMap {
   virtual ~RectangleDistance();
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
-    dist[0] = Evaluate(x);
-    return dist;
+    return Eigen::VectorXd::Constant(1, Evaluate(x));
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
     Eigen::MatrixXd J(1, input_dimension());
     Eigen::VectorXd g(input_dimension());
     Eigen::MatrixXd H(input_dimension(), input_dimension());
-    dist[0] = Evaluate(x, &g, &H);
+    Evaluate(x, &g, &H);
     J.row(0) = g;
     return J;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd dist(1);
     Eigen::VectorXd g(input_dimension());
     Eigen::MatrixXd H(input_dimension(), input_dimension());
-    dist[0] = Evaluate(x, &g, &H);
+    Evaluate(x, &g, &H);
     return H;
   }
 
