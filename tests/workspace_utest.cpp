@@ -103,8 +103,7 @@ class SphereDistanceTest : public DifferentialMapTest {
     auto sphere = std::make_shared<SphereDistance>(center, radius);
     for (uint32_t i = 0; i < 5; ++i) {
       Eigen::VectorXd p = util::Random(dim);
-      auto test = std::make_pair(sphere, p);
-      function_tests_.push_back(test);
+      function_tests_.push_back(std::make_pair(sphere, p));
     }
   }
 
@@ -114,8 +113,7 @@ class SphereDistanceTest : public DifferentialMapTest {
     double radius(.1);
     auto sphere = std::make_shared<SphereDistance>(center, radius);
     for (uint32_t i = 0; i < 5; ++i) {
-      auto test = std::make_pair(sphere, util::Random(dim));
-      function_tests_.push_back(test);
+      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
     }
   }
 };
