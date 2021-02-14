@@ -124,6 +124,7 @@ class DifferentiableMap {
     computing the true 1st order derivative of the composition.
 */
 class Compose : public DifferentiableMap {
+public:
   Compose(std::shared_ptr<const DifferentiableMap> f,
           std::shared_ptr<const DifferentiableMap> g) {
     // Make sure the composition makes sense

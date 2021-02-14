@@ -125,6 +125,7 @@ class AffineMap : public DifferentiableMap {
 /** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
 class SquaredNorm : public DifferentiableMap {
  public:
+  SquaredNorm(uint32_t dim) : x0_(Eigen::VectorXd::Zero(dim)) {}
   SquaredNorm(const Eigen::VectorXd& x0) : x0_(x0) {}
 
   uint32_t output_dimension() const { return 1; }

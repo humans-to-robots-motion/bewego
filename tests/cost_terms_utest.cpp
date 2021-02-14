@@ -81,33 +81,35 @@ TEST(cost_terms, squared_norm_velocity) {
   x_3.tail(7) = x_2;  // x_{t+1}
   double sq_norm_1 = (*f)(x_3)[0] * 2;
   double sq_norm_2 = ((x_2 - x_1) / .1).squaredNorm();
-  ASSERT_LT( std::fabs(sq_norm_1 - sq_norm_2), 1e-3 );
+  EXPECT_NEAR(sq_norm_1, sq_norm_2, 1e-3);
 }
 
-TEST(cost_terms, squared_norm_acceleration) {
+TEST(cost_terms, compose) {
   std::srand(SEED);
 
-  f = std::make_shared<SquaredNormAcceleration>(1, .01);
-  // f->set_debug(true);
-  ASSERT_TRUE(f->CheckJacobian());
-  ASSERT_TRUE(f->CheckHessian());
+  uint32_t dim = 1;
+  double dt = .01;
 
+  DifferentiableMapPtr f1 = std::make_shared<SquaredNormVelocity>(dim, dt);
+  ASSERT_TRUE(f1->CheckJacobian());
+  ASSERT_TRUE(f1->CheckHessian());
 
-  f = std::make_shared<SquaredNormAcceleration>(7, .1);
-   // f->set_debug(true);
-  ASSERT_TRUE(f->CheckJacobian(1e-6));
-  ASSERT_TRUE(f->CheckHessian(1e-6));
+  DifferentiableMapPtr f2 = std::make_shared<Compose>(
+      std::make_shared<SquaredNorm>(dim),
+      std::make_shared<FiniteDifferencesVelocity>(dim, dt));
 
-  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_3 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_4 = Eigen::VectorXd::Random(3 * 7);
-  x_4.head(7) = x_1;        // x_{t-1}
-  x_4.segment(7, 7) = x_2;  // x_{t}
-  x_4.tail(7) = x_3;        // x_{t+1}
-  double sq_norm_1 = (*f)(x_4)[0] * 2;
-  double sq_norm_2 = ((x_1 + x_3 - 2 * x_2) / (.1 * .1)).squaredNorm();
-  ASSERT_LT( (sq_norm_1 - sq_norm_2), 1e-3 );
+  ASSERT_TRUE(f2->CheckJacobian(1e-6));
+  ASSERT_TRUE(f2->CheckHessian());
+
+  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(dim);
+  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(dim);
+  Eigen::VectorXd x_3 = Eigen::VectorXd::Random(2 * dim);
+  x_3.head(dim) = x_1;  // x_{t}
+  x_3.tail(dim) = x_2;  // x_{t+1}
+
+  double sq_norm_1 = (*f1)(x_3)[0];
+  double sq_norm_2 = (*f2)(x_3)[0];
+  EXPECT_NEAR(sq_norm_1, sq_norm_2, 1e-12);
 }
 
 int main(int argc, char* argv[]) {
