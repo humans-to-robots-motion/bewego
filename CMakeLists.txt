@@ -118,6 +118,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/kinematics.cpp
     ${bewego_SOURCE_DIR}/trajectory.cpp
     ${bewego_SOURCE_DIR}/cost_terms.cpp
+    ${bewego_SOURCE_DIR}/objective.cpp
     ${bewego_SOURCE_DIR}/workspace.cpp
     ${bewego_SOURCE_DIR}/util.cpp
 )

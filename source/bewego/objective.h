@@ -32,35 +32,32 @@
 
 namespace bewego {
 
-class MotionOptimizationFactory {
-  MotionOptimizationFactory(uint32_t T, uint32_t t) {}
+class MotionObjective {
+ public:
+  MotionObjective(
+    uint32_t T,
+    double dt,
+    uint32_t config_space_dim) : 
+      T_(T),
+      dt_(dt),
+      config_space_dim_(config_space_dim)
+    {
+    assert(T_ > 2);
+    assert(dt_ > 0);
+    assert(config_space_dim_ > 0);
+    function_network_ = std::make_shared<CliquesFunctionNetwork>(
+        (T_ + 2) * config_space_dim_, config_space_dim_);
+  }
 
   /** Apply the following euqation to all cliques:
 
               | d^n/dt^n x_t |^2
 
-      where n is either 
+      where n (deriv_order) is either
         1: velocity
         2: accleration
    */
-  void AddSmoothnessTerms(uint32_t deriv_order = 2, double scalar) {
-    if (deriv_order == 1) {
-      auto derivative = std::make_shared<Compose>(
-          std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
-          function_network_->LeftOfCliqueMap());
-      function_network_->RegisterFunctionForAllCliques(
-          std::make_shared<Scale>(derivative, scalar));
-    } else if (deriv_order == 2) {
-      auto derivative =
-          std::make_shared<SquaredNormAcceleration>(config_space_dim_, dt_);
-      function_network_.RegisterFunctionForAllCliques(
-          std::make_shared<Scale>(derivative, scalar));
-      else {
-        std::cerr << "deriv_order (" << deriv_order << ") not suported"
-                  << std::endl;
-      }
-    }
-  }
+  void AddSmoothnessTerms(uint32_t deriv_order, double scalar);
 
   /** Apply the following euqation to all cliques:
 
@@ -69,20 +66,23 @@ class MotionOptimizationFactory {
           The resulting Riemanian metric is isometric. TODO see paper.
           Introduced in CHOMP, Ratliff et al. 2009. */
   void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
-                                         double scalar) {
-    auto cost = std::make_shared<Compose>(
-        potential, function_network_->CenterOfCliqueMap());
-    auto squared_norm_vel = std::make_shared<Compose>(
-        std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
-        function_network_->RightOfCliqueMap());
-    function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
-        std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
+                                         double scalar);
+
+  std::shared_ptr<const CliquesFunctionNetwork> function_network() const {
+    return function_network_;
+  }
+
+  std::shared_ptr<const TrajectoryObjectiveFunction> objective(
+      const Eigen::VectorXd& q_init) const {
+    return std::make_shared<TrajectoryObjectiveFunction>(q_init,
+                                                         function_network_);
   }
 
  protected:
-  std::shared_ptr<CliquesFunctionNetwork> function_network_;
+  double T_;
   double dt_;
   double config_space_dim_;
+  std::shared_ptr<CliquesFunctionNetwork> function_network_;
 };
 
 }  // namespace bewego

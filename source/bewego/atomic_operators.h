@@ -260,6 +260,31 @@ class RangeSubspaceMap : public DifferentiableMap {
   std::vector<uint32_t> indices_;
 };
 
+class Scale : public DifferentiableMap {
+ public:
+  Scale(DifferentiableMapPtr f, double alpha) : f_(f), alpha_(alpha) {}
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return f_->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return alpha_ * f_->Forward(x);
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return alpha_ * f_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    return alpha_ * f_->Hessian(x);
+  }
+
+ protected:
+  DifferentiableMapPtr f_;
+  double alpha_;
+};
+
 /**
  * \brief Represents the sum of a set of maps f_i.
  *

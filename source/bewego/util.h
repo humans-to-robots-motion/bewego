@@ -24,10 +24,11 @@
  */
 
 // author: Jim Mainprice, mainprice@gmail.com
+#pragma once
 
+#include <Eigen/Core>
 #include <stdexcept>
 #include <vector>
-#include <Eigen/Core>
 
 namespace bewego {
 namespace util {

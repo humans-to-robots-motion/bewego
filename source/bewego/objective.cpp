@@ -23,3 +23,37 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
+#include <bewego/cost_terms.h>
+#include <bewego/objective.h>
+
+namespace bewego {
+
+void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
+  if (deriv_order == 1) {
+    auto derivative = std::make_shared<Compose>(
+        std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
+        function_network_->LeftOfCliqueMap());
+    function_network_->RegisterFunctionForAllCliques(
+        std::make_shared<Scale>(derivative, scalar));
+  } else if (deriv_order == 2) {
+    auto derivative =
+        std::make_shared<SquaredNormAcceleration>(config_space_dim_, dt_);
+    function_network_->RegisterFunctionForAllCliques(
+        std::make_shared<Scale>(derivative, scalar));
+  } else {
+    std::cerr << "deriv_order (" << deriv_order << ") not suported"
+              << std::endl;
+  }
+}
+
+void MotionObjective::AddIsometricPotentialToAllCliques(
+    DifferentiableMapPtr potential, double scalar) {
+  auto cost = std::make_shared<Compose>(potential,
+                                        function_network_->CenterOfCliqueMap());
+  auto squared_norm_vel = std::make_shared<Compose>(
+      std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
+      function_network_->RightOfCliqueMap());
+  function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
+      std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
+}
+}  // namespace bewego

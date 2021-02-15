@@ -1,6 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/atomic_operators.h>
+#include <bewego/util.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -91,6 +92,22 @@ TEST(atomic_operators, range_subspace_map) {
   indices = {5};  // output_dimension = 1
   for (uint32_t i = 0; i < NB_TESTS; i++) {
     f = std::make_shared<RangeSubspaceMap>(n, indices);
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
+  }
+}
+
+TEST(atomic_operators, scale) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  uint32_t n = 10;
+
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(n, n);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(n);
+    double c = util::Rand();
+    auto g = std::make_shared<QuadricMap>(a, b, c);
+    f = std::make_shared<Scale>(g, util::Rand() );
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }

@@ -258,7 +258,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         The idea is that the finite differences are approximated using
         cliques so for the first clique, these values are quite off.
         Since the first configuration is part of the problem statement
-        we can take it out of the optimization and through away the gradient
+        we can take it out of the optimization and throw away the gradient
         computed for that configuration.
 
         TODO Test...
