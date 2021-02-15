@@ -115,4 +115,31 @@ class SquaredNormAcceleration : public SquaredNormDerivative {
   }
 };
 
+class ObstaclePotential : public DifferentiableMap {
+ public:
+  ObstaclePotential() {}
+  ObstaclePotential(std::shared_ptr<const DifferentiableMap> sdf, double alpha,
+                    double rho_scaling);
+  virtual ~ObstaclePotential() {}
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+  // Returns the dimension of the domain (input) space.
+  virtual uint32_t input_dimension() const { return ambient_space_dim_; }
+  virtual uint32_t output_dimension() const { return 1; }
+
+  // Returns a pointer to the sdf
+  std::shared_ptr<const DifferentiableMap> signed_distance_field() const {
+    return signed_distance_field_;
+  }
+
+ private:
+  uint32_t ambient_space_dim_;
+  std::shared_ptr<const DifferentiableMap> signed_distance_field_;
+  double alpha_;
+  double rho_scaling_;
+};
+
 }  // namespace bewego

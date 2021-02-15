@@ -56,4 +56,22 @@ void MotionObjective::AddIsometricPotentialToAllCliques(
   function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
       std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
 }
+
+void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {
+  workspace_objects_.push_back(std::make_shared<Circle>(center, radius));
+  workspace_ = std::make_shared<Workspace>(workspace_objects_);
+}
+
+void MotionObjective::AddBox(const Eigen::VectorXd& center,
+                             const Eigen::VectorXd& dimension) {
+  workspace_objects_.push_back(
+      std::make_shared<Rectangle>(center, dimension, 0));
+  workspace_ = std::make_shared<Workspace>(workspace_objects_);
+}
+
+void MotionObjective::ClearWorkspace() {
+  workspace_objects_.clear();
+  workspace_ = std::make_shared<Workspace>(workspace_objects_);
+}
+
 }  // namespace bewego

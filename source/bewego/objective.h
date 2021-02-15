@@ -27,6 +27,7 @@
 
 #include <bewego/differentiable_map.h>
 #include <bewego/trajectory.h>
+#include <bewego/workspace.h>
 
 #include <iostream>
 
@@ -34,19 +35,15 @@ namespace bewego {
 
 class MotionObjective {
  public:
-  MotionObjective(
-    uint32_t T,
-    double dt,
-    uint32_t config_space_dim) : 
-      T_(T),
-      dt_(dt),
-      config_space_dim_(config_space_dim)
-    {
+  MotionObjective(uint32_t T, double dt, uint32_t config_space_dim)
+      : T_(T), dt_(dt), config_space_dim_(config_space_dim) {
     assert(T_ > 2);
     assert(dt_ > 0);
     assert(config_space_dim_ > 0);
     function_network_ = std::make_shared<CliquesFunctionNetwork>(
         (T_ + 2) * config_space_dim_, config_space_dim_);
+    workspace_objects_.clear();
+    workspace_ = std::make_shared<Workspace>(workspace_objects_);
   }
 
   /** Apply the following euqation to all cliques:
@@ -63,10 +60,19 @@ class MotionObjective {
 
               c(x_t) | d/dt x_t |
 
-          The resulting Riemanian metric is isometric. TODO see paper.
-          Introduced in CHOMP, Ratliff et al. 2009. */
+        The resulting Riemanian metric is isometric. TODO see paper.
+        Introduced in CHOMP, Ratliff et al. 2009. */
   void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
                                          double scalar);
+
+  /** Add Sphere to Workspace (2D for now) */
+  void AddSphere(const Eigen::VectorXd& x0, double radius);
+
+  /** Add Box to Workspace (2D for now) */
+  void AddBox(const Eigen::VectorXd& center, const Eigen::VectorXd& dimension);
+
+  /** Removes the objects from the workspace */
+  void ClearWorkspace();
 
   std::shared_ptr<const CliquesFunctionNetwork> function_network() const {
     return function_network_;
@@ -83,6 +89,8 @@ class MotionObjective {
   double dt_;
   double config_space_dim_;
   std::shared_ptr<CliquesFunctionNetwork> function_network_;
+  std::shared_ptr<Workspace> workspace_;
+  std::vector<std::shared_ptr<const WorkspaceObject>> workspace_objects_;
 };
 
 }  // namespace bewego

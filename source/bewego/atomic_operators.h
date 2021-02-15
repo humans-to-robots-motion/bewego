@@ -385,4 +385,66 @@ class ProductMap : public DifferentiableMap {
   DifferentiableMapPtr h_;
 };
 
+// Represent a function as f(x) = argmin_i g_i(x).
+// All functions g_i must be of the same input dimensionality,
+// as specified during construction.
+// WARNING: This operator may lead to discontunious derivatives
+class Min : public DifferentiableMap {
+ public:
+  // All terms must be of dimension term_dimension.
+  Min(uint32_t term_dimension) : term_dimension_(term_dimension) {}
+  Min(const VectorOfMaps& v) { AddTerms(v); }
+  virtual ~Min() {}
+
+  void AddTerms(const VectorOfMaps& v) {
+    assert(v.empty() != true);
+    term_dimension_ = functions_.front()->input_dimension();
+    for (auto& f : v) {
+      assert(f->input_dimension() == term_dimension_);
+      assert(f->output_dimension() == 1);
+    }
+    functions_ = v;
+  }
+
+  uint32_t GetMinFunctionId(const Eigen::VectorXd& x) const {
+    double min = std::numeric_limits<double>::max();
+    uint32_t min_id = 0;
+    for (uint32_t i = 0; i < functions_.size(); i++) {
+      double value = (*functions_[i])(x)[0];
+      if (min > value) {
+        min = value;
+        min_id = i;
+      }
+    }
+    return min_id;
+  }
+
+  // Evaluates f(x) = argmin_x (x).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    double min = std::numeric_limits<double>::max();
+    for (auto& f : functions_) {
+      double value = (*f)(x)[0];
+      if (min > value) {
+        min = value;
+      }
+    }
+    return Eigen::VectorXd::Constant(1, min);
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return functions_[GetMinFunctionId(x)]->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return functions_[GetMinFunctionId(x)]->Hessian(x);
+  }
+
+  virtual uint32_t input_dimension() const { return term_dimension_; }
+  virtual uint32_t output_dimension() const { return 1; }
+
+ protected:
+  VectorOfMaps functions_;
+  uint32_t term_dimension_;
+};
+
 }  // namespace bewego

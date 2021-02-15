@@ -25,6 +25,7 @@
 
 #pragma once
 #include <bewego/differentiable_map.h>
+#include <bewego/atomic_operators.h>
 
 #include <Eigen/Geometry>
 
@@ -45,6 +46,14 @@ class Workspace {
       signed_distance_functions.push_back(obj->ConstraintFunction());
     }
     return signed_distance_functions;
+  }
+
+  // Extract the signed distance field as the minimum of all
+  // the SDF of the objects present in the workspace
+  // This field has first order discontiuities but the values
+  // should be continuous.
+  DifferentiableMapPtr SignedDistanceField() const {
+    return std::make_shared<Min>(ExtractSurfaceFunctions());
   }
 
  protected:

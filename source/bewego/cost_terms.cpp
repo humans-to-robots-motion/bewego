@@ -24,3 +24,33 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/cost_terms.h>
+
+using namespace bewego;
+
+ObstaclePotential::ObstaclePotential(
+    std::shared_ptr<const DifferentiableMap> sdf, double alpha,
+    double rho_scaling) {
+  signed_distance_field_ = sdf;
+  ambient_space_dim_ = sdf->input_dimension();
+  alpha_ = alpha;
+  rho_scaling_ = rho_scaling;
+}
+
+Eigen::VectorXd ObstaclePotential::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == ambient_space_dim_);
+  double sd = signed_distance_field_->Forward(x)[0];
+  double v = rho_scaling_ * exp(-alpha_ * sd);
+  return Eigen::VectorXd::Constant(1, v);
+}
+
+Eigen::MatrixXd ObstaclePotential::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == ambient_space_dim_);
+  double rho = Forward(x)[0];
+  return -alpha_ * rho * signed_distance_field_->Jacobian(x);
+}
+
+Eigen::MatrixXd ObstaclePotential::Hessian(const Eigen::VectorXd& x) const {
+  assert(x.size() == ambient_space_dim_);
+  // TODO...
+  return Eigen::MatrixXd::Zero(ambient_space_dim_, ambient_space_dim_);
+}

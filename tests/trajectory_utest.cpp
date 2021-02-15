@@ -1,6 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/cost_terms.h>
+#include <bewego/objective.h>
 #include <bewego/trajectory.h>
 #include <gtest/gtest.h>
 
@@ -93,6 +94,19 @@ TEST(cliques_function_network, jacobian) {
   ASSERT_TRUE(cost->CheckHessian(precision));
 
   network->RegisterFunctionForAllCliques(cost);
+  ASSERT_TRUE(network->CheckJacobian(precision));
+  ASSERT_TRUE(network->CheckHessian(precision));
+}
+
+TEST(cliques_function_network, motion_objective) {
+  std::srand(SEED);
+  double precision = 1e-6;
+  uint32_t n = 2;
+  double dt = .01;
+  auto objective = std::make_shared<MotionObjective>(T, dt, n);
+  objective->AddSmoothnessTerms(1, .1);
+  objective->AddSmoothnessTerms(2, .1);
+  auto network = objective->function_network();
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
 }
