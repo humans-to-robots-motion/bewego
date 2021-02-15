@@ -120,7 +120,7 @@ class DifferentiableMap {
   bool CheckHessian(double precision = 1e-12) const;
 
   /** Print check Jacobian and Hessian info */
-  void set_debug(bool v) { debug_ = v; }
+  void set_debug(bool v = true) { debug_ = v; }
 
  protected:
   bool debug_;
