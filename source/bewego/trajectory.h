@@ -68,9 +68,11 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         nb_clique_elements_(3),
         clique_element_dim_(clique_element_dim),
         clique_dim_(nb_clique_elements_ * clique_element_dim_),
-        nb_cliques_(uint32_t(input_size_ / clique_element_dim - 2)) {
-    // TODO implement this as a Sum of maps
+        nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2) {
     functions_.resize(nb_cliques_);
+    for (uint32_t t = 0; t < nb_cliques_; t++) {
+      functions_[t] = std::make_shared<SumMap>();
+    }
   }
 
   virtual uint32_t input_dimension() const { return input_size_; }
@@ -121,7 +123,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   **/
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     Eigen::MatrixXd H(
-        Eigen::MatrixXd::Zero(output_dimension(), input_dimension()));
+        Eigen::MatrixXd::Zero(input_dimension(), input_dimension()));
     auto cliques = AllCliques(x);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       const Eigen::VectorXd& x_t = cliques[t];
@@ -167,14 +169,19 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     return H.block(c_id, c_id, clique_dim_, clique_dim_);
   }
 
+  Eigen::VectorXd Clique(uint32_t t, const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return x.segment(t * clique_element_dim_, clique_dim_);
+  }
+
   // returns a list of all cliques
   std::vector<Eigen::VectorXd> AllCliques(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    assert(input_dimension() == (nb_cliques_ + 2) * clique_element_dim_);
     std::vector<Eigen::VectorXd> cliques(nb_cliques_);
-    for (uint32_t c_id = 0; c_id < clique_element_dim_ * nb_cliques_;
-         c_id += clique_element_dim_) {
-      cliques[c_id] = x.segment(c_id, clique_dim_);
+    for (uint32_t t = 0; t < nb_cliques_; t++) {
+      cliques[t] = Clique(t, x);
     }
-    assert(cliques.size() == nb_cliques_);
     return cliques;
   }
 
@@ -183,8 +190,8 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     assert(f->input_dimension() == clique_dim_);
     std::vector<DifferentiableMapPtr> functions = clique_functions(t);
     functions.push_back(f);
-    functions_[t] =
-        std::make_shared<SumMap>(std::make_shared<VectorOfMaps>(functions));
+    auto functions_copy = std::make_shared<VectorOfMaps>(functions);
+    functions_[t] = std::make_shared<SumMap>(functions_copy);
   }
 
   // Register function f
@@ -233,7 +240,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   }
 
   // x_{t-1} ; x_{t}
-  DifferentiableMapPtr LeftOfCliqueMap() {
+  DifferentiableMapPtr LeftOfCliqueMap() const {
     uint32_t dim = clique_element_dim_;
     return std::make_shared<RangeSubspaceMap>(
         dim * nb_clique_elements_,
@@ -241,6 +248,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   }
 
   const VectorOfMaps& clique_functions(uint32_t t) const {
+    assert(t < nb_cliques_);
     return std::static_pointer_cast<const SumMap>(functions_[t])->terms();
   }
 

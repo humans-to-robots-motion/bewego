@@ -292,6 +292,7 @@ class Scale : public DifferentiableMap {
  */
 class SumMap : public DifferentiableMap {
  public:
+  SumMap() { maps_ = std::make_shared<VectorOfMaps>(); }
   SumMap(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
     assert(maps_->size() > 0);
     for (uint32_t i = 0; i < maps_->size(); i++) {
