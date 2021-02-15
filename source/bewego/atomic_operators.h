@@ -183,14 +183,13 @@ class SquaredNorm : public DifferentiableMap {
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     Eigen::VectorXd delta_x = x - x0_;
-    Eigen::VectorXd v(1);
-    v(0) = 0.5 * delta_x.transpose() * delta_x;
-    return v;
+    double d = 0.5 * delta_x.transpose() * delta_x;
+    return Eigen::VectorXd::Constant(1, d);
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    Eigen::MatrixXd J(output_dimension(), input_dimension());
+    Eigen::MatrixXd J(1, input_dimension());
     J.row(0) = x - x0_;
     return J;
   }

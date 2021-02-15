@@ -39,8 +39,8 @@ ObstaclePotential::ObstaclePotential(
 Eigen::VectorXd ObstaclePotential::Forward(const Eigen::VectorXd& x) const {
   assert(x.size() == ambient_space_dim_);
   double sd = signed_distance_field_->Forward(x)[0];
-  double v = rho_scaling_ * exp(-alpha_ * sd);
-  return Eigen::VectorXd::Constant(1, v);
+  double rho = rho_scaling_ * exp(-alpha_ * sd);
+  return Eigen::VectorXd::Constant(1, rho);
 }
 
 Eigen::MatrixXd ObstaclePotential::Jacobian(const Eigen::VectorXd& x) const {
