@@ -51,6 +51,8 @@ Eigen::MatrixXd ObstaclePotential::Jacobian(const Eigen::VectorXd& x) const {
 
 Eigen::MatrixXd ObstaclePotential::Hessian(const Eigen::VectorXd& x) const {
   assert(x.size() == ambient_space_dim_);
-  // TODO...
-  return Eigen::MatrixXd::Zero(ambient_space_dim_, ambient_space_dim_);
+  double rho = Forward(x)[0];
+  auto J_sdf = signed_distance_field_->Jacobian(x);
+  auto H_sdf = signed_distance_field_->Hessian(x);
+  return rho * (alpha_ * alpha_ * J_sdf.transpose() * J_sdf - alpha_ * H_sdf);
 }

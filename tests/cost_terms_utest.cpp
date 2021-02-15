@@ -1,6 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/cost_terms.h>
+#include <bewego/util.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -114,19 +115,17 @@ TEST(cost_terms, compose) {
 
 TEST(cost_terms, obstacle_potential) {
   std::srand(SEED);
-
   uint32_t dim = 1;
   double dt = .01;
-
+  double alpha = 10 * util::Rand();
+  double scale = 10 * util::Rand();
   auto dist = std::make_shared<SquaredNorm>(3);
-  auto phi = std::make_shared<ObstaclePotential>(dist, 1., 1.);
-  phi->set_debug();
-  ASSERT_TRUE(phi->CheckJacobian(1e-6));
-
-  // TODO
-  // ASSERT_TRUE(phi->CheckHessian());
+  auto phi = std::make_shared<ObstaclePotential>(dist, alpha, scale);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(phi->CheckJacobian(1e-7));
+    ASSERT_TRUE(phi->CheckHessian(1e-7));
+  }
 }
-
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
