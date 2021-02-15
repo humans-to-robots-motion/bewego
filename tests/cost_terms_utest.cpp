@@ -112,6 +112,22 @@ TEST(cost_terms, compose) {
   EXPECT_NEAR(sq_norm_1, sq_norm_2, 1e-12);
 }
 
+TEST(cost_terms, obstacle_potential) {
+  std::srand(SEED);
+
+  uint32_t dim = 1;
+  double dt = .01;
+
+  auto dist = std::make_shared<SquaredNorm>(3);
+  auto phi = std::make_shared<ObstaclePotential>(dist, 1., 1.);
+  phi->set_debug();
+  ASSERT_TRUE(phi->CheckJacobian(1e-6));
+
+  // TODO
+  // ASSERT_TRUE(phi->CheckHessian());
+}
+
+
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
