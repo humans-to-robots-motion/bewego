@@ -147,10 +147,10 @@ TEST(cost_terms, bound_barrier) {
   Eigen::Vector3d v_lower(-1, -1, -1);
   Eigen::Vector3d v_upper(1, 1, 1);
 
-  auto phi1 = std::make_shared<BoundBarrier>(v_lower, v_upper, );
+  auto phi = std::make_shared<BoundBarrier>(v_lower, v_upper );
   for (uint32_t i = 0; i < NB_TESTS; i++) {
-    ASSERT_TRUE(phi1->CheckJacobian(1e-7));
-    ASSERT_TRUE(phi1->CheckHessian(1e-7));
+    ASSERT_TRUE(phi->CheckJacobian(1e-3));
+    ASSERT_TRUE(phi->CheckHessian(1e-4));
   }
 }
 

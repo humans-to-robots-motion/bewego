@@ -284,6 +284,33 @@ class Scale : public DifferentiableMap {
   double alpha_;
 };
 
+class Offset : public DifferentiableMap {
+ public:
+  Offset(DifferentiableMapPtr f, const Eigen::VectorXd& offset)
+      : f_(f), offset_(offset) {
+    assert(offset_.size() == f_->output_dimension());
+  }
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return f_->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return f_->Forward(x) + offset_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return f_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return f_->Hessian(x);
+  }
+
+ protected:
+  DifferentiableMapPtr f_;
+  Eigen::VectorXd offset_;
+};
+
 /**
  * \brief Represents the sum of a set of maps f_i.
  *
@@ -397,7 +424,7 @@ class Min : public DifferentiableMap {
 
   void AddTerms(const VectorOfMaps& v) {
     assert(v.empty() != true);
-    term_dimension_ = functions_.front()->input_dimension();
+    term_dimension_ = v.front()->input_dimension();
     for (auto& f : v) {
       assert(f->input_dimension() == term_dimension_);
       assert(f->output_dimension() == 1);
@@ -440,6 +467,8 @@ class Min : public DifferentiableMap {
 
   virtual uint32_t input_dimension() const { return term_dimension_; }
   virtual uint32_t output_dimension() const { return 1; }
+
+  const VectorOfMaps& maps() const { return functions_; }
 
  protected:
   VectorOfMaps functions_;

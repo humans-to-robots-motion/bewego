@@ -29,6 +29,8 @@
 #include <bewego/differentiable_map.h>
 #include <bewego/util.h>
 
+using bewego::util::range;
+
 namespace bewego {
 
 /*!\brief Base class to implement a function network
@@ -203,7 +205,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   }
 
   // Register function f
-  void RegisterFunctionLastClique(DifferentiableMapPtr f) {
+  void RegisterFunctionForLastClique(DifferentiableMapPtr f) {
     assert(f->input_dimension() == clique_dim_);
     uint32_t T = nb_cliques_ - 1;
     RegisterFunctionForClique(T, f);
@@ -211,40 +213,37 @@ class CliquesFunctionNetwork : public FunctionNetwork {
 
   // x_{t}
   DifferentiableMapPtr CenterOfCliqueMap() const {
-    uint32_t dim = clique_element_dim_;
-    return std::make_shared<RangeSubspaceMap>(
-        dim * nb_clique_elements_,
-        util::range(dim, (nb_clique_elements_ - 1) * dim));
+    const uint32_t& n = clique_element_dim_;
+    const uint32_t& d = nb_clique_elements_;
+    return std::make_shared<RangeSubspaceMap>(n * d, range(n, (d - 1) * n));
   }
 
   // x_{t+1}
   DifferentiableMapPtr RightMostOfCliqueMap() const {
-    uint32_t dim = clique_element_dim_;
-    return std::make_shared<RangeSubspaceMap>(
-        dim * nb_clique_elements_, util::range((nb_clique_elements_ - 1) * dim,
-                                               nb_clique_elements_ * dim));
+    const uint32_t& n = clique_element_dim_;
+    const uint32_t& d = nb_clique_elements_;
+    return std::make_shared<RangeSubspaceMap>(n * d, range((d - 1) * n, d * n));
   }
 
   // x_{t} ; x_{t+1}
   DifferentiableMapPtr RightOfCliqueMap() const {
-    uint32_t dim = clique_element_dim_;
-    return std::make_shared<RangeSubspaceMap>(
-        dim * clique_element_dim_, util::range(dim, nb_clique_elements_ * dim));
+    const uint32_t& n = clique_element_dim_;
+    const uint32_t& d = nb_clique_elements_;
+    return std::make_shared<RangeSubspaceMap>(n * d, range(n, d * n));
   }
 
   // x_{t-1}
   DifferentiableMapPtr LeftMostOfCliqueMap() const {
-    uint32_t dim = clique_element_dim_;
-    return std::make_shared<RangeSubspaceMap>(dim * nb_clique_elements_,
-                                              util::range(dim));
+    const uint32_t& n = clique_element_dim_;
+    const uint32_t& d = nb_clique_elements_;
+    return std::make_shared<RangeSubspaceMap>(n * d, range(n));
   }
 
   // x_{t-1} ; x_{t}
   DifferentiableMapPtr LeftOfCliqueMap() const {
-    uint32_t dim = clique_element_dim_;
-    return std::make_shared<RangeSubspaceMap>(
-        dim * nb_clique_elements_,
-        util::range((nb_clique_elements_ - 1) * dim));
+    const uint32_t& n = clique_element_dim_;
+    const uint32_t& d = nb_clique_elements_;
+    return std::make_shared<RangeSubspaceMap>(n * d, range((d - 1) * n));
   }
 
   const VectorOfMaps& clique_functions(uint32_t t) const {
@@ -324,6 +323,8 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
         indices
                 0 and T + 1
             are supposed to be inactive.
+
+        TODO: TEST...
 */
 class Trajectory {
  public:

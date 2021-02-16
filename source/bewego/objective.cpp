@@ -48,13 +48,42 @@ void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
 
 void MotionObjective::AddIsometricPotentialToAllCliques(
     DifferentiableMapPtr potential, double scalar) {
-  auto cost = std::make_shared<Compose>(potential,
-                                        function_network_->CenterOfCliqueMap());
+  auto cost = std::make_shared<Compose>(potential, 
+      function_network_->CenterOfCliqueMap());
+
   auto squared_norm_vel = std::make_shared<Compose>(
       std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
       function_network_->RightOfCliqueMap());
+
   function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
       std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
+}
+
+void MotionObjective::AddObstacleTerms(double scalar, double alpha,
+                                       double margin) {
+  auto sdf = workspace_->SignedDistanceField();
+  auto obstacle_potential = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
+  AddIsometricPotentialToAllCliques(obstacle_potential, scalar);
+}
+
+void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
+                                                double scalar) {
+  auto terminal_potential =
+      std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_goal),
+                                function_network_->CenterOfCliqueMap());
+
+  function_network_->RegisterFunctionForLastClique(
+      std::make_shared<Scale>(terminal_potential, scalar));
+}
+
+void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
+                                       uint32_t t, double scalar) {
+  auto potential =
+      std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_waypoint),
+                                function_network_->LeftMostOfCliqueMap());
+
+  function_network_->RegisterFunctionForClique(
+      t, std::make_shared<Scale>(potential, scalar));
 }
 
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {

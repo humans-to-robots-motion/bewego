@@ -1,7 +1,6 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/cost_terms.h>
-#include <bewego/objective.h>
 #include <bewego/trajectory.h>
 #include <gtest/gtest.h>
 
@@ -59,6 +58,38 @@ TEST(cliques_function_network, cliques) {
   }
 }
 
+TEST(cliques_function_network, cliques_accessors) {
+  std::srand(SEED);
+  double precision = 1e-6;
+  uint32_t n = 0;
+  std::shared_ptr<CliquesFunctionNetwork> network;
+  std::vector<Eigen::VectorXd> cliques;
+  Eigen::VectorXd x;
+
+  // -------- C-Space dimension 7
+
+  n = 7;
+  network = MakeFunctionNetwork(n);
+
+  x = Eigen::VectorXd::Random(network->input_dimension());
+  EXPECT_EQ(network->nb_cliques(), 10);
+  cliques = network->AllCliques(x);
+  EXPECT_EQ(cliques.size(), network->nb_cliques());
+  EXPECT_EQ(cliques.size(), T);
+
+  auto f1 = network->CenterOfCliqueMap();     // x_{t}
+  auto f2 = network->RightMostOfCliqueMap();  // x_{t+1}
+  auto f3 = network->RightOfCliqueMap();      // x_{t} ; x_{t+1}
+  auto f4 = network->LeftMostOfCliqueMap();   // x_{t-1}
+  auto f5 = network->LeftOfCliqueMap();       // x_{t-1} ; x_{t}
+
+  EXPECT_LT((cliques[0].segment(n, n) - (*f1)(cliques[0])).norm(), 1e-6);
+  EXPECT_LT((cliques[0].segment(2 * n, n) - (*f2)(cliques[0])).norm(), 1e-6);
+  EXPECT_LT((cliques[0].segment(0, n) - (*f4)(cliques[0])).norm(), 1e-6);
+  EXPECT_LT((cliques[0].segment(n, 2 * n) - (*f3)(cliques[0])).norm(), 1e-6);
+  EXPECT_LT((cliques[0].segment(0, 2 * n) - (*f5)(cliques[0])).norm(), 1e-6);
+}
+
 TEST(cliques_function_network, jacobian) {
   std::srand(SEED);
 
@@ -94,19 +125,6 @@ TEST(cliques_function_network, jacobian) {
   ASSERT_TRUE(cost->CheckHessian(precision));
 
   network->RegisterFunctionForAllCliques(cost);
-  ASSERT_TRUE(network->CheckJacobian(precision));
-  ASSERT_TRUE(network->CheckHessian(precision));
-}
-
-TEST(cliques_function_network, motion_objective) {
-  std::srand(SEED);
-  double precision = 1e-6;
-  uint32_t n = 2;
-  double dt = .01;
-  auto objective = std::make_shared<MotionObjective>(T, dt, n);
-  objective->AddSmoothnessTerms(1, .1);
-  objective->AddSmoothnessTerms(2, .1);
-  auto network = objective->function_network();
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
 }

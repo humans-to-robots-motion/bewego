@@ -44,6 +44,7 @@ class MotionObjective {
         (T_ + 2) * config_space_dim_, config_space_dim_);
     workspace_objects_.clear();
     workspace_ = std::make_shared<Workspace>(workspace_objects_);
+    ClearWorkspace();
   }
 
   /** Apply the following euqation to all cliques:
@@ -66,7 +67,20 @@ class MotionObjective {
                                          double scalar);
 
   /** Takes a matrix and adds an isometric potential term to all clique */
-  void AddObstacleTerms();
+  void AddObstacleTerms(double scalar, double alpha, double margin);
+
+  /** Add terminal potential
+
+            phi(x) =  | q_T - q_goal |^2
+   **/
+  void AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal, double scalar);
+
+  /** Add waypoint
+
+            phi(x) =  | q_t - q_waypoint |^2
+   **/
+  void AddWayPointTerms(const Eigen::VectorXd& q_waypoint, uint32_t t,
+                        double scalar);
 
   /** Add Sphere to Workspace (2D for now) */
   void AddSphere(const Eigen::VectorXd& x0, double radius);

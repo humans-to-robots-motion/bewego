@@ -107,7 +107,23 @@ TEST(atomic_operators, scale) {
     Eigen::VectorXd b = Eigen::VectorXd::Random(n);
     double c = util::Rand();
     auto g = std::make_shared<QuadricMap>(a, b, c);
-    f = std::make_shared<Scale>(g, util::Rand() );
+    f = std::make_shared<Scale>(g, util::Rand());
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
+  }
+}
+
+TEST(atomic_operators, offset) {
+  std::srand(SEED);
+  const double precision = 1e-10;
+  uint32_t n = 10;
+
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(n, n);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(n);
+    Eigen::VectorXd c = Eigen::VectorXd::Random(1);
+    auto g = std::make_shared<QuadricMap>(a, b, c);
+    f = std::make_shared<Offset>(g, Eigen::VectorXd::Random(1));
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
@@ -144,6 +160,24 @@ TEST(atomic_operators, product_map) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+}
+
+TEST(atomic_operators, min) {
+  std::srand(SEED);
+  const double precision = 1e-6;
+  VectorOfMaps maps;
+  for (uint32_t i = 0; i < 2; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(5);
+    Eigen::VectorXd c = Eigen::VectorXd::Random(1);
+    maps.push_back(std::make_shared<QuadricMap>(a, b, c));
+  }
+  auto min_map = std::make_shared<Min>(maps);
+  EXPECT_EQ(min_map->maps().size(), maps.size() );
+  // for (uint32_t i = 0; i < NB_TESTS; i++) {
+  //   ASSERT_TRUE(f->CheckJacobian(precision));
+  //   ASSERT_TRUE(f->CheckHessian(precision));
+  // }
 }
 
 int main(int argc, char* argv[]) {
