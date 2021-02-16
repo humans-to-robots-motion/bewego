@@ -140,6 +140,20 @@ TEST(cost_terms, obstacle_potential) {
   }
 }
 
+TEST(cost_terms, bound_barrier) {
+  std::srand(SEED);
+  double alpha = 10 * util::Rand();
+
+  Eigen::Vector3d v_lower(-1, -1, -1);
+  Eigen::Vector3d v_upper(1, 1, 1);
+
+  auto phi1 = std::make_shared<BoundBarrier>(v_lower, v_upper, );
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(phi1->CheckJacobian(1e-7));
+    ASSERT_TRUE(phi1->CheckHessian(1e-7));
+  }
+}
+
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

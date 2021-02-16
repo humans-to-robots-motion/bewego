@@ -65,6 +65,9 @@ class MotionObjective {
   void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
                                          double scalar);
 
+  /** Takes a matrix and adds an isometric potential term to all clique */
+  void AddObstacleTerms();
+
   /** Add Sphere to Workspace (2D for now) */
   void AddSphere(const Eigen::VectorXd& x0, double radius);
 

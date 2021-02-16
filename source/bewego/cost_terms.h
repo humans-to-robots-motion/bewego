@@ -142,4 +142,79 @@ class ObstaclePotential : public DifferentiableMap {
   double rho_scaling_;
 };
 
+/** Barrier between values v_lower and v_upper */
+class BoundBarrier : public DifferentiableMap {
+ public:
+  BoundBarrier(const Eigen::VectorXd& v_lower, const Eigen::VectorXd& v_upper)
+      : v_lower_(v_lower), v_upper_(v_upper) {
+    assert(v_lower.size() == v_upper.size());
+    alpha_ = 1.;
+    margin_ = 1e-10;
+
+    // Warning: this does not work with the line search
+    inf_ = std::numeric_limits<double>::max();
+  }
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return v_lower_.size(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    assert(x.size() == input_dimension());
+    double value = 0.;
+    for (uint32_t i = 0; i < x.size(); i++) {
+      double x_i = x[i];
+      double l_dist = x_i - v_lower_[i];
+      double u_dist = v_upper_[i] - x_i;
+      if (l_dist < margin_ || u_dist < margin_) {
+        return Eigen::VectorXd::Constant(1, inf_);
+      }
+
+      // Log barrier f(x_i) = -log(d_u) + -log(d_l)
+      value += -alpha_ * log(l_dist);
+      value += -alpha_ * log(u_dist);
+    }
+    return Eigen::VectorXd::Constant(1, std::min(inf_, value));
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    assert(x.size() == input_dimension());
+    Eigen::MatrixXd J = Eigen::MatrixXd::Zero(1, input_dimension());
+    for (uint32_t i = 0; i < x.size(); i++) {
+      double x_i = x[i];
+      double l_dist = x_i - v_lower_[i];
+      double u_dist = v_upper_[i] - x_i;
+      if (l_dist < margin_ || u_dist < margin_) {
+        return Eigen::MatrixXd::Zero(1, input_dimension());
+      }
+      J(0, i) += -alpha_ / l_dist;
+      J(0, i) += alpha_ / u_dist;
+    }
+    return J;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(x.size() == input_dimension());
+    Eigen::MatrixXd H =
+        Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    for (uint32_t i = 0; i < x.size(); i++) {
+      double x_i = x[i];
+      double l_dist = x_i - v_lower_[i];
+      double u_dist = v_upper_[i] - x_i;
+      if (l_dist < margin_ || u_dist < margin_) {
+        return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+      }
+      H(i, i) += alpha_ / (l_dist * l_dist);
+      H(i, i) += alpha_ / (u_dist * u_dist);
+    }
+    return H;
+  }
+
+ protected:
+  Eigen::VectorXd v_lower_;
+  Eigen::VectorXd v_upper_;
+  double margin_;
+  double alpha_;
+  double inf_;
+};
+
 }  // namespace bewego
