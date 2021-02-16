@@ -83,11 +83,19 @@ TEST(cliques_function_network, cliques_accessors) {
   auto f4 = network->LeftMostOfCliqueMap();   // x_{t-1}
   auto f5 = network->LeftOfCliqueMap();       // x_{t-1} ; x_{t}
 
-  EXPECT_LT((cliques[0].segment(n, n) - (*f1)(cliques[0])).norm(), 1e-6);
-  EXPECT_LT((cliques[0].segment(2 * n, n) - (*f2)(cliques[0])).norm(), 1e-6);
-  EXPECT_LT((cliques[0].segment(0, n) - (*f4)(cliques[0])).norm(), 1e-6);
-  EXPECT_LT((cliques[0].segment(n, 2 * n) - (*f3)(cliques[0])).norm(), 1e-6);
-  EXPECT_LT((cliques[0].segment(0, 2 * n) - (*f5)(cliques[0])).norm(), 1e-6);
+  for (uint32_t t = 0; t < 4; t++) {
+    Eigen::VectorXd x1 = cliques[t].segment(n, n);      // x_{t}
+    Eigen::VectorXd x2 = cliques[t].segment(2 * n, n);  // x_{t+1}
+    Eigen::VectorXd x3 = cliques[t].segment(0, n);      // x_{t} ; x_{t+1}
+    Eigen::VectorXd x4 = cliques[t].segment(n, 2 * n);  // x_{t-1}
+    Eigen::VectorXd x5 = cliques[t].segment(0, 2 * n);  // x_{t-1} ; x_{t}
+
+    EXPECT_LT((x1 - (*f1)(cliques[t])).norm(), 1e-6);
+    EXPECT_LT((x2 - (*f2)(cliques[t])).norm(), 1e-6);
+    EXPECT_LT((x3 - (*f4)(cliques[t])).norm(), 1e-6);
+    EXPECT_LT((x4 - (*f3)(cliques[t])).norm(), 1e-6);
+    EXPECT_LT((x5 - (*f5)(cliques[t])).norm(), 1e-6);
+  }
 }
 
 TEST(cliques_function_network, jacobian) {
