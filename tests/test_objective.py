@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, University of Stuttgart
+# Copyright (c) 2021, University of Stuttgart
 # All rights reserved.
 #
 # Permission to use, copy, modify, and distribute this software for any purpose
@@ -15,7 +15,7 @@
 # OTHER TORTIOUS ACTION,   ARISING OUT OF OR IN    CONNECTION WITH THE USE   OR
 # PERFORMANCE OF THIS SOFTWARE.
 #
-#                                            Jim Mainprice on Sat Jun 6 2020
+#                                             Jim Mainprice on Tue Feb 16 2021
 
 import os
 import sys
