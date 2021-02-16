@@ -25,12 +25,13 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/atomic_operators.h>
 #include <bewego/differentiable_map.h>
-#include <bewego/planar_grid.h>
-#include <bewego/value_iteration.h>
 #include <bewego/geometry.h>
 #include <bewego/kinematics.h>
+#include <bewego/objective.h>
+#include <bewego/planar_grid.h>
+#include <bewego/trajectory.h>
 #include <bewego/util.h>
-
+#include <bewego/value_iteration.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -152,6 +153,30 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_theta", &bewego::ValueIteration::set_theta)
       .def("run", &bewego::ValueIteration::Run)
       .def("solve", &bewego::ValueIteration::solve);
+
+  py::class_<bewego::TrajectoryObjectiveFunction,
+             std::shared_ptr<bewego::TrajectoryObjectiveFunction>>(
+      m, "TrajectoryObjectiveFunction")
+      .def("input_dimension",
+           &bewego::TrajectoryObjectiveFunction::input_dimension)
+      .def("output_dimension",
+           &bewego::TrajectoryObjectiveFunction::output_dimension)
+      .def("gradient", &bewego::TrajectoryObjectiveFunction::Gradient)
+      .def("forward", &bewego::TrajectoryObjectiveFunction::Forward)
+      .def("jacobian", &bewego::TrajectoryObjectiveFunction::Jacobian)
+      .def("hessian", &bewego::TrajectoryObjectiveFunction::Hessian);
+
+  py::class_<bewego::MotionObjective>(m, "MotionObjective")
+      .def(py::init<uint32_t, double, uint32_t>())
+      .def("add_smoothness_terms", &bewego::MotionObjective::AddSmoothnessTerms)
+      .def("add_obstacle_terms", &bewego::MotionObjective::AddObstacleTerms)
+      .def("add_terminal_potential_terms",
+           &bewego::MotionObjective::AddTerminalPotentialTerms)
+      .def("add_waypoint_terms", &bewego::MotionObjective::AddWayPointTerms)
+      .def("add_sphere", &bewego::MotionObjective::AddSphere)
+      .def("add_box", &bewego::MotionObjective::AddBox)
+      .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
+      .def("objective", &bewego::MotionObjective::objective);
 
   m.attr("__version__") = "0.0.1";
 }
