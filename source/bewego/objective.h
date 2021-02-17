@@ -54,7 +54,7 @@ class MotionObjective {
       where n (deriv_order) is either
         1: velocity
         2: accleration
-   */
+  **/
   void AddSmoothnessTerms(uint32_t deriv_order, double scalar);
 
   /** Apply the following euqation to all cliques:
@@ -62,7 +62,8 @@ class MotionObjective {
               c(x_t) | d/dt x_t |
 
         The resulting Riemanian metric is isometric. TODO see paper.
-        Introduced in CHOMP, Ratliff et al. 2009. */
+        Introduced in CHOMP, Ratliff et al. 2009. 
+  **/
   void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
                                          double scalar);
 
@@ -72,18 +73,18 @@ class MotionObjective {
   /** Add terminal potential
 
             phi(x) =  | q_T - q_goal |^2
-   **/
+  **/
   void AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal, double scalar);
 
   /** Add waypoint
 
             phi(x) =  | q_t - q_waypoint |^2
-   **/
+  **/
   void AddWayPointTerms(const Eigen::VectorXd& q_waypoint, uint32_t t,
                         double scalar);
 
   /** Add Sphere to Workspace (2D for now) */
-  void AddSphere(const Eigen::VectorXd& x0, double radius);
+  void AddSphere(const Eigen::VectorXd& center, double radius);
 
   /** Add Box to Workspace (2D for now) */
   void AddBox(const Eigen::VectorXd& center, const Eigen::VectorXd& dimension);
