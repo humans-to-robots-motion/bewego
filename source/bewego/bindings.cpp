@@ -154,6 +154,20 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("run", &bewego::ValueIteration::Run)
       .def("solve", &bewego::ValueIteration::solve);
 
+  py::class_<bewego::ObstaclePotential,
+            std::shared_ptr<bewego::ObstaclePotential>>(
+      m, "ObstaclePotential")
+      .def("input_dimension",
+           &bewego::ObstaclePotential::input_dimension)
+      .def("output_dimension",
+           &bewego::ObstaclePotential::output_dimension)
+      .def("gradient", &bewego::ObstaclePotential::Gradient)
+      .def("forward", &bewego::ObstaclePotential::Forward)
+      .def("jacobian", &bewego::ObstaclePotential::Jacobian)
+      .def("hessian", &bewego::ObstaclePotential::Hessian)
+      .def("__call__", &bewego::ObstaclePotential::Forward, 
+        py::arg("e")=nullptr, py::is_operator());
+
   py::class_<bewego::TrajectoryObjectiveFunction,
              std::shared_ptr<bewego::TrajectoryObjectiveFunction>>(
       m, "TrajectoryObjectiveFunction")
@@ -176,7 +190,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("add_sphere", &bewego::MotionObjective::AddSphere)
       .def("add_box", &bewego::MotionObjective::AddBox)
       .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
-      .def("objective", &bewego::MotionObjective::objective);
+      .def("objective", &bewego::MotionObjective::objective)
+      .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
 
   m.attr("__version__") = "0.0.1";
 }

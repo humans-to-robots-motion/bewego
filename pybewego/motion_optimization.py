@@ -20,13 +20,28 @@
 from pybewego import MotionObjective
 from pyrieef.motion.trajectory import Trajectory
 from pyrieef.geometry.workspace import *
+import ipopt_interface
+from scipy import optimize
+
+
+class CostFunctionParameters:
+
+    def __init__(self):
+        self.s_velocity_norm = 1
+        self.s_acceleration_norm = 1
+        self.s_obstacles = 1
+        self.s_obstacle_alpha = 10
+        self.s_obstacle_margin = 0
+        self.s_terminal_potential = 1e+5
+        self.s_margin = 1
+
 
 class MotionOptimization:
 
     """ Motion optimization class
         that can draw the inner optimization quantities """
 
-    def __init__(self, workspace, trajectory, dt, q_goal ):
+    def __init__(self, workspace, trajectory, dt, q_goal):
 
         self.dt = dt
         self.n = trajectory.n()
@@ -34,9 +49,10 @@ class MotionOptimization:
         self.q_init = trajectory.initial_configuration()
         self.q_goal = q_goal
         self.workspace = workspace
+        self.trajectory = trajectory
         self.problem = None
 
-    def initialize_objective(self):
+    def initialize_objective(self, parameters):
 
         self.problem = MotionObjective(self.T, self.dt, self.n)
 
@@ -44,33 +60,32 @@ class MotionOptimization:
         for o in self.workspace.obstacles:
             if isinstance(o, Circle):
                 self.problem.add_sphere(o.origin, o.radius)
-            elif isinstance(o, Box):
+            elif hasattr(o, '_is_box'):
                 self.problem.add_box(o.origin, o.dim)
             else:
-                print("Shape not supported by bewego")
+                print("Shape {} not supported by bewego".format(type(o)))
 
         # Terms
-        self.problem.add_smoothness_terms(1, scalar_v)
-        self.problem.add_smoothness_terms(2, scalar_a)
-        self.problem.add_obstacle_terms(scalar_o, alpha, margin)
-        self.problem.add_terminal_potential_terms(self.q_goal, scalar_g)
+        self.problem.add_smoothness_terms(1, parameters.s_velocity_norm)
+        self.problem.add_smoothness_terms(2, parameters.s_acceleration_norm)
+        self.problem.add_obstacle_terms(
+            parameters.s_obstacles,
+            parameters.s_obstacle_alpha,
+            parameters.s_margin)
+        self.problem.add_terminal_potential_terms(
+            self.q_goal, parameters.s_terminal_potential)
 
         # Create objective functions
-        self.objective = self.problem.objective(q_goal)
-        self.obstacle_potential = self.problem.obstacle_potential() # TODO
-
+        self.objective = self.problem.objective(self.q_goal)
+        self.obstacle_potential = self.problem.obstacle_potential()  # TODO
 
     def optimize(self,
-                 q_init,
+                 parameters,
                  nb_steps=100,
-                 trajectory=None,
-                 optimizer="natural_gradient"):
+                 optimizer="newton"):
 
-        if trajectory is None:
-            trajectory = linear_interpolation_trajectory(
-                q_init, self.q_goal, self.T)
-
-        xi = trajectory.active_segment()
+        self.initialize_objective(parameters)
+        xi = self.trajectory.active_segment()
 
         if optimizer is "newton":
             res = optimize.minimize(
@@ -81,11 +96,29 @@ class MotionOptimization:
                 hess=self.objective.hessian,
                 options={'maxiter': nb_steps, 'disp': self.verbose}
             )
-            trajectory.active_segment()[:] = res.x
+            self.trajectory.active_segment()[:] = res.x
             gradient = res.jac
             delta = res.jac
             dist = np.linalg.norm(
-                trajectory.final_configuration() - self.q_goal)
+                self.trajectory.final_configuration() - self.q_goal)
+            if self.verbose:
+                print(("gradient norm : ", np.linalg.norm(res.jac)))
+        else:
+            raise ValueError
+
+        if optimizer is "ipopt":
+            res = minimize_ipopt(
+                x0=np.array(xi),
+                fun=self.objective.forward,
+                jac=self.objective.gradient,
+                hess=self.objective.hessian,
+                options={'maxiter': nb_steps, 'disp': self.verbose}
+            )
+            self.trajectory.active_segment()[:] = res.x
+            gradient = res.jac
+            delta = res.jac
+            dist = np.linalg.norm(
+                self.trajectory.final_configuration() - self.q_goal)
             if self.verbose:
                 print(("gradient norm : ", np.linalg.norm(res.jac)))
         else:

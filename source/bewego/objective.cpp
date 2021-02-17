@@ -62,8 +62,8 @@ void MotionObjective::AddIsometricPotentialToAllCliques(
 void MotionObjective::AddObstacleTerms(double scalar, double alpha,
                                        double margin) {
   auto sdf = workspace_->SignedDistanceField();
-  auto obstacle_potential = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
-  AddIsometricPotentialToAllCliques(obstacle_potential, scalar);
+  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, margin);
+  AddIsometricPotentialToAllCliques(obstacle_potential_, scalar);
 }
 
 void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,

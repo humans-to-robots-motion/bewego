@@ -28,6 +28,7 @@
 #include <bewego/differentiable_map.h>
 #include <bewego/trajectory.h>
 #include <bewego/workspace.h>
+#include <bewego/cost_terms.h>
 
 #include <iostream>
 
@@ -62,7 +63,7 @@ class MotionObjective {
               c(x_t) | d/dt x_t |
 
         The resulting Riemanian metric is isometric. TODO see paper.
-        Introduced in CHOMP, Ratliff et al. 2009. 
+        Introduced in CHOMP, Ratliff et al. 2009.
   **/
   void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
                                          double scalar);
@@ -102,6 +103,10 @@ class MotionObjective {
                                                          function_network_);
   }
 
+  std::shared_ptr<const ObstaclePotential> obstacle_potential() const {
+    return obstacle_potential_;
+  }
+
  protected:
   double T_;
   double dt_;
@@ -109,6 +114,7 @@ class MotionObjective {
   std::shared_ptr<CliquesFunctionNetwork> function_network_;
   std::shared_ptr<Workspace> workspace_;
   std::vector<std::shared_ptr<const WorkspaceObject>> workspace_objects_;
+  std::shared_ptr<ObstaclePotential> obstacle_potential_;
 };
 
 }  // namespace bewego
