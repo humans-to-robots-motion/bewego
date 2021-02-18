@@ -13,7 +13,7 @@ Compile and execute tests
 
     
     mkdir -p build && cd build
-    cmake .. -DPYBIND11_PYTHON_VERSION=3.5
+    cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPYBIND11_PYTHON_VERSION=3.5
     make
     make test
     pytest ../tests
