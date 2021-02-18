@@ -128,19 +128,35 @@ class LWR : public DifferentiableMap {
  public:
   LWR(uint32_t m, uint32_t n) : m_(m), n_(n) {}
   uint32_t input_dimension() const { return n_; }
-  uint32_t ouput_dimension() const { return m_; }
+  uint32_t output_dimension() const { return m_; }
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    double v = CalculateLocallyWeightedRegression(x, X_, Y_, D_, ridge_lambda_);
-    return Eigen::VectorXd::Constant(1, v);
+    assert(input_dimension() == x.size());
+    assert(m_ == X_.size());
+    assert(m_ == Y_.size());
+    assert(m_ == D_.size());
+    assert(m_ == ridge_lambda_.size());
+    Eigen::VectorXd y(m_);
+    for (uint32_t i = 0; i < m_; i++) {
+      y[i] = CalculateLocallyWeightedRegression(x, X_[i], Y_[i], D_[i],
+                                                ridge_lambda_[i]);
+    }
+    return y;
   }
+
+  std::vector<Eigen::VectorXd> ForwardMultiQuerry(
+      const std::vector<Eigen::VectorXd>& xs) const;
+
+  std::vector<Eigen::MatrixXd> JacobianMultiQuerry(
+      const std::vector<Eigen::VectorXd>& xs) const;
+
+  std::vector<Eigen::MatrixXd> X_;
+  std::vector<Eigen::VectorXd> Y_;
+  std::vector<Eigen::MatrixXd> D_;
+  std::vector<double> ridge_lambda_;
 
  protected:
   uint32_t m_;
   uint32_t n_;
-  Eigen::MatrixXd X_;
-  Eigen::VectorXd Y_;
-  Eigen::MatrixXd D_;
-  double ridge_lambda_;
 };
 
 }  // namespace bewego

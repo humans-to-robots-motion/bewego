@@ -44,4 +44,23 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   // Return inner product between plane and querrie point
   return beta.transpose() * x_query_aug;
 }
+
+std::vector<Eigen::VectorXd> LWR::ForwardMultiQuerry(
+    const std::vector<Eigen::VectorXd>& xs) const {
+  std::vector<Eigen::VectorXd> ys(xs.size());
+  for (uint32_t i = 0; i < ys.size(); i++) {
+    ys[i] = Forward(xs[i]);
+  }
+  return ys;
+}
+
+std::vector<Eigen::MatrixXd> LWR::JacobianMultiQuerry(
+    const std::vector<Eigen::VectorXd>& xs) const {
+  std::vector<Eigen::MatrixXd> Js(xs.size());
+  for (uint32_t i = 0; i < Js.size(); i++) {
+    Js[i] = Jacobian(xs[i]);
+  }
+  return Js;
+}
+
 }  // namespace bewego

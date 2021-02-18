@@ -26,6 +26,7 @@
 #include <bewego/atomic_operators.h>
 #include <bewego/differentiable_map.h>
 #include <bewego/geometry.h>
+#include <bewego/interpolation.h>
 #include <bewego/kinematics.h>
 #include <bewego/objective.h>
 #include <bewego/planar_grid.h>
@@ -154,19 +155,33 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("run", &bewego::ValueIteration::Run)
       .def("solve", &bewego::ValueIteration::solve);
 
+  py::class_<bewego::LWR, std::shared_ptr<bewego::LWR>>(m, "LWR")
+      .def(py::init<uint32_t, uint32_t>())
+      .def("input_dimension", &bewego::LWR::input_dimension)
+      .def("output_dimension", &bewego::LWR::output_dimension)
+      .def("gradient", &bewego::LWR::Gradient)
+      .def("forward", &bewego::LWR::Forward)
+      .def("jacobian", &bewego::LWR::Jacobian)
+      .def("hessian", &bewego::LWR::Hessian)
+      .def("multi_forward", &bewego::LWR::ForwardMultiQuerry)
+      .def("multi_jacobian", &bewego::LWR::JacobianMultiQuerry)
+      .def_readwrite("X", &bewego::LWR::X_)
+      .def_readwrite("Y", &bewego::LWR::Y_)
+      .def_readwrite("D", &bewego::LWR::D_)
+      .def_readwrite("ridge_lambda", &bewego::LWR::ridge_lambda_)
+      .def("__call__", &bewego::LWR::Forward, py::arg("e") = nullptr,
+           py::is_operator());
+
   py::class_<bewego::ObstaclePotential,
-            std::shared_ptr<bewego::ObstaclePotential>>(
-      m, "ObstaclePotential")
-      .def("input_dimension",
-           &bewego::ObstaclePotential::input_dimension)
-      .def("output_dimension",
-           &bewego::ObstaclePotential::output_dimension)
+             std::shared_ptr<bewego::ObstaclePotential>>(m, "ObstaclePotential")
+      .def("input_dimension", &bewego::ObstaclePotential::input_dimension)
+      .def("output_dimension", &bewego::ObstaclePotential::output_dimension)
       .def("gradient", &bewego::ObstaclePotential::Gradient)
       .def("forward", &bewego::ObstaclePotential::Forward)
       .def("jacobian", &bewego::ObstaclePotential::Jacobian)
       .def("hessian", &bewego::ObstaclePotential::Hessian)
-      .def("__call__", &bewego::ObstaclePotential::Forward, 
-        py::arg("e")=nullptr, py::is_operator());
+      .def("__call__", &bewego::ObstaclePotential::Forward,
+           py::arg("e") = nullptr, py::is_operator());
 
   py::class_<bewego::TrajectoryObjectiveFunction,
              std::shared_ptr<bewego::TrajectoryObjectiveFunction>>(
