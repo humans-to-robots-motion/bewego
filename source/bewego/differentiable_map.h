@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
+#include <memory>
 #include <cassert>
 #include <vector>
 

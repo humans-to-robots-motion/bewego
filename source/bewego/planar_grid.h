@@ -28,6 +28,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
+#include <memory>
 
 #include "astar.h"
 
