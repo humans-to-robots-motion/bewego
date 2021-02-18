@@ -46,7 +46,7 @@ void GetData(std::shared_ptr<const AffineMap> f, Eigen::MatrixXd *X,
 }
 
 std::shared_ptr<AffineMap> SetUpLinearFunction() {
-  Eigen::Vector3d a_;
+  Eigen::MatrixXd a_(1, 3);
   Eigen::VectorXd b_(1);
   a_ << 1, 2, 3;
   b_ << 0.;
