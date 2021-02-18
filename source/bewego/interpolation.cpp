@@ -1,7 +1,7 @@
 #include <bewego/interpolation.h>
 
 #include <Eigen/Core>
-#include <Eigen/LU>  // for matrix inverse
+#include <Eigen/LU> // for matrix inverse
 
 namespace bewego {
 double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
@@ -14,8 +14,8 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   // data set anyway.
   if (Y.size() == 0) return 0.;
 
-  // The "augmented" version of X has an extra constant feature to represent the
-  // bias.
+  // The "augmented" version of X has an extra 
+  // constant feature to represent the bias.
   Eigen::MatrixXd Xaug(X.rows(), X.cols() + 1);
   Xaug << X, Eigen::VectorXd::Ones(Xaug.rows());
 
@@ -27,7 +27,7 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   for (int i = 0; i < X.rows(); i++) {
     Eigen::VectorXd diff = x_query - X.row(i).transpose();
     double w = exp(-.5 * diff.transpose() * D * diff);
-    WX.row(i) = (w * Xaug.row(i).array()).matrix();
+    WX.row(i) = w * Xaug.row(i);
   }
 
   // Fit plane to the weighted data
