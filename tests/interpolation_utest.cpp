@@ -134,7 +134,7 @@ TEST(LWRTest, Evaluation) {
   x_query << .3;
   double lambda = .1;
 
-  Eigen::MatrixXd D = Eigen::VectorXd::Ones(5).asDiagonal();
+  Eigen::MatrixXd D = Eigen::MatrixXd::Identity(1, 1);
   double value = CalculateLocallyWeightedRegression(x_query, X, Y, D, lambda);
   // cout << value << endl;
   EXPECT_NEAR(value, 0.307063690815270, 1e-7);

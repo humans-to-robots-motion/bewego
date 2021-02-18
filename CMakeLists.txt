@@ -46,10 +46,10 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 ############################
-# Dependencies             #
+# Catkin                   #
 ############################
 # Use catkin of available otherwise fall back to native cmake
-find_package(catkin QUIET)
+# find_package(catkin QUIET)
 
 if(catkin_FOUND)
   message(STATUS "Using catkin")
@@ -75,15 +75,47 @@ else(catkin_FOUND)
     message("Building without catkin")
 endif(catkin_FOUND)
 
-find_package(gtest QUIET)
-enable_testing()
-if(GTEST_LIBRARY)
-    message(${GTEST_INCLUDE_DIRS})
-    include_directories(${GTEST_INCLUDE_DIRS})
-else()
-    message("gtest library not found !!! setting it up at link target")
-    set(GTEST_LIBRARY gtest)
+############################
+## gtest                   #
+############################
+
+# find_package(gtest QUIET)
+# enable_testing()
+# if(GTEST_LIBRARY)
+#     message(${GTEST_INCLUDE_DIRS})
+#     include_directories(${GTEST_INCLUDE_DIRS})
+# else()
+#     message("gtest library not found !!! setting it up at link target")
+#     set(GTEST_LIBRARY gtest)
+# endif()
+
+# Download and unpack googletest at configure time
+configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "CMake step for googletest failed: ${result}")
 endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "Build step for googletest failed: ${result}")
+endif()
+
+# Prevent overriding the parent project's compiler/linker
+# settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Add googletest directly to our build. This defines
+# the gtest and gtest_main targets.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
+                 EXCLUDE_FROM_ALL)
+
+# Now simply link against gtest or gtest_main as needed.
+set(GTEST_LIBRARY gtest)
 
 # message("where to compile : ${CMAKE_CURRENT_BINARY_DIR}")
 # message("where to compile : ${PROJECT_SOURCE_DIR}")
@@ -94,7 +126,7 @@ endif()
 set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
 add_subdirectory(pybind11)
 pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
-target_link_libraries(_pybewego PRIVATE bewego)
+target_link_libraries(_pybewego PRIVATE bewego ${GTEST_LIBRARY})
 set_target_properties(_pybewego
   PROPERTIES PREFIX ""
   LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"

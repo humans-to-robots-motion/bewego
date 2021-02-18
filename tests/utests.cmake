@@ -1,12 +1,12 @@
-find_package(gtest QUIET)
+# find_package(gtest QUIET)
 enable_testing()
-if(GTEST_LIBRARY)
-    message(${GTEST_INCLUDE_DIRS})
-    include_directories(${GTEST_INCLUDE_DIRS})
-else()
-    message("gtest library not found !!! setting it up at link target")
-    set(GTEST_LIBRARY gtest)
-endif()
+# if(GTEST_LIBRARY)
+#     message("GTEST INCLUDE DIR: ${GTEST_INCLUDE_DIRS}")
+#     include_directories(${GTEST_INCLUDE_DIRS})
+# else()
+#     message("gtest library not found !!! setting it up at link target")
+#     set(GTEST_LIBRARY gtest)
+# endif()
 
 set(test_SOURCES 
     workspace_utest
