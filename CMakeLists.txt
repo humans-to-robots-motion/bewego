@@ -121,6 +121,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/objective.cpp
     ${bewego_SOURCE_DIR}/workspace.cpp
     ${bewego_SOURCE_DIR}/util.cpp
+    ${bewego_SOURCE_DIR}/interpolation.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}

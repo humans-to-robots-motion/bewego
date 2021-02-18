@@ -67,5 +67,9 @@ double Rand();
 /// set the seed with: std::srand((unsigned int) time(0));
 Eigen::VectorXd Random(uint32_t dim);
 
+/// Samples a random vector using eigen's interface for sampling
+/// set the seed with: std::srand((unsigned int) time(0));
+Eigen::VectorXd RandomVector(uint32_t size, double min, double max);
+
 }  // namespace util
 }  // namespace bewego

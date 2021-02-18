@@ -15,6 +15,7 @@ set(test_SOURCES
     geometry_utest
     atomic_operators_utest
     objective_utest
+    interpolation_utest
 )
 
 foreach(test_exec ${test_SOURCES})
