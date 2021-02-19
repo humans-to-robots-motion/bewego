@@ -28,7 +28,6 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Core>
-#include <memory>
 #include <cassert>
 #include <vector>
 
@@ -214,8 +213,8 @@ class Compose : public DifferentiableMap {
  */
 class DifferentialMapTest : public testing::Test {
  public:
-  DifferentialMapTest()
-      : gradient_precision_(1e-6), hessian_precision_(1e-6), verbose_(false) {}
+  DifferentialMapTest(bool with_hesssian=true)
+      : use_double_eq_(true), gradient_precision_(1e-6), hessian_precision_(1e-6), verbose_(false) {}
 
   /** \brief Returns true if implementation is the same as finite difference */
   void FiniteDifferenceTest(std::shared_ptr<const DifferentiableMap> phi,
@@ -223,6 +222,9 @@ class DifferentialMapTest : public testing::Test {
 
   /** \brief Run test procedure on all function tests in function_tests_. */
   void RunTests() const;
+
+  /** \brief Run test procedure on all function tests in function_tests_. */
+  void AddRandomTests(std::shared_ptr<const DifferentiableMap> f, uint32_t n);
 
   bool verbose() const { return verbose_; }
   void set_verbose(bool v) { verbose_ = v; }
@@ -236,6 +238,7 @@ class DifferentialMapTest : public testing::Test {
       std::pair<std::shared_ptr<const DifferentiableMap>, Eigen::VectorXd>>
       function_tests_;
 
+  bool use_double_eq_;
   double gradient_precision_;
   double hessian_precision_;
   bool verbose_;

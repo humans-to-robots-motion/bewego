@@ -110,8 +110,8 @@ void DifferentialMapTest::FiniteDifferenceTest(
   Eigen::MatrixXd J, J_diff;
   Eigen::MatrixXd H, H_diff;
 
-  J  = f->Jacobian(x);
-  H  = f->Hessian(x);
+  J = f->Jacobian(x);
+  H = f->Hessian(x);
 
   J_diff = DifferentiableMap::FiniteDifferenceJacobian(*f, x);
   H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
@@ -128,6 +128,14 @@ void DifferentialMapTest::FiniteDifferenceTest(
 
   EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
   EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+}
+
+void DifferentialMapTest::AddRandomTests(
+    std::shared_ptr<const DifferentiableMap> f, uint32_t n) {
+  for (uint32_t i = 0; i <n ; i++) {
+    Eigen::VectorXd x = Eigen::VectorXd::Random(f->input_dimension());
+    function_tests_.push_back(std::make_pair(f, x));
+  }
 }
 
 void DifferentialMapTest::RunTests() const {
