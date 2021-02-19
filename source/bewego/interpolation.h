@@ -129,6 +129,7 @@ class LWR : public DifferentiableMap {
   LWR(uint32_t m, uint32_t n) : m_(m), n_(n) {}
   uint32_t input_dimension() const { return n_; }
   uint32_t output_dimension() const { return m_; }
+  
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     assert(m_ == X_.size());

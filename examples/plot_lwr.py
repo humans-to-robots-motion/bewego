@@ -20,7 +20,7 @@
 from demos_common_imports import *
 import numpy as np
 from pyrieef.geometry.workspace import *
-# from pyrieef.geometry.interpolation import *
+from pyrieef.geometry import interpolation
 from pybewego import LWR
 from pyrieef.rendering.workspace_renderer import WorkspaceDrawer
 import matplotlib.pyplot as plt
@@ -60,16 +60,54 @@ f.Y = [Y1, Y2]
 f.D = [np.eye(2), np.eye(2)]
 f.ridge_lambda = [.1, .1]
 
-t0 = time.time()
+
 # Querries the regressed function f
 # And then draws the interolated field in red and original points in black
+positions = list()
 X_int, Y_int = workspace.box.meshgrid(30)
 U_int, V_int = np.zeros(X_int.shape), np.zeros(Y_int.shape)
 for i, j in itertools.product(range(X_int.shape[0]), range(X_int.shape[1])):
     g = f(np.array([X_int[i, j], Y_int[i, j]]))
+    positions.append(
+        np.array([X_int[i, j], Y_int[i, j]]).reshape((2)))
     U_int[i, j] = g[0]
     V_int[i, j] = g[1]
-print("time : ", time.time() - t0)
+
+
+f1 = interpolation.LWR(2, 2)
+f1.X = [X_data, X_data]
+f1.Y = [Y1, Y2]
+f1.D = [np.eye(2), np.eye(2)]
+f1.ridge_lambda = [.1, .1]
+
+
+gradients = []
+t0 = time.time()
+for p in positions:
+    gradients.append(f1(p.T))
+print("time 0 : {} (pyrieef)".format(time.time() - t0))
+
+gradients = []
+t0 = time.time()
+for p in positions:
+    gradients.append(f(p))
+print("time 1 : {}, len : {} (bewego single)".format(
+    time.time() - t0, len(gradients) ))
+
+positions2 = []
+for p in positions:
+    positions2.append(p.T)
+
+gradients2 = []
+t0 = time.time()
+gradients2 = f.multi_forward(positions2)
+print("time 2 : {}, len : {}  (bewego multi)".format(
+    time.time() - t0, len(gradients) ))
+
+# for g1, g2 in zip(gradients, gradients2):
+#     print(g1)
+#     print(g2)
+#     assert abs(g1 - g2) < 1e-6 
 
 renderer = WorkspaceDrawer(workspace)
 renderer.set_drawing_axis(i)
