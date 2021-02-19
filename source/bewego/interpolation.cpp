@@ -33,31 +33,21 @@ using std::cout;
 using std::endl;
 
 namespace bewego {
+
 double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
+                                          const Eigen::VectorXd& x_query_aug,
                                           const Eigen::MatrixXd& X,
+                                          const Eigen::MatrixXd& Xaug,
                                           const Eigen::VectorXd& Y,
-                                          const Eigen::MatrixXd& D,
+                                          const Eigen::MatrixXd& D_scale,
                                           double ridge_lambda) {
-  // Default value is 0. The calculation uses ridge regression with a finite
-  // regularizer, so the values should diminish smoothly to 0 away from the
-  // data set anyway.
-  if (Y.size() == 0) return 0.;
-
-  // The "augmented" version of X has an extra constant feature 
-  // to represent the bias.
-  Eigen::MatrixXd Xaug(X.rows(), X.cols() + 1);
-  Xaug << X, Eigen::VectorXd::Ones(Xaug.rows());
-
-  Eigen::VectorXd x_query_aug(x_query.size() + 1);
-  x_query_aug << x_query, 1;
-
-  // Compute weighted points: WX, where W is the diagonal matrix of weights.
   Eigen::MatrixXd WX(Xaug.rows(), Xaug.cols());
   Eigen::VectorXd diff(x_query.size());
-  Eigen::MatrixXd D_scale = -.5 * D;
+
+  // Compute weighted points: WX, where W is the diagonal matrix of weights.
   for (int i = 0; i < X.rows(); i++) {
     diff = X.row(i).transpose() - x_query;
-    WX.row(i) = exp( diff.transpose() * D_scale * diff) * Xaug.row(i);
+    WX.row(i) = exp(diff.transpose() * D_scale * diff) * Xaug.row(i);
   }
 
   // Fit plane to the weighted data
@@ -72,6 +62,44 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   // beta = inv(X'WX + lambda I)WX'Y
   // Return inner product between plane and querrie point
   return (Pinv.inverse() * WX.transpose() * Y).transpose() * x_query_aug;
+}
+
+double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
+                                          const Eigen::MatrixXd& X,
+                                          const Eigen::VectorXd& Y,
+                                          const Eigen::MatrixXd& D,
+                                          double ridge_lambda) {
+  // Default value is 0. The calculation uses ridge regression with a finite
+  // regularizer, so the values should diminish smoothly to 0 away from the
+  // data set anyway.
+  if (Y.size() == 0) return 0.;
+
+  // The "augmented" version of X has an extra constant feature
+  // to represent the bias.
+  Eigen::MatrixXd Xaug(X.rows(), X.cols() + 1);
+  Xaug << X, Eigen::VectorXd::Ones(Xaug.rows());
+
+  Eigen::VectorXd x_query_aug(x_query.size() + 1);
+  x_query_aug << x_query, 1;
+
+  Eigen::MatrixXd D_scale = -.5 * D;
+
+  return CalculateLocallyWeightedRegression(x_query, x_query_aug, X, Xaug, Y,
+                                            D_scale, ridge_lambda);
+}
+
+Eigen::VectorXd LWR::Forward(const Eigen::VectorXd& x) const {
+  assert(input_dimension() == x.size());
+  assert(m_ == X_.size());
+  assert(m_ == Y_.size());
+  assert(m_ == D_.size());
+  assert(m_ == ridge_lambda_.size());
+  Eigen::VectorXd y(m_);
+  for (uint32_t i = 0; i < m_; i++) {
+    y[i] = CalculateLocallyWeightedRegression(x, X_[i], Y_[i], D_[i],
+                                              ridge_lambda_[i]);
+  }
+  return y;
 }
 
 std::vector<Eigen::VectorXd> LWR::ForwardMultiQuerry(
