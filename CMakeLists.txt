@@ -2,6 +2,22 @@ cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 
+############################
+# Build Type               #
+############################
+
+if(DEFINED CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of
+build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug
+Release RelWithDebInfo MinSizeRel.")
+else()
+   set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build,
+options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release
+RelWithDebInfo MinSizeRel.")
+endif()
+
+message("Build Type: " ${CMAKE_BUILD_TYPE}) 
+
 project(bewego)
 
 ############################

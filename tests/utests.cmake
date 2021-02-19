@@ -8,19 +8,14 @@ enable_testing()
 #     set(GTEST_LIBRARY gtest)
 # endif()
 
-set(test_SOURCES 
-    workspace_utest
-    trajectory_utest
-    cost_terms_utest
-    geometry_utest
-    atomic_operators_utest
-    objective_utest
-    interpolation_utest
-)
+file(GLOB_RECURSE test_SOURCES
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp-unittests "*utest.cpp")
 
 foreach(test_exec ${test_SOURCES})
-    add_executable(${test_exec} tests/${test_exec}.cpp)
-    target_link_libraries(${test_exec} ${GTEST_LIBRARY} ${PROJECT_NAME})
+    message("add : ${test_exec}")
+    string(REGEX REPLACE "\\.[^.]*$" "" test_name ${test_exec})
+    add_executable(${test_name} tests/cpp-unittests/${test_exec})
+    target_link_libraries(${test_name} ${GTEST_LIBRARY} ${PROJECT_NAME})
     include(GoogleTest)
-    gtest_add_tests(TARGET ${test_exec})
+    gtest_add_tests(TARGET ${test_name})
 endforeach()
