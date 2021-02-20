@@ -102,12 +102,48 @@ gradients2 = []
 t0 = time.time()
 gradients2 = f.multi_forward(positions2)
 print("time 2 : {}, len : {}  (bewego multi)".format(
+    time.time() - t0, len(gradients2) ))
+
+f.initialize(
+    [X_data, X_data], 
+    [Y1, Y2], 
+    [np.eye(2), np.eye(2)],
+    [.1, .1])
+gradients3 = []
+t0 = time.time()
+gradients3 = f.multi_forward(positions2)
+print("time 3 : {}, len : {}  (bewego init)".format(
+    time.time() - t0, len(gradients3) ))
+
+for g1, g2, g3 in zip(gradients, gradients2, gradients3):
+    assert np.linalg.norm(g1 - g2) < 1e-6 
+    assert np.linalg.norm(g1 - g3) < 1e-6 
+
+f = LWR(2, 2)
+f.X = [X_data, X_data]
+f.Y = [Y1, Y2]
+f.D = [np.eye(2), np.eye(2)]
+f.ridge_lambda = [.1, .1]
+
+gradients = []
+t0 = time.time()
+gradients = f.multi_jacobian(positions2)
+print("time 4 : {}, len : {}  (bewego multi)".format(
     time.time() - t0, len(gradients) ))
 
-# for g1, g2 in zip(gradients, gradients2):
-#     print(g1)
-#     print(g2)
-#     assert abs(g1 - g2) < 1e-6 
+f.initialize(
+    [X_data, X_data], 
+    [Y1, Y2], 
+    [np.eye(2), np.eye(2)],
+    [.1, .1])
+gradients2 = []
+t0 = time.time()
+gradients2 = f.multi_jacobian(positions2)
+print("time 5 : {}, len : {}  (bewego init)".format(
+    time.time() - t0, len(gradients2) ))
+
+for g1, g2 in zip(gradients, gradients2):
+    assert np.linalg.norm(g1 - g2) < 1e-6 
 
 renderer = WorkspaceDrawer(workspace)
 renderer.set_drawing_axis(i)

@@ -82,10 +82,41 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   Eigen::VectorXd x_query_aug(x_query.size() + 1);
   x_query_aug << x_query, 1;
 
+  // Precompute the scaled metric
   Eigen::MatrixXd D_scale = -.5 * D;
 
   return CalculateLocallyWeightedRegression(x_query, x_query_aug, X, Xaug, Y,
                                             D_scale, ridge_lambda);
+}
+
+void LWR::Initialize(const std::vector<Eigen::MatrixXd>& X,
+                     const std::vector<Eigen::VectorXd>& Y,
+                     const std::vector<Eigen::MatrixXd>& D,
+                     const std::vector<double> ridge_lambda) {
+  assert(!X.empty());
+  assert(!Y.empty());
+  assert(!D.empty());
+
+  X_ = X;  // Input data
+  Y_ = Y;  // Targets
+  D_ = D;  // Metrics
+
+  Xaug_.resize(X.size());
+  D_scale_.resize(D.size());
+
+  // The "augmented" version of X has an extra constant feature
+  // to represent the bias.
+  for (uint32_t i = 0; i < Xaug_.size(); i++) {
+    Xaug_[i] = Eigen::MatrixXd(X[i].rows(), X[i].cols() + 1);
+    Xaug_[i] << X[i], Eigen::VectorXd::Ones(Xaug_[i].rows());
+  }
+
+  // Precompute the scaled metrics
+  for (uint32_t i = 0; i < D_scale_.size(); i++) {
+    D_scale_[i] = -.5 * D[i];
+  }
+
+  initialized_ = true;
 }
 
 Eigen::VectorXd LWR::Forward(const Eigen::VectorXd& x) const {
@@ -95,9 +126,19 @@ Eigen::VectorXd LWR::Forward(const Eigen::VectorXd& x) const {
   assert(m_ == D_.size());
   assert(m_ == ridge_lambda_.size());
   Eigen::VectorXd y(m_);
-  for (uint32_t i = 0; i < m_; i++) {
-    y[i] = CalculateLocallyWeightedRegression(x, X_[i], Y_[i], D_[i],
-                                              ridge_lambda_[i]);
+  if (!initialized_) {
+    for (uint32_t i = 0; i < m_; i++) {
+      y[i] = CalculateLocallyWeightedRegression(x, X_[i], Y_[i], D_[i],
+                                                ridge_lambda_[i]);
+    }
+  } else {
+    Eigen::VectorXd x_query_aug(x.size() + 1);
+    x_query_aug << x, 1;
+    for (uint32_t i = 0; i < m_; i++) {
+      y[i] = CalculateLocallyWeightedRegression(x, x_query_aug, X_[i], Xaug_[i],
+                                                Y_[i], D_scale_[i],
+                                                ridge_lambda_[i]);
+    }
   }
   return y;
 }

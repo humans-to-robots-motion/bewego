@@ -126,9 +126,14 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
 
 class LWR : public DifferentiableMap {
  public:
-  LWR(uint32_t m, uint32_t n) : m_(m), n_(n) {}
+  LWR(uint32_t m, uint32_t n) : m_(m), n_(n), initialized_(false) {}
   uint32_t input_dimension() const { return n_; }
   uint32_t output_dimension() const { return m_; }
+
+  void Initialize(const std::vector<Eigen::MatrixXd>& X,
+                  const std::vector<Eigen::VectorXd>& Y,
+                  const std::vector<Eigen::MatrixXd>& D,
+                  const std::vector<double> ridge_lambda);
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
 
@@ -146,6 +151,9 @@ class LWR : public DifferentiableMap {
  protected:
   uint32_t m_;
   uint32_t n_;
+  bool initialized_;
+  std::vector<Eigen::MatrixXd> Xaug_;
+  std::vector<Eigen::MatrixXd> D_scale_;
 };
 
 }  // namespace bewego

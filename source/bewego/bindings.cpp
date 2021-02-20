@@ -165,6 +165,7 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("hessian", &bewego::LWR::Hessian)
       .def("multi_forward", &bewego::LWR::ForwardMultiQuerry)
       .def("multi_jacobian", &bewego::LWR::JacobianMultiQuerry)
+      .def("initialize", &bewego::LWR::Initialize)
       .def_readwrite("X", &bewego::LWR::X_)
       .def_readwrite("Y", &bewego::LWR::Y_)
       .def_readwrite("D", &bewego::LWR::D_)
