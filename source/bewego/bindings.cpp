@@ -194,7 +194,10 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("gradient", &bewego::TrajectoryObjectiveFunction::Gradient)
       .def("forward", &bewego::TrajectoryObjectiveFunction::Forward)
       .def("jacobian", &bewego::TrajectoryObjectiveFunction::Jacobian)
-      .def("hessian", &bewego::TrajectoryObjectiveFunction::Hessian);
+      .def("hessian", &bewego::TrajectoryObjectiveFunction::Hessian)
+      .def("__call__", &bewego::TrajectoryObjectiveFunction::Forward,
+           py::arg("e") = nullptr, py::is_operator());
+
 
   py::class_<bewego::MotionObjective>(m, "MotionObjective")
       .def(py::init<uint32_t, double, uint32_t>())

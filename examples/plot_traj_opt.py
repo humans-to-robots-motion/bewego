@@ -66,4 +66,4 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
         objective.viewer.draw_ws_obstacles()
 
     algorithms.newton_optimize_trajectory(
-        objective, path, verbose=VERBOSE, maxiter=20)
+        objective, trajectory, verbose=VERBOSE, maxiter=100)
