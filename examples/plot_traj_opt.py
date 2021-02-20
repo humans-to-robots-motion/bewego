@@ -28,28 +28,39 @@ from pyrieef.optimization import algorithms
 from pyrieef.rendering.optimization import TrajectoryOptimizationViewer
 from pyrieef.motion.trajectory import *
 from pyrieef.utils.collision_checking import *
+import pyrieef.learning.demonstrations as demonstrations
+from pyrieef.graph.shortest_path import *
 
-DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
+DRAW_MODE = 'pyglet2d'  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
 BOXES = True
 
 nb_points = 40  # points for the grid on which to perform graph search.
+grid = np.ones((nb_points, nb_points))
+graph = CostmapToSparseGraph(grid, average_cost=False)
+graph.convert()
+
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
 for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
 
-    trajectory = linear_interpolation_trajectory(
-        q_init=np.zeros(2),
-        q_goal=np.zeros(2),
-        T=30)
+    trajectory = demonstrations.graph_search_path(
+        graph, workspace, nb_points)
 
     problem = MotionOptimization(
         workspace,
         trajectory,
         dt=0.01,
-        q_goal=np.ones(2))
+        q_goal=np.ones(2)/2)
 
-    problem.initialize_objective(CostFunctionParameters())
+    p = CostFunctionParameters()
+    p.s_velocity_norm = 5.
+    p.s_acceleration_norm = 20
+    p.s_obstacles = 1
+    p.s_obstacle_alpha = 10
+    p.s_obstacle_margin = .001
+    p.s_terminal_potential = 1e+5
+    problem.initialize_objective(p)
 
     objective = TrajectoryOptimizationViewer(
         problem,
@@ -57,13 +68,16 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
         draw_gradient=True,
         use_3d=DRAW_MODE == "pyglet3d",
         use_gl=DRAW_MODE == "pyglet2d")
-
     if DRAW_MODE is not None:
-        objective.reset_objective()
+        print("Set to false")
+        objective.viewer.background_matrix_eval = False
         objective.viewer.save_images = True
         objective.viewer.workspace_id += 1
         objective.viewer.image_id = 0
+        objective.reset_objective()
         objective.viewer.draw_ws_obstacles()
 
     algorithms.newton_optimize_trajectory(
         objective, trajectory, verbose=VERBOSE, maxiter=100)
+
+    objective.viewer.gl.close()

@@ -31,9 +31,8 @@ class CostFunctionParameters:
         self.s_acceleration_norm = 1
         self.s_obstacles = 1
         self.s_obstacle_alpha = 10
-        self.s_obstacle_margin = 0
+        self.s_obstacle_margin = 1
         self.s_terminal_potential = 1e+5
-        self.s_margin = 1
 
 
 class MotionOptimization:
@@ -71,7 +70,7 @@ class MotionOptimization:
         self.problem.add_obstacle_terms(
             parameters.s_obstacles,
             parameters.s_obstacle_alpha,
-            parameters.s_margin)
+            parameters.s_obstacle_margin)
         self.problem.add_terminal_potential_terms(
             self.q_goal, parameters.s_terminal_potential)
 
