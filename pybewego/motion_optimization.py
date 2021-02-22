@@ -31,7 +31,7 @@ class CostFunctionParameters:
         self.s_acceleration_norm = 1
         self.s_obstacles = 1
         self.s_obstacle_alpha = 10
-        self.s_obstacle_margin = 1
+        self.s_obstacle_margin = 0
         self.s_terminal_potential = 1e+5
 
 
@@ -65,17 +65,26 @@ class MotionOptimization:
                 print("Shape {} not supported by bewego".format(type(o)))
 
         # Terms
-        self.problem.add_smoothness_terms(1, parameters.s_velocity_norm)
-        self.problem.add_smoothness_terms(2, parameters.s_acceleration_norm)
-        self.problem.add_obstacle_terms(
-            parameters.s_obstacles,
-            parameters.s_obstacle_alpha,
-            parameters.s_obstacle_margin)
-        self.problem.add_terminal_potential_terms(
-            self.q_goal, parameters.s_terminal_potential)
+        if parameters.s_velocity_norm > 0:
+            self.problem.add_smoothness_terms(
+                1, parameters.s_velocity_norm)
+
+        if parameters.s_acceleration_norm > 0:
+            self.problem.add_smoothness_terms(
+                2, parameters.s_acceleration_norm)
+
+        if parameters.s_obstacles > 0:
+            self.problem.add_obstacle_terms(
+                parameters.s_obstacles,
+                parameters.s_obstacle_alpha,
+                parameters.s_obstacle_margin)
+
+        if parameters.s_terminal_potential > 0:
+            self.problem.add_terminal_potential_terms(
+                self.q_goal, parameters.s_terminal_potential)
 
         # Create objective functions
-        self.objective = self.problem.objective(self.q_goal)
+        self.objective = self.problem.objective(self.q_init)
         self.obstacle_potential = self.problem.obstacle_potential()  # TODO
 
     def optimize(self,

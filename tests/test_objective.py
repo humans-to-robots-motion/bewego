@@ -26,6 +26,7 @@ from pyrieef.geometry.differentiable_geometry import *
 from pyrieef.motion.trajectory import Trajectory
 from pyrieef.motion.trajectory import linear_interpolation_trajectory
 from pyrieef.motion.objective import smoothness_metric
+from pyrieef.motion.objective import MotionOptimization2DCostMap
 from numpy.testing import assert_allclose
 import time
 
@@ -80,4 +81,53 @@ def test_motion_optimimization_hessian():
     H2 = H2[:active_size, :active_size]
     assert_allclose(H1, H2)
 
-test_motion_optimimization_hessian()
+
+def test_motion_optimimization_compare():
+
+    np.random.seed(0)
+
+    print("Check Motion Optimization (Derivatives)")
+
+    T = 30
+    n = 2
+    dt = 0.1
+
+    q_init = np.zeros(n)
+    q_goal = np.ones(n)
+
+    problem1 = MotionObjective(T, dt, n)
+    problem1.add_smoothness_terms(2, 20)
+    objective1 = problem1.objective(q_init)
+
+    problem2 = MotionOptimization2DCostMap(T, n)
+    problem2.dt = dt
+    problem2.q_init = q_init
+    problem2.create_clique_network()
+    problem2.set_scalars(acceleration_scalar=20)
+    problem2.add_smoothness_terms(2)
+    problem2.create_objective()
+    objective2 = problem2.objective
+
+    assert objective1.input_dimension() == objective2.input_dimension()
+
+    trajectory = Trajectory(T, n)
+    trajectory.set(np.random.rand(n * (T + 2)))
+
+    cost1 = objective1.forward(trajectory.active_segment())
+    cost2 = objective2.forward(trajectory.active_segment())
+    print(("sum_acceleration 1 : ", cost1))
+    print(("sum_acceleration 1 : ", cost2))
+    assert abs(cost1 - cost2) < 1e-6
+
+    trajectory = linear_interpolation_trajectory(q_init, q_goal, T)
+
+    cost1 = objective1.forward(trajectory.active_segment())
+    cost2 = objective2.forward(trajectory.active_segment())
+    print(("sum_acceleration 2 : ", cost1))
+    print(("sum_acceleration 2 : ", cost2))
+    assert abs(cost1 - cost2) < 1e-6
+
+
+
+# test_motion_optimimization_hessian()
+test_motion_optimimization_compare()

@@ -24,6 +24,7 @@ from tqdm import tqdm
 from pybewego.motion_optimization import MotionOptimization
 from pybewego.motion_optimization import CostFunctionParameters
 
+from pyrieef.motion.objective import MotionOptimization2DCostMap
 from pyrieef.optimization import algorithms
 from pyrieef.rendering.optimization import TrajectoryOptimizationViewer
 from pyrieef.motion.trajectory import *
@@ -31,7 +32,7 @@ from pyrieef.utils.collision_checking import *
 import pyrieef.learning.demonstrations as demonstrations
 from pyrieef.graph.shortest_path import *
 
-DRAW_MODE = 'pyglet2d'  # None, pyglet2d, pyglet3d or matplotlib
+DRAW_MODE = None  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
 BOXES = True
 
@@ -46,21 +47,37 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
 
     trajectory = demonstrations.graph_search_path(
         graph, workspace, nb_points)
+    if trajectory is None:
+        continue
 
     problem = MotionOptimization(
         workspace,
         trajectory,
         dt=0.01,
-        q_goal=np.ones(2)/2)
+        q_goal=trajectory.final_configuration())
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 5.
-    p.s_acceleration_norm = 20
-    p.s_obstacles = 1
+    p.s_velocity_norm = 1
+    p.s_acceleration_norm = 5
+    p.s_obstacles = 100
     p.s_obstacle_alpha = 10
-    p.s_obstacle_margin = .001
-    p.s_terminal_potential = 1e+5
+    p.s_obstacle_scaling = 1
+    p.s_terminal_potential = 1e+6
     problem.initialize_objective(p)
+
+    # assert check_jacobian_against_finite_difference(
+    #     problem.objective, False)
+    # assert check_hessian_against_finite_difference(
+    #     problem.objective, True, tolerance=1e-2)
+
+    # problem2 = MotionOptimization2DCostMap(20, 2)
+    # problem2.dt = 0.01
+    # problem2.q_init = trajectory.initial_configuration()
+    # problem2.create_clique_network()
+    # problem2.set_scalars(acceleration_scalar=1)
+    # problem2.add_smoothness_terms(2)
+    # problem2.create_objective()
+    # objective2 = problem2.objective
 
     objective = TrajectoryOptimizationViewer(
         problem,
@@ -80,4 +97,8 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     algorithms.newton_optimize_trajectory(
         objective, trajectory, verbose=VERBOSE, maxiter=100)
 
-    objective.viewer.gl.close()
+    if DRAW_MODE is not None:
+        objective.viewer.gl.close()
+
+
+

@@ -62,7 +62,7 @@ void MotionObjective::AddIsometricPotentialToAllCliques(
 void MotionObjective::AddObstacleTerms(double scalar, double alpha,
                                        double margin) {
   auto sdf = workspace_->SignedDistanceField();
-  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, margin);
+  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
   AddIsometricPotentialToAllCliques(obstacle_potential_, scalar);
 }
 
@@ -89,6 +89,8 @@ void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {
   workspace_objects_.push_back(std::make_shared<Circle>(center, radius));
   workspace_ = std::make_shared<Workspace>(workspace_objects_);
+  auto sdf = workspace_->SignedDistanceField();
+  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, 10, 1);
 }
 
 void MotionObjective::AddBox(const Eigen::VectorXd& center,
@@ -96,6 +98,8 @@ void MotionObjective::AddBox(const Eigen::VectorXd& center,
   workspace_objects_.push_back(
       std::make_shared<Rectangle>(center, dimension, 0));
   workspace_ = std::make_shared<Workspace>(workspace_objects_);
+  auto sdf = workspace_->SignedDistanceField();
+  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, 10, 1);
 }
 
 void MotionObjective::ClearWorkspace() {
