@@ -26,7 +26,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include "planar_grid.h"
-#include "chrono.h"
+#include <bewego/util/chrono.h>
 
 #include <iostream>
 

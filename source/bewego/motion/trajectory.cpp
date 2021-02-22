@@ -24,4 +24,4 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 
-#include <bewego/trajectory.h>
+#include <bewego/motion/trajectory.h>

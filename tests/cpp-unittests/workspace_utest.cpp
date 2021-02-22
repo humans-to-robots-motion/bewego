@@ -1,8 +1,8 @@
 // Copyright (c) 2019, University of Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 
-#include <bewego/util.h>
-#include <bewego/workspace.h>
+#include <bewego/util/util.h>
+#include <bewego/workspace/workspace.h>
 #include <gtest/gtest.h>
 
 using namespace bewego;

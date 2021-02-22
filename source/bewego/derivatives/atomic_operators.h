@@ -25,7 +25,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <bewego/differentiable_map.h>
+#include <bewego/derivatives/differentiable_map.h>
 
 #include <vector>
 

@@ -23,7 +23,7 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/kinematics.h>
+#include <bewego/motion/kinematics.h>
 
 using std::cout;
 using std::endl;

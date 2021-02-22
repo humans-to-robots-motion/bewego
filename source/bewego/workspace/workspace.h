@@ -24,8 +24,8 @@
  */
 
 #pragma once
-#include <bewego/differentiable_map.h>
-#include <bewego/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/derivatives/atomic_operators.h>
 
 #include <Eigen/Geometry>
 

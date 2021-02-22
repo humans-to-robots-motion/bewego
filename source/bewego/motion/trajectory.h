@@ -25,9 +25,9 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <bewego/atomic_operators.h>
-#include <bewego/differentiable_map.h>
-#include <bewego/util.h>
+#include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/util/util.h>
 
 using bewego::util::range;
 

@@ -34,7 +34,7 @@ from pyrieef.graph.shortest_path import *
 
 DRAW_MODE = None  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
-BOXES = True
+BOXES = False
 
 nb_points = 40  # points for the grid on which to perform graph search.
 grid = np.ones((nb_points, nb_points))
@@ -64,20 +64,6 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     p.s_obstacle_scaling = 1
     p.s_terminal_potential = 1e+6
     problem.initialize_objective(p)
-
-    # assert check_jacobian_against_finite_difference(
-    #     problem.objective, False)
-    # assert check_hessian_against_finite_difference(
-    #     problem.objective, True, tolerance=1e-2)
-
-    # problem2 = MotionOptimization2DCostMap(20, 2)
-    # problem2.dt = 0.01
-    # problem2.q_init = trajectory.initial_configuration()
-    # problem2.create_clique_network()
-    # problem2.set_scalars(acceleration_scalar=1)
-    # problem2.add_smoothness_terms(2)
-    # problem2.create_objective()
-    # objective2 = problem2.objective
 
     objective = TrajectoryOptimizationViewer(
         problem,

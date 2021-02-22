@@ -23,7 +23,7 @@
  *                                               Jim Mainprice Wed 4 Feb 2020
  */
 
-#include <bewego/workspace.h>
+#include <bewego/workspace/workspace.h>
 
 #include <iostream>
 using namespace bewego;

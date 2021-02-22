@@ -25,10 +25,10 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <bewego/differentiable_map.h>
-#include <bewego/trajectory.h>
-#include <bewego/workspace.h>
-#include <bewego/cost_terms.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/motion/cost_terms.h>
+#include <bewego/motion/trajectory.h>
+#include <bewego/workspace/workspace.h>
 
 #include <iostream>
 

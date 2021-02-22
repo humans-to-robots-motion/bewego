@@ -1,4 +1,4 @@
-#include<bewego/util.h>
+#include<bewego/util/util.h>
 
 namespace bewego {
 namespace util {

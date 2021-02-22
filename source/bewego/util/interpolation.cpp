@@ -23,7 +23,7 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/interpolation.h>
+#include <bewego/util/interpolation.h>
 
 #include <Eigen/Core>
 #include <Eigen/LU>  // for matrix inverse

@@ -23,16 +23,16 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/atomic_operators.h>
-#include <bewego/differentiable_map.h>
-#include <bewego/geometry.h>
-#include <bewego/interpolation.h>
-#include <bewego/kinematics.h>
-#include <bewego/objective.h>
-#include <bewego/planar_grid.h>
-#include <bewego/trajectory.h>
-#include <bewego/util.h>
-#include <bewego/value_iteration.h>
+#include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/motion/kinematics.h>
+#include <bewego/motion/objective.h>
+#include <bewego/motion/trajectory.h>
+#include <bewego/planning/value_iteration.h>
+#include <bewego/planning/planar_grid.h>
+#include <bewego/util/interpolation.h>
+#include <bewego/util/util.h>
+#include <bewego/workspace/geometry.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -197,7 +197,6 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("hessian", &bewego::TrajectoryObjectiveFunction::Hessian)
       .def("__call__", &bewego::TrajectoryObjectiveFunction::Forward,
            py::arg("e") = nullptr, py::is_operator());
-
 
   py::class_<bewego::MotionObjective>(m, "MotionObjective")
       .def(py::init<uint32_t, double, uint32_t>())

@@ -24,7 +24,9 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 #include "astar.h"
-#include "chrono.h"
+
+#include <bewego/util/chrono.h>
+
 #include <iostream>
 
 using namespace std;
@@ -87,9 +89,8 @@ bool SearchState::is_open(vector<SearchState*>& open_search_states) {
   return is_open;
 }
 
-void SearchState::set_closed(
-    std::vector<SearchState*>& closed_search_states,
-    std::vector<SearchState*>& open_search_states) {
+void SearchState::set_closed(std::vector<SearchState*>& closed_search_states,
+                             std::vector<SearchState*>& open_search_states) {
   for (vector<SearchState*>::iterator it = open_search_states.begin();
        it != open_search_states.end(); ++it) {
     if ((*it)->equal(this)) {
@@ -99,7 +100,6 @@ void SearchState::set_closed(
   }
   closed_search_states.push_back(this);
 }
-
 
 void SearchState::set_open(std::vector<SearchState*>& open_search_states) {
   open_search_states.push_back(this);
@@ -127,7 +127,7 @@ vector<SearchState*> AStar::Solution(QueueElement q_tmp) {
   a_star_search_state_ = FOUND;
   TreeNode* solution_leaf = q_tmp.tree_node();
   TreeNode* node = solution_leaf;
-  
+
   while (node) {
     solution_.push_back(node->search_state());
     node = node->parent();
@@ -200,8 +200,7 @@ vector<SearchState*> AStar::Solve(SearchState* initial_search_state) {
         current_search_state->Successors(parent_state);
 
     for (unsigned int i = 0; i < branched_states.size(); i++) {
-      if ((branched_states[i] != NULL) &&
-          (branched_states[i]->valid())) {
+      if ((branched_states[i] != NULL) && (branched_states[i]->valid())) {
         if (!((parent != NULL) && (parent->search_state()->valid()) &&
               (parent->search_state()->equal(branched_states[i])))) {
           if (!(branched_states[i]->is_closed(closed_set))) {
@@ -209,8 +208,8 @@ vector<SearchState*> AStar::Solve(SearchState* initial_search_state) {
               branched_states[i]->Cost(current_search_state, goal_);
               branched_states[i]->set_open(open_set);
               explored_states_.push_back(branched_states[i]);
-              open_set_.push(*new QueueElement(new TreeNode(
-                  branched_states[i], (q_tmp.tree_node()))));
+              open_set_.push(*new QueueElement(
+                  new TreeNode(branched_states[i], (q_tmp.tree_node()))));
             }
           }
         }

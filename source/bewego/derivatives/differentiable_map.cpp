@@ -23,7 +23,7 @@
  *                                                              Wed 4 Feb 2019
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/differentiable_map.h>
+#include <bewego/derivatives/differentiable_map.h>
 
 #include <iostream>
 using std::cout;

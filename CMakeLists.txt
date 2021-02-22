@@ -158,18 +158,18 @@ file(GLOB_RECURSE bewego_HEADERS
 
 # Build bewego library
 set(bewego_SOURCES 
-    ${bewego_SOURCE_DIR}/differentiable_map.cpp
-    ${bewego_SOURCE_DIR}/chrono.cpp
-    ${bewego_SOURCE_DIR}/astar.cpp
-    ${bewego_SOURCE_DIR}/planar_grid.cpp
-    ${bewego_SOURCE_DIR}/value_iteration.cpp
-    ${bewego_SOURCE_DIR}/kinematics.cpp
-    ${bewego_SOURCE_DIR}/trajectory.cpp
-    ${bewego_SOURCE_DIR}/cost_terms.cpp
-    ${bewego_SOURCE_DIR}/objective.cpp
-    ${bewego_SOURCE_DIR}/workspace.cpp
-    ${bewego_SOURCE_DIR}/util.cpp
-    ${bewego_SOURCE_DIR}/interpolation.cpp
+    ${bewego_SOURCE_DIR}/util/util.cpp
+    ${bewego_SOURCE_DIR}/util/chrono.cpp
+    ${bewego_SOURCE_DIR}/util/interpolation.cpp
+    ${bewego_SOURCE_DIR}/derivatives/differentiable_map.cpp
+    ${bewego_SOURCE_DIR}/planning/astar.cpp
+    ${bewego_SOURCE_DIR}/planning/planar_grid.cpp
+    ${bewego_SOURCE_DIR}/planning/value_iteration.cpp
+    ${bewego_SOURCE_DIR}/motion/kinematics.cpp
+    ${bewego_SOURCE_DIR}/motion/trajectory.cpp
+    ${bewego_SOURCE_DIR}/motion/cost_terms.cpp
+    ${bewego_SOURCE_DIR}/motion/objective.cpp
+    ${bewego_SOURCE_DIR}/workspace/workspace.cpp
 )
 add_library(${bewego_LIBRARY} SHARED
     ${bewego_HEADERS}
