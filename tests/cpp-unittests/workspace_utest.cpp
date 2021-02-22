@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/util/util.h>
+#include <bewego/util/misc.h>
 #include <bewego/workspace/workspace.h>
 #include <gtest/gtest.h>
 
@@ -66,7 +67,7 @@ class RectangleDistanceTest : public DifferentialMapTest {
       auto rectangle =
           std::make_shared<RectangleDistance>(center, dimension, theta);
       for (uint32_t i = 0; i < 5; ++i) {
-        Eigen::VectorXd p = util::Random(dim);
+        Eigen::VectorXd p = bewego::util::Random(dim);
         auto test = std::make_pair(rectangle, p);
         function_tests_.push_back(test);
       }

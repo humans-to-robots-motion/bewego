@@ -157,7 +157,8 @@ file(GLOB_RECURSE bewego_HEADERS
     ${bewego_SOURCE_DIR}/*.hpp ${bewego_SOURCE_DIR}/*.h)
 
 # Build bewego library
-set(bewego_SOURCES 
+set(bewego_SOURCES
+    ${bewego_SOURCE_DIR}/util/misc.cpp
     ${bewego_SOURCE_DIR}/util/util.cpp
     ${bewego_SOURCE_DIR}/util/chrono.cpp
     ${bewego_SOURCE_DIR}/util/interpolation.cpp
@@ -171,10 +172,20 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/motion/objective.cpp
     ${bewego_SOURCE_DIR}/workspace/workspace.cpp
 )
-add_library(${bewego_LIBRARY} SHARED
+add_library(${bewego_LIBRARY} 
+  SHARED
     ${bewego_HEADERS}
-    ${bewego_SOURCES})
-target_link_libraries(${bewego_LIBRARY} PRIVATE ${GTEST_LIBRARY})
+    ${bewego_SOURCES}
+)
+target_link_libraries(${bewego_LIBRARY} 
+  PRIVATE 
+    ${GTEST_LIBRARY}
+)
+
+############################
+# numerical_optimization   #
+############################
+# include(${bewego_SOURCE_DIR}/numerical_optimization/numerical_optimization.cmake)
 
 ############################
 # Tests                    #

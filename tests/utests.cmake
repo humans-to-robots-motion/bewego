@@ -9,7 +9,7 @@ enable_testing()
 # endif()
 
 file(GLOB_RECURSE test_SOURCES
-  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp-unittests "*utest.cpp")
+  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp-unittests" "*utest.cpp")
 
 foreach(test_exec ${test_SOURCES})
     message("add : ${test_exec}")

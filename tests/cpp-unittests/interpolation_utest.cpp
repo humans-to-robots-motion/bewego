@@ -4,6 +4,7 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/util/interpolation.h>
 #include <bewego/util/util.h>
+#include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
 #include <Eigen/LU>

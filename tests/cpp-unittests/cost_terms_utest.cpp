@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/motion/cost_terms.h>
 #include <bewego/util/util.h>
+#include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
