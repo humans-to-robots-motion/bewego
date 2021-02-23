@@ -1,8 +1,8 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/derivatives/atomic_operators.h>
-#include <bewego/util/util.h>
 #include <bewego/util/misc.h>
+#include <bewego/util/util.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -180,12 +180,39 @@ TEST(atomic_operators, min) {
     maps.push_back(std::make_shared<QuadricMap>(a, b, c));
   }
   auto min_map = std::make_shared<Min>(maps);
-  EXPECT_EQ(min_map->maps().size(), maps.size() );
+  EXPECT_EQ(min_map->maps().size(), maps.size());
   // for (uint32_t i = 0; i < NB_TESTS; i++) {
   //   ASSERT_TRUE(f->CheckJacobian(precision));
   //   ASSERT_TRUE(f->CheckHessian(precision));
   // }
 }
+
+/**
+TEST(atomic_operators, second_order_tayler_approx) {
+  std::srand(SEED);
+  const double precision = 1e-6;
+
+  Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
+  Eigen::VectorXd b = Eigen::VectorXd::Random(5);
+  Eigen::VectorXd c = Eigen::VectorXd::Random(1);
+  Eigen::MatrixXd H = .5 * (a + a.transpose());
+  auto map = std::make_shared<QuadricMap>(a, b, c);
+
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    Eigen::VectorXd x = Eigen::VectorXd::Random(5);
+    auto approx = std::make_shared<SecondOrderTaylorApproximation>(*map, x);
+    double v1 = approx->ForwardFunc(x);
+    double v2 = map->ForwardFunc(x);
+    Eigen::VectorXd g = approx->Gradient(x);
+    Eigen::MatrixXd h = approx->Hessian(x);
+    cout << "g : " << g.transpose() << endl;
+    cout << "b : " << b.transpose() << endl;
+    ASSERT_LT(std::fabs(v1 - v2), 1e-6);
+    ASSERT_LT((g - (H * x - b)).cwiseAbs().maxCoeff(), 1e-6);
+    ASSERT_LT((H - h).cwiseAbs().maxCoeff(), 1e-6);
+  }
+}
+*/
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

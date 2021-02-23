@@ -507,8 +507,8 @@ class Min : public DifferentiableMap {
  *
  *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
  *
- * with g and H are the gradient and Hessian of f, respectively.
- * TODO: Test.
+ *   with g and H are the gradient and Hessian of f, respectively.
+ *   TODO: Test.
  */
 class SecondOrderTaylorApproximation : public QuadricMap {
  public:
@@ -524,7 +524,7 @@ class SecondOrderTaylorApproximation : public QuadricMap {
     H_ = H;
     a_ = H;
     b_ = H * x0 - g;
-    c = fx0_ - g.transpose() * x0 + .5 * x0.transpose() * H * x0;
+    c = v - g.transpose() * x0 + .5 * x0.transpose() * H * x0;
     c_ = Eigen::VectorXd::Constant(1, c);
 
     x0_ = x0;
