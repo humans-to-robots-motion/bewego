@@ -46,6 +46,12 @@ class DifferentiableMap {
   }
 
   /** Should return an array or single value */
+  virtual double ForwardFunc(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    return Forward(x)[0];
+  }
+
+  /** Should return an array or single value */
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const = 0;
 
   /** Should return an array or single value
@@ -213,8 +219,11 @@ class Compose : public DifferentiableMap {
  */
 class DifferentialMapTest : public testing::Test {
  public:
-  DifferentialMapTest(bool with_hesssian=true)
-      : use_double_eq_(true), gradient_precision_(1e-6), hessian_precision_(1e-6), verbose_(false) {}
+  DifferentialMapTest(bool with_hesssian = true)
+      : use_double_eq_(true),
+        gradient_precision_(1e-6),
+        hessian_precision_(1e-6),
+        verbose_(false) {}
 
   /** \brief Returns true if implementation is the same as finite difference */
   void FiniteDifferenceTest(std::shared_ptr<const DifferentiableMap> phi,

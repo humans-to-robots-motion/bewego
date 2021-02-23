@@ -94,6 +94,11 @@ class AffineMap : public DifferentiableMap {
   AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) : a_(a), b_(b) {
     assert(a_.rows() == b.size());
   }
+  AffineMap(const Eigen::VectorXd& a, double b) {
+    a_ = Eigen::MatrixXd(1, a.size());
+    a_.row(0) = a;
+    b_ = Eigen::VectorXd::Constant(1, b);
+  }
 
   uint32_t output_dimension() const { return b_.size(); }
   uint32_t input_dimension() const { return a_.cols(); }
