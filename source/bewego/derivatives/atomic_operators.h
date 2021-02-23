@@ -131,6 +131,7 @@ class AffineMap : public DifferentiableMap {
         f(x) = 1/2 x^T A x + bx + c */
 class QuadricMap : public DifferentiableMap {
  public:
+  QuadricMap() {}
   QuadricMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b, double c)
       : a_(a), b_(b), c_(Eigen::VectorXd::Constant(1, c)) {
     assert(a_.rows() == a_.cols());
@@ -165,11 +166,32 @@ class QuadricMap : public DifferentiableMap {
     return H_;
   }
 
+  QuadricMap& operator+=(const QuadricMap& f_rhs) {
+    assert(H_.rows() == f_rhs.H_.rows());
+    assert(a_.rows() == f_rhs.a_.rows());
+    assert(H_.cols() == f_rhs.H_.cols());
+    assert(b_.rows() == f_rhs.b_.rows());
+    H_ += f_rhs.H_;
+    a_ += f_rhs.a_;
+    b_ += f_rhs.b_;
+    c_ += f_rhs.c_;
+    return *this;
+  }
+
   const Eigen::MatrixXd& a() const { return a_; }
   const Eigen::VectorXd& b() const { return b_; }
   double c() const { return c_[0]; }
 
  protected:
+  void Initialize(const Eigen::MatrixXd& a, const Eigen::VectorXd& b,
+                  double c) {
+    assert(a_.rows() == a_.cols());
+    assert(a_.rows() == b_.size());
+    a_ = a;
+    b_ = b;
+    c_ = Eigen::VectorXd::Constant(1, c);
+    H_ = .5 * (a_ + a_.transpose());
+  }
   Eigen::MatrixXd a_;
   Eigen::VectorXd b_;
   Eigen::VectorXd c_;
