@@ -502,4 +502,40 @@ class Min : public DifferentiableMap {
   uint32_t term_dimension_;
 };
 
+/**
+ *   Second-order Taylor approximation of a differentiable map.
+ *
+ *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
+ *
+ * with g and H are the gradient and Hessian of f, respectively.
+ * TODO: Test.
+ */
+class SecondOrderTaylorApproximation : public QuadricMap {
+ public:
+  SecondOrderTaylorApproximation(const DifferentiableMap& f,
+                                 const Eigen::VectorXd& x0)
+      : x0_(x0) {
+    assert(f.output_dimension() == 1);
+    double v = f.ForwardFunc(x0);
+    Eigen::VectorXd g = f.Gradient(x0);
+    Eigen::MatrixXd H = f.Hessian(x0);
+    double c = 0;
+
+    H_ = H;
+    a_ = H;
+    b_ = H * x0 - g;
+    c = fx0_ - g.transpose() * x0 + .5 * x0.transpose() * H * x0;
+    c_ = Eigen::VectorXd::Constant(1, c);
+
+    x0_ = x0;
+    g0_ = g;
+    fx0_ = v;
+  }
+
+ private:
+  Eigen::VectorXd x0_;
+  Eigen::VectorXd g0_;
+  double fx0_;
+};
+
 }  // namespace bewego
