@@ -187,32 +187,36 @@ TEST(atomic_operators, min) {
   // }
 }
 
-/**
+
 TEST(atomic_operators, second_order_tayler_approx) {
   std::srand(SEED);
   const double precision = 1e-6;
 
+  // Eigen::MatrixXd a = Eigen::MatrixXd::Zero(5, 5);
   Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
   Eigen::VectorXd b = Eigen::VectorXd::Random(5);
+  // Eigen::VectorXd b = Eigen::VectorXd::Zero(5);
+  // Eigen::VectorXd c = Eigen::VectorXd::Constant(1, 0); 
   Eigen::VectorXd c = Eigen::VectorXd::Random(1);
   Eigen::MatrixXd H = .5 * (a + a.transpose());
-  auto map = std::make_shared<QuadricMap>(a, b, c);
+  auto map = std::make_shared<QuadricMap>(H, b, c);
 
   for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(map->CheckJacobian(precision));
+    ASSERT_TRUE(map->CheckHessian(precision));
     Eigen::VectorXd x = Eigen::VectorXd::Random(5);
     auto approx = std::make_shared<SecondOrderTaylorApproximation>(*map, x);
     double v1 = approx->ForwardFunc(x);
     double v2 = map->ForwardFunc(x);
-    Eigen::VectorXd g = approx->Gradient(x);
+    Eigen::VectorXd g1 = approx->Gradient(x);
+    Eigen::VectorXd g2 = map->Gradient(x);
     Eigen::MatrixXd h = approx->Hessian(x);
-    cout << "g : " << g.transpose() << endl;
-    cout << "b : " << b.transpose() << endl;
     ASSERT_LT(std::fabs(v1 - v2), 1e-6);
-    ASSERT_LT((g - (H * x - b)).cwiseAbs().maxCoeff(), 1e-6);
+    ASSERT_LT((g1 - g2).cwiseAbs().maxCoeff(), 1e-6);
     ASSERT_LT((H - h).cwiseAbs().maxCoeff(), 1e-6);
   }
 }
-*/
+
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

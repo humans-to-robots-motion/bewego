@@ -513,25 +513,7 @@ class Min : public DifferentiableMap {
 class SecondOrderTaylorApproximation : public QuadricMap {
  public:
   SecondOrderTaylorApproximation(const DifferentiableMap& f,
-                                 const Eigen::VectorXd& x0)
-      : x0_(x0) {
-    assert(f.output_dimension() == 1);
-    double v = f.ForwardFunc(x0);
-    Eigen::VectorXd g = f.Gradient(x0);
-    Eigen::MatrixXd H = f.Hessian(x0);
-    double c = 0;
-
-    H_ = H;
-    a_ = H;
-    b_ = H * x0 - g;
-    c = v - g.transpose() * x0 + .5 * x0.transpose() * H * x0;
-    c_ = Eigen::VectorXd::Constant(1, c);
-
-    x0_ = x0;
-    g0_ = g;
-    fx0_ = v;
-  }
-
+                                 const Eigen::VectorXd& x0);
  private:
   Eigen::VectorXd x0_;
   Eigen::VectorXd g0_;
