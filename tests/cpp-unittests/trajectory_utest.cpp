@@ -136,8 +136,3 @@ TEST(cliques_function_network, jacobian) {
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
 }
-
-int main(int argc, char* argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

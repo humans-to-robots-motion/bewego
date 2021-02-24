@@ -27,6 +27,8 @@
 
 using namespace bewego;
 
+// ---------------------------------
+
 ObstaclePotential::ObstaclePotential(
     std::shared_ptr<const DifferentiableMap> sdf, double alpha,
     double rho_scaling) {
@@ -55,4 +57,25 @@ Eigen::MatrixXd ObstaclePotential::Hessian(const Eigen::VectorXd& x) const {
   auto J_sdf = signed_distance_field_->Jacobian(x);
   auto H_sdf = signed_distance_field_->Hessian(x);
   return rho * (alpha_ * alpha_ * J_sdf.transpose() * J_sdf - alpha_ * H_sdf);
+}
+
+// ---------------------------------
+
+Eigen::VectorXd LogBarrier::Forward(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::VectorXd::Constant(
+      1, x <= margin_ ? std::numeric_limits<double>::infinity() : -log(x));
+}
+
+Eigen::MatrixXd LogBarrier::Jacobian(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 0 : (-1. / x));
+}
+
+Eigen::MatrixXd LogBarrier::Hessian(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 0 : 1. / (x * x));
 }

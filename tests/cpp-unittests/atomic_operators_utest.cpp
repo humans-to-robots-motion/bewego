@@ -213,9 +213,3 @@ TEST(atomic_operators, second_order_tayler_approx) {
     ASSERT_LT((H - h).cwiseAbs().maxCoeff(), 1e-6);
   }
 }
-
-
-int main(int argc, char* argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

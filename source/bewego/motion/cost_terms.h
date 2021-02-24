@@ -146,28 +146,14 @@ class ObstaclePotential : public DifferentiableMap {
 class LogBarrier : public DifferentiableMap {
  public:
   LogBarrier(double margin = 0) : margin_(margin) {}
+  virtual ~LogBarrier() {}
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return 1; }
 
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x_vect) const {
-    assert(x_vect.size() == 1);
-    double x = x_vect[0];
-    return Eigen::VectorXd::Constant(
-        1, x <= margin_ ? -log(x) : std::numeric_limits<double>::infinity());
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x_vect) const {
-    assert(x_vect.size() == 1);
-    double x = x_vect[0];
-    return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? -1. / x : 0);
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x_vect) const {
-    assert(x_vect.size() == 1);
-    double x = x_vect[0];
-    return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 1. / (x * x) : 0);
-  }
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x_vect) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x_vect) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x_vect) const;
 
  protected:
   double margin_;

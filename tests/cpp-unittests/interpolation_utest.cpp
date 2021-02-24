@@ -140,8 +140,3 @@ TEST(LWRTest, Evaluation) {
   // cout << value << endl;
   EXPECT_NEAR(value, 0.307063690815270, 1e-7);
 }
-
-int main(int argc, char **argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

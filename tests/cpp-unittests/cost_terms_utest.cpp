@@ -145,14 +145,13 @@ TEST_F(DifferentialMapTest, log_barrier) {
   std::srand(SEED);
   auto phi = std::make_shared<LogBarrier>();
   // set_verbose(true);
-  // Eigen::VectorXd x(1);
-  // for (uint32_t i = 0; i < NB_TESTS; i++) {
-  //   x[0] = util::Rand() + 1.;
-  //   function_tests_.push_back(std::make_pair(phi, x));
-  // }
-  AddRandomTests(phi, NB_TESTS);
+  Eigen::VectorXd x(1);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    x[0] = util::Rand() + 1;
+    function_tests_.push_back(std::make_pair(phi, x));
+  }
+  // AddRandomTests(phi, NB_TESTS);
   RunAllTests();
-  ASSERT_FALSE(HasFailure());
 }
 
 TEST(cost_terms, bound_barrier) {
@@ -167,9 +166,4 @@ TEST(cost_terms, bound_barrier) {
     ASSERT_TRUE(phi->CheckJacobian(1e-3));
     ASSERT_TRUE(phi->CheckHessian(1e-4));
   }
-}
-
-int main(int argc, char* argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

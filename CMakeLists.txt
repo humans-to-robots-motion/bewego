@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 
+enable_testing()
+
 ############################
 # Build Type               #
 ############################
@@ -131,7 +133,7 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  EXCLUDE_FROM_ALL)
 
 # Now simply link against gtest or gtest_main as needed.
-set(GTEST_LIBRARY gtest)
+set(GTEST_LIBRARY gtest_main)
 
 # message("where to compile : ${CMAKE_CURRENT_BINARY_DIR}")
 # message("where to compile : ${PROJECT_SOURCE_DIR}")
@@ -178,12 +180,11 @@ add_library(${bewego_LIBRARY}
     ${bewego_HEADERS}
     ${bewego_SOURCES}
 )
-enable_testing()
 target_link_libraries(${bewego_LIBRARY} 
   PRIVATE 
     ${GTEST_LIBRARY}
 )
-include(GoogleTest)
+# include(GoogleTest)
 
 ############################
 # numerical_optimization   #
