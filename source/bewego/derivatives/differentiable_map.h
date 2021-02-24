@@ -229,8 +229,10 @@ class DifferentialMapTest : public testing::Test {
   void FiniteDifferenceTest(std::shared_ptr<const DifferentiableMap> phi,
                             const Eigen::VectorXd& x) const;
 
+  virtual void SetUp() {}
+  
   /** \brief Run test procedure on all function tests in function_tests_. */
-  void RunTests() const;
+  void RunAllTests() const;
 
   /** \brief Run test procedure on all function tests in function_tests_. */
   void AddRandomTests(std::shared_ptr<const DifferentiableMap> f, uint32_t n);

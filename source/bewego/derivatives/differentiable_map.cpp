@@ -120,6 +120,7 @@ void DifferentialMapTest::FiniteDifferenceTest(
   double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
 
   if (verbose_) {
+    cout << "Test for  x : " << x.transpose() << endl;
     cout << "J : " << endl << J << endl;
     cout << "J_diff : " << endl << J_diff << endl;
     cout << "H : " << endl << H << endl;
@@ -138,7 +139,7 @@ void DifferentialMapTest::AddRandomTests(
   }
 }
 
-void DifferentialMapTest::RunTests() const {
+void DifferentialMapTest::RunAllTests() const {
   for (uint32_t i = 0; i < function_tests_.size(); ++i) {
     auto test = function_tests_[i];
     FiniteDifferenceTest(test.first, test.second);

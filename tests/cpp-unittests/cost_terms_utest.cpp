@@ -1,8 +1,8 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/motion/cost_terms.h>
-#include <bewego/util/util.h>
 #include <bewego/util/misc.h>
+#include <bewego/util/util.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -141,6 +141,20 @@ TEST(cost_terms, obstacle_potential) {
   }
 }
 
+TEST_F(DifferentialMapTest, log_barrier) {
+  std::srand(SEED);
+  auto phi = std::make_shared<LogBarrier>();
+  // set_verbose(true);
+  // Eigen::VectorXd x(1);
+  // for (uint32_t i = 0; i < NB_TESTS; i++) {
+  //   x[0] = util::Rand() + 1.;
+  //   function_tests_.push_back(std::make_pair(phi, x));
+  // }
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+  ASSERT_FALSE(HasFailure());
+}
+
 TEST(cost_terms, bound_barrier) {
   std::srand(SEED);
   double alpha = 10 * util::Rand();
@@ -148,7 +162,7 @@ TEST(cost_terms, bound_barrier) {
   Eigen::Vector3d v_lower(-1, -1, -1);
   Eigen::Vector3d v_upper(1, 1, 1);
 
-  auto phi = std::make_shared<BoundBarrier>(v_lower, v_upper );
+  auto phi = std::make_shared<BoundBarrier>(v_lower, v_upper);
   for (uint32_t i = 0; i < NB_TESTS; i++) {
     ASSERT_TRUE(phi->CheckJacobian(1e-3));
     ASSERT_TRUE(phi->CheckHessian(1e-4));

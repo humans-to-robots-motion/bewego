@@ -192,11 +192,8 @@ TEST(atomic_operators, second_order_tayler_approx) {
   std::srand(SEED);
   const double precision = 1e-6;
 
-  // Eigen::MatrixXd a = Eigen::MatrixXd::Zero(5, 5);
   Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
   Eigen::VectorXd b = Eigen::VectorXd::Random(5);
-  // Eigen::VectorXd b = Eigen::VectorXd::Zero(5);
-  // Eigen::VectorXd c = Eigen::VectorXd::Constant(1, 0); 
   Eigen::VectorXd c = Eigen::VectorXd::Random(1);
   Eigen::MatrixXd H = .5 * (a + a.transpose());
   auto map = std::make_shared<QuadricMap>(H, b, c);

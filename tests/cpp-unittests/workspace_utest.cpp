@@ -47,7 +47,7 @@ TEST_F(SphereDistanceTest, Evaluation) {
   set_verbose(false);
   set_precisions(error, 1e-3);
   // set_precisions(error, std::numeric_limits<double>::max());
-  RunTests();
+  RunAllTests();
 }
 
 class RectangleDistanceTest : public DifferentialMapTest {
@@ -97,7 +97,7 @@ TEST_F(RectangleDistanceTest, Evaluation) {
   set_verbose(false);
   set_precisions(error, 1e-3);
   // set_precisions(error, std::numeric_limits<double>::max());
-  RunTests();
+  RunAllTests();
 }
 
 TEST(RectangleDistance, Main) {

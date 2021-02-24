@@ -178,10 +178,12 @@ add_library(${bewego_LIBRARY}
     ${bewego_HEADERS}
     ${bewego_SOURCES}
 )
+enable_testing()
 target_link_libraries(${bewego_LIBRARY} 
   PRIVATE 
     ${GTEST_LIBRARY}
 )
+include(GoogleTest)
 
 ############################
 # numerical_optimization   #
