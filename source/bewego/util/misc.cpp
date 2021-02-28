@@ -301,6 +301,12 @@ bool LoadMatrixFromDisk(const std::string& filename, Eigen::MatrixXd* mat,
 /// Real \in [0, 1]
 double Rand() { return std::rand() / double(RAND_MAX); }
 
+/// Real \in [min, max]
+double RandUniform(double min, double max) {
+  assert(max > min);
+  return (max - min) * Rand() + min;
+}
+
 /// Vector \in [0, 1]^dim
 Eigen::VectorXd Random(uint32_t dim) {
   return 0.5 * (Eigen::VectorXd::Random(dim) + Eigen::VectorXd::Ones(dim));

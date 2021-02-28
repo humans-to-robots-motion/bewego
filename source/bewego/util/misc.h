@@ -157,6 +157,10 @@ bool LoadMatrixFromDisk(const std::string& filename,
 /// set the seed with: std::srand((unsigned int) time(0));
 double Rand();
 
+/// Float \in [min, max]
+/// set the seed with: std::srand((unsigned int) time(0));
+double RandUniform(double min, double max);
+
 /// Vector \in [0, 1]
 /// set the seed with: std::srand((unsigned int) time(0));
 Eigen::VectorXd Random(uint32_t dim);
