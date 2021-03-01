@@ -141,32 +141,6 @@ TEST(cost_terms, obstacle_potential) {
   }
 }
 
-TEST_F(DifferentialMapTest, log_barrier) {
-  std::srand(SEED);
-  auto phi = std::make_shared<LogBarrier>();
-  // set_verbose(true);
-  Eigen::VectorXd x(1);
-  for (uint32_t i = 0; i < NB_TESTS; i++) {
-    x[0] = util::Rand() + 1; // between 0 and 1.
-    function_tests_.push_back(std::make_pair(phi, x));
-  }
-  // AddRandomTests(phi, NB_TESTS);
-  RunAllTests();
-}
-
-TEST_F(DifferentialMapTest, log_barrier_with_approx) {
-  std::srand(SEED);
-  auto phi = std::make_shared<LogBarrierWithApprox>(5);
-  // set_verbose(true);
-  Eigen::VectorXd x(1);
-  for (uint32_t i = 0; i < 100; i++) {
-    x[0] = util::RandUniform(.1, 1.);
-    function_tests_.push_back(std::make_pair(phi, x));
-  }
-  // AddRandomTests(phi, NB_TESTS);
-  RunAllTests();
-}
-
 TEST(cost_terms, bound_barrier) {
   std::srand(SEED);
   double alpha = 10 * util::Rand();

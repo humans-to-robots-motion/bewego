@@ -142,52 +142,6 @@ class ObstaclePotential : public DifferentiableMap {
   double rho_scaling_;
 };
 
-/** Logarithmic Barrier */
-class LogBarrier : public DifferentiableMap {
- public:
-  LogBarrier(double margin = 0) : margin_(margin) {}
-  virtual ~LogBarrier() {}
-
-  uint32_t output_dimension() const { return 1; }
-  uint32_t input_dimension() const { return 1; }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x_vect) const;
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x_vect) const;
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x_vect) const;
-
- protected:
-  double margin_;
-};
-
-/** The log barrier slice */
-class LogBarrierWithApprox : public LogBarrier {
- public:
-  LogBarrierWithApprox(double max_hessian, double scalar = 1.)
-      : max_hessian_(max_hessian) {
-    SetScalar(scalar);
-  }
-
-  void SetScalar(double scalar) {
-    scalar_ = scalar;
-    x_splice_ = sqrt(scalar_ / max_hessian_);
-    approximation_ = MakeTaylorLogBarrier();
-  }
-
-  // Fix the hessian and gradient to constants
-  std::shared_ptr<DifferentiableMap> MakeTaylorLogBarrier() const;
-
-  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
-
- protected:
-  double max_hessian_;
-  double scalar_;
-  double x_splice_;
-  std::shared_ptr<DifferentiableMap> approximation_;
-};
-
-
 /** Barrier between values v_lower and v_upper */
 class BoundBarrier : public DifferentiableMap {
  public:

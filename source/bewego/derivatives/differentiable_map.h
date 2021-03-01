@@ -230,7 +230,7 @@ class DifferentialMapTest : public testing::Test {
                             const Eigen::VectorXd& x) const;
 
   virtual void SetUp() {}
-  
+
   /** \brief Run test procedure on all function tests in function_tests_. */
   void RunAllTests() const;
 

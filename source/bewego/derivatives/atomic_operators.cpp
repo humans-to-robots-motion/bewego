@@ -47,3 +47,78 @@ SecondOrderTaylorApproximation::SecondOrderTaylorApproximation(
   g0_ = g;
   fx0_ = v;
 }
+
+//------------------------------------------------------------------------------
+// LogBarrier implementation
+//------------------------------------------------------------------------------
+
+Eigen::VectorXd LogBarrier::Forward(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::VectorXd::Constant(
+      1, x <= margin_ ? std::numeric_limits<double>::infinity() : -log(x));
+}
+
+Eigen::MatrixXd LogBarrier::Jacobian(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 0 : (-1. / x));
+}
+
+Eigen::MatrixXd LogBarrier::Hessian(const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 0 : 1. / (x * x));
+}
+
+//------------------------------------------------------------------------------
+// LogBarrierWithApprox implementation
+//------------------------------------------------------------------------------
+
+Eigen::VectorXd LogBarrierWithApprox::Forward(
+    const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  double v = 0;
+  if (x <= 0) {
+    v = std::numeric_limits<double>::infinity();
+  } else {
+    if (x <= x_splice_) {
+      return approximation_->Forward(x_vect);
+    } else {
+      v = -scalar_ * log(x);
+    }
+  }
+  return Eigen::VectorXd::Constant(1, v);
+}
+
+Eigen::MatrixXd LogBarrierWithApprox::Jacobian(
+    const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  double g = 0;
+  if (x > 0) {
+    g = x <= x_splice_ ? approximation_->Jacobian(x_vect)(0, 0) : -scalar_ / x;
+  }
+  return Eigen::MatrixXd::Constant(1, 1, g);
+}
+
+Eigen::MatrixXd LogBarrierWithApprox::Hessian(
+    const Eigen::VectorXd& x_vect) const {
+  assert(x_vect.size() == 1);
+  double x = x_vect[0];
+  double h = 0;
+  if (x > 0) {
+    h = x <= x_splice_ ? approximation_->Hessian(x_vect)(0, 0)
+                       : scalar_ / (x * x);
+  }
+  return Eigen::MatrixXd::Constant(1, 1, h);
+}
+
+std::shared_ptr<DifferentiableMap> LogBarrierWithApprox::MakeTaylorLogBarrier()
+    const {
+  auto log_barrier = std::make_shared<LogBarrier>();
+  auto scaled_log_barrier = std::make_shared<Scale>(log_barrier, scalar_);
+  return std::make_shared<SecondOrderTaylorApproximation>(
+      *scaled_log_barrier, Eigen::VectorXd::Constant(1, x_splice_));
+}
