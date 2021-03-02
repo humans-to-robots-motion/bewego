@@ -26,7 +26,7 @@
 #pragma once
 
 #include <bewego/derivatives/differentiable_map.h>
-#include <bewego/motion/cost_terms.h>
+#include <bewego/trajectory_optimization/cost_terms.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/workspace/workspace.h>
 

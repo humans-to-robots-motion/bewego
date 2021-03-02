@@ -50,6 +50,10 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
         if A is not None:
             args.extend([cvxopt.matrix(A), cvxopt.matrix(b)])
     sol = cvxopt.solvers.qp(*args)
+    print("z : ", sol['z'])
+    print("y : ", sol['y'])
+    print("s : ", np.array(sol['s'])) # Inequality
+    print(sol)
     if 'optimal' not in sol['status']:
         return None
     return np.array(sol['x']).reshape((P.shape[1],))

@@ -171,8 +171,8 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/planning/value_iteration.cpp
     ${bewego_SOURCE_DIR}/motion/kinematics.cpp
     ${bewego_SOURCE_DIR}/motion/trajectory.cpp
-    ${bewego_SOURCE_DIR}/motion/cost_terms.cpp
-    ${bewego_SOURCE_DIR}/motion/objective.cpp
+    ${bewego_SOURCE_DIR}/trajectory_optimization/cost_terms.cpp
+    ${bewego_SOURCE_DIR}/trajectory_optimization/objective.cpp
     ${bewego_SOURCE_DIR}/workspace/workspace.cpp
 )
 add_library(${bewego_LIBRARY} 
