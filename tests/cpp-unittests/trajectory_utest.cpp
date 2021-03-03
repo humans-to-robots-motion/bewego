@@ -1,7 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/motion/trajectory.h>
 #include <bewego/motion/cost_terms.h>
+#include <bewego/motion/trajectory.h>
 #include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
@@ -139,16 +139,16 @@ TEST(cliques_function_network, jacobian) {
 }
 
 TEST(trajectory, TrajectoryInterpolation) {
-  uint32_t n = 2;
-  uint32_t T = 10;
+  uint32_t n = 10;
+  uint32_t T = 30;
   auto q_init = util::Random(n);  // Sample hypercube.
   auto q_goal = util::Random(n);  // Sample hypercube.
   Trajectory trajectory = GetLinearInterpolation(q_init, q_goal, T);
-  auto matrix = trajectory.Matrix();
-  cout << "Trajectory : " << endl << matrix << endl;
-  // ASSERT_LT((q_init - trajectory.Configuration(0)).norm(), 1e-6);
-  // ASSERT_LT((q_goal - trajectory.FinalConfiguration()).norm(), 1e-6);
-  // ASSERT_LT((q_goal - trajectory.Configuration(T + 1)).norm(), 1e-6);
+  // auto matrix = trajectory.Matrix();
+  // cout << "Trajectory : " << endl << matrix << endl;
+  ASSERT_LT((q_init - trajectory.Configuration(0)).norm(), 1e-6);
+  ASSERT_LT((q_goal - trajectory.FinalConfiguration()).norm(), 1e-6);
+  ASSERT_LT((q_goal - trajectory.Configuration(T + 1)).norm(), 1e-6);
 }
 
 TEST(trajectory, TrajectoryNull) {
@@ -179,8 +179,8 @@ TEST(trajectory, ContinuousTrajectory) {
   // Test the length function
   double length_0 = (q_init - q_goal).norm();
   double length_1 = trajectory.length();
-  cout << "length_0 : " << length_0 << endl;
-  cout << "length_1 : " << length_1 << endl;
+  // cout << "length_0 : " << length_0 << endl;
+  // cout << "length_1 : " << length_1 << endl;
   ASSERT_LT(std::fabs(length_0 - length_1), 1.e-10);
 
   double ds = length_0 / T;
@@ -189,10 +189,10 @@ TEST(trajectory, ContinuousTrajectory) {
     auto q_0 = trajectory.Configuration(i);
     auto q_1 = (1. - alpha) * q_init + alpha * q_goal;
     auto q_2 = trajectory.ConfigurationAtParameter(alpha);
-    cout << i << " -> (0) " << q_0.transpose() << endl;
-    cout << i << " -> (1) " << q_2.transpose() << endl;
-    ASSERT_LT(std::fabs((q_0 - q_1).norm()), 1.e-7);
-    ASSERT_LT(std::fabs((q_0 - q_2).norm()), 1.e-7);
+    // cout << i << " -> (0) " << q_0.transpose() << endl;
+    // cout << i << " -> (1) " << q_2.transpose() << endl;
+    ASSERT_LT((q_0 - q_1).norm(), 1.e-7);
+    ASSERT_LT((q_0 - q_2).norm(), 1.e-7);
   }
 }
 
