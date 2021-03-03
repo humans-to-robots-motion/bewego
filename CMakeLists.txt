@@ -189,7 +189,7 @@ target_link_libraries(${bewego_LIBRARY}
 ############################
 # numerical_optimization   #
 ############################
-include(${bewego_SOURCE_DIR}/numerical_optimization/numerical_optimization.cmake)
+# include(${bewego_SOURCE_DIR}/numerical_optimization/numerical_optimization.cmake)
 
 ############################
 # Tests                    #
