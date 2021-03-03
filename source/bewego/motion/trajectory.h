@@ -328,14 +328,23 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
 */
 class Trajectory {
  public:
-  Trajectory(uint32_t T, uint32_t n) : n_(n), T_(T) {
+  Trajectory() : n_(0), T_(0) { x_ = Eigen::VectorXd(2); }
+  Trajectory(uint32_t n, uint32_t T) : n_(n), T_(T) {
     assert(n_ > 0);
     assert(T_ > 0);
     x_ = Eigen::VectorXd(n_ * (T_ + 2));
   }
 
-  Trajectory(uint32_t T, uint32_t n, const Eigen::VectorXd& q_init,
-             const Eigen::VectorXd& x) {
+  Trajectory(const Eigen::VectorXd& q_init, uint32_t T) {
+    assert(q_init.size() > 0);
+    n_ = q_init.size();
+    T_ = T;
+    x_ = Eigen::VectorXd::Zero(n_ * (T_ + 2));
+    x_.head(n_) = q_init;
+    // x_.tail(n_ * (T_ + 1)) = x; // TODO
+  }
+
+  Trajectory(const Eigen::VectorXd& q_init, const Eigen::VectorXd& x) {
     assert(n > 0);
     assert(x.size() % q_init.size() == 0);
     n_ = q_init.size();
@@ -343,6 +352,13 @@ class Trajectory {
     x_ = Eigen::VectorXd::Zero(n_ * (T_ + 2));
     x_.head(n_) = q_init;
     x_.tail(n_ * (T_ + 1)) = x;
+  }
+
+  Trajectory(uint32_t n, uint32_t T, const Eigen::VectorXd& q_init,
+             const Eigen::VectorXd& x)
+      : Trajectory(q_init, x) {
+    assert(n == q_init.size());
+    assert(T == uint32_t((x.size() / q_init.size()) - 1));
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Trajectory& traj) {
@@ -363,8 +379,7 @@ class Trajectory {
     x_ = x;
   }
 
-  /**
-  The active segment of the trajectory
+  /** The active segment of the trajectory
       removes the first configuration on the trajectory */
   Eigen::VectorXd ActiveSegment() const { return x_.tail(n_ * (T_ + 1)); }
 
@@ -374,12 +389,18 @@ class Trajectory {
   /** last active configuration */
   Eigen::VectorXd FinalConfiguration() const { return Configuration(T_); }
 
-  /** mutable : traj.configuration(3)[:] = np.ones(2) */
-  Eigen::VectorXd Configuration(uint32_t i) const {
+  /** mutable configuration */
+  Eigen::VectorBlock<Eigen::VectorXd> Configuration(uint32_t i) {
     assert(i >= 0 && i <= (T_ + 1));
-    return x_.segment(n_ * i, n_);
+    return Eigen::VectorBlock<Eigen::VectorXd>(x_.derived(), i * n_, n_);
   }
 
+  /** non-mutable configuration */
+  const Eigen::VectorBlock<const Eigen::VectorXd> Configuration(
+      uint32_t i) const {
+    assert(i >= 0 && i <= (T_ + 1));
+    return Eigen::VectorBlock<const Eigen::VectorXd>(x_.derived(), i * n_, n_);
+  }
   /**
   returns velocity at index i
           WARNING It is not the same convention as for the clique
@@ -439,9 +460,114 @@ class Trajectory {
     return line;
   }
 
+  //! Returns the trajectory in the form of matrix
+  //! Each row is a configuration
+  Eigen::MatrixXd Matrix() const {
+    Eigen::MatrixXd Xi(T_ + 2, n_);
+    for (uint32_t t = 0; t <= T() + 1; t++) {
+      Xi.row(t) = Configuration(t);
+    }
+    return Xi;
+  }
+
  protected:
   uint32_t n_;
   uint32_t T_;
   Eigen::VectorXd x_;
 };
+
+//! Implements a trajectory that can be continously interpolated
+class ContinuousTrajectory : public Trajectory {
+ public:
+  ContinuousTrajectory(const Trajectory& trajectory) : Trajectory(trajectory) {}
+
+  // The trajectory is indexed by s \in [0, 1]
+  Eigen::VectorXd ConfigurationAtParameter(double s) const {
+    double l = length();
+    assert(l > 0.);
+    if (l == 0.) {
+      return Configuration(0);
+    }
+    double d_param = s * l;
+    Eigen::VectorXd q_prev = Configuration(0);
+    double dist = 0.;
+    for (uint32_t i = 1; i <= T(); i++) {
+      Eigen::VectorXd q_curr = Configuration(i);
+      double d = (q_curr - q_prev).norm();
+      if (d_param <= (d + dist)) {
+        return interpolate(q_prev, q_curr, d_param - dist, d);
+      }
+      dist += d;
+      q_prev = q_curr;
+    }
+    return Eigen::VectorXd();
+  }
+
+  // Length in configuration space
+  double length() const {
+    double length = 0.;
+    Eigen::VectorXd q_prev = Configuration(0);
+    for (uint32_t i = 1; i <= T(); i++) {
+      Eigen::VectorXd q_curr = Configuration(i);
+      length += (q_curr - q_prev).norm();
+      q_prev = q_curr;
+    }
+    return length;
+  }
+
+  Eigen::VectorXd interpolate(const Eigen::VectorXd& q_1,
+                              const Eigen::VectorXd& q_2, double d_param,
+                              double dist) const {
+    // interpolate between configurations """
+    //#assert d_param / dist <= 1.
+    double alpha = std::min(d_param / dist, 1.);
+    // assert alpha >= 0 and alpha <= 1., "alpha : {}".format(alpha)
+    return (1. - alpha) * q_1 + alpha * q_2;
+  }
+};
+
+//! Initialize a zero motion trajectory
+std::shared_ptr<Trajectory> InitializeZeroTrajectory(
+    const Eigen::VectorXd& q_init, uint32_t T);
+
+//! Convert vector representation in Trajectory.
+Trajectory GetTrajectory(const std::vector<Eigen::VectorXd>& line);
+
+//! Resamples a trajectory to be of T unit of time
+Trajectory Resample(const Trajectory& trajectory, uint32_t T);
+
+//! Linear interpolated trajectory
+Trajectory GetLinearInterpolation(const Eigen::VectorXd& q_init,
+                                  const Eigen::VectorXd& q_goal, uint32_t T);
+
+//! TODO
+//! Get the precision matrix using the hessian of the control costs
+//! sets constant scalars for the velocity and acceleration costs
+// Eigen::MatrixXd GetControlCostPrecisionMatrix(uint32_t T, double dt,
+//                                               uint32_t n);
+
+//! TODO
+//! Samples trajectories with 0 mean
+// std::vector<Trajectory> SampleTrajectoriesZeroMean(uint32_t T, double dt,
+//                                                    uint32_t n,
+//                                                    uint32_t nb_samples,
+//                                                    double std_dev = 1.5e-02);
+
+//! check if trajectory is Null motion
+bool IsTrajectoryNullMotion(const Trajectory& trajectory, double error = 0);
+
+//! Trajectory collision checking.
+bool DoesTrajectoryCollide(
+    const Trajectory& trajectory,
+    std::shared_ptr<const DifferentiableMap> collision_check,
+    double margin = 0.);
+
+//! Checks the equality of two markov trajectories
+bool AreTrajectoriesEqual(const Trajectory& traj1, const Trajectory& traj2,
+                          double error = 0);
+
+//! Returns the trajectory in the form of matrix
+//! Each row is a configuration
+Trajectory InitializeFromMatrix(const Eigen::MatrixXd& matrix);
+
 }  // namespace bewego

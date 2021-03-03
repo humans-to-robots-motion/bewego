@@ -23,7 +23,7 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/trajectory_optimization/cost_terms.h>
+#include <bewego/motion/cost_terms.h>
 
 using namespace bewego;
 

@@ -26,10 +26,10 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/motion/kinematics.h>
+#include <bewego/motion/objective.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/planning/planar_grid.h>
 #include <bewego/planning/value_iteration.h>
-#include <bewego/trajectory_optimization/objective.h>
 #include <bewego/util/interpolation.h>
 #include <bewego/util/util.h>
 #include <bewego/workspace/geometry.h>

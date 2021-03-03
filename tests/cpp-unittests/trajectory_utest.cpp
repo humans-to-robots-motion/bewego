@@ -1,7 +1,8 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/trajectory_optimization/cost_terms.h>
 #include <bewego/motion/trajectory.h>
+#include <bewego/motion/cost_terms.h>
+#include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -135,4 +136,104 @@ TEST(cliques_function_network, jacobian) {
   network->RegisterFunctionForAllCliques(cost);
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
+}
+
+TEST(trajectory, TrajectoryInterpolation) {
+  uint32_t n = 2;
+  uint32_t T = 10;
+  auto q_init = util::Random(n);  // Sample hypercube.
+  auto q_goal = util::Random(n);  // Sample hypercube.
+  Trajectory trajectory = GetLinearInterpolation(q_init, q_goal, T);
+  auto matrix = trajectory.Matrix();
+  cout << "Trajectory : " << endl << matrix << endl;
+  // ASSERT_LT((q_init - trajectory.Configuration(0)).norm(), 1e-6);
+  // ASSERT_LT((q_goal - trajectory.FinalConfiguration()).norm(), 1e-6);
+  // ASSERT_LT((q_goal - trajectory.Configuration(T + 1)).norm(), 1e-6);
+}
+
+TEST(trajectory, TrajectoryNull) {
+  uint32_t n = 10;
+  uint32_t T = 30;
+  auto q_init = util::Random(n);  // Sample hypercube.
+
+  // Linear interpolation introduces numerical issues for testing
+  // the trajectory NULL motion.
+  Trajectory trajectory = GetLinearInterpolation(q_init, q_init, T);
+  ASSERT_TRUE(IsTrajectoryNullMotion(trajectory, 1e-10));
+
+  // Simple test
+  for (uint32_t t = 1; t <= trajectory.T() + 1; t++) {
+    trajectory.Configuration(t) = q_init;
+  }
+  ASSERT_TRUE(IsTrajectoryNullMotion(trajectory));
+}
+
+TEST(trajectory, ContinuousTrajectory) {
+  uint32_t n = 10;
+  uint32_t T = 30;
+  auto q_init = util::Random(n);  // Sample hypercube.
+  auto q_goal = util::Random(n);  // Sample hypercube.
+
+  ContinuousTrajectory trajectory = GetLinearInterpolation(q_init, q_goal, T);
+
+  // Test the length function
+  double length_0 = (q_init - q_goal).norm();
+  double length_1 = trajectory.length();
+  cout << "length_0 : " << length_0 << endl;
+  cout << "length_1 : " << length_1 << endl;
+  ASSERT_LT(std::fabs(length_0 - length_1), 1.e-10);
+
+  double ds = length_0 / T;
+  for (uint32_t i = 0; i <= T; i++) {
+    double alpha = float(i) / float(T);
+    auto q_0 = trajectory.Configuration(i);
+    auto q_1 = (1. - alpha) * q_init + alpha * q_goal;
+    auto q_2 = trajectory.ConfigurationAtParameter(alpha);
+    cout << i << " -> (0) " << q_0.transpose() << endl;
+    cout << i << " -> (1) " << q_2.transpose() << endl;
+    ASSERT_LT(std::fabs((q_0 - q_1).norm()), 1.e-7);
+    ASSERT_LT(std::fabs((q_0 - q_2).norm()), 1.e-7);
+  }
+}
+
+TEST(trajectory, Resample) {
+  uint32_t n = 10;
+  uint32_t T = 10;
+  auto q_init = util::Random(n);  // Sample hypercube.
+  auto q_goal = util::Random(n);  // Sample hypercube.
+  auto t_0 = GetLinearInterpolation(q_init, q_goal, T);
+  auto t_1 = Resample(t_0, 30);
+  double l_0 = ContinuousTrajectory(t_0).length();
+  double l_1 = ContinuousTrajectory(t_1).length();
+  ASSERT_LT(std::fabs(l_0 - l_1), 1.e-7);
+}
+
+TEST(trajectory, ResampleTwoConfigs) {
+  uint32_t n = 10;
+  uint32_t T = 10;
+  auto q_init = util::Random(n);  // Sample hypercube.
+  auto q_goal = util::Random(n);  // Sample hypercube.
+  std::vector<Eigen::VectorXd> configs{q_init, q_goal};
+  auto t_0 = GetTrajectory(configs);
+  auto t_1 = Resample(t_0, T);
+  ASSERT_EQ(1, t_0.T());
+  ASSERT_EQ(T, t_1.T());
+  double l_0 = (q_init - q_goal).norm();
+  double l_1 = ContinuousTrajectory(t_1).length();
+  ASSERT_LT(std::fabs(l_0 - l_1), 1.e-7);
+}
+
+TEST(trajectory, ResampleTwoEqualConfigs) {
+  uint32_t n = 10;
+  uint32_t T = 10;
+  auto q_init = util::Random(n);  // Sample hypercube.
+  auto q_goal = q_init;
+  std::vector<Eigen::VectorXd> configs{q_init, q_goal};
+  auto t_0 = GetTrajectory(configs);
+  auto t_1 = Resample(t_0, T);
+  ASSERT_EQ(1, t_0.T());
+  ASSERT_EQ(T, t_1.T());
+  double l_0 = (q_init - q_goal).norm();
+  double l_1 = ContinuousTrajectory(t_1).length();
+  ASSERT_LT(std::fabs(l_0 - l_1), 1.e-7);
 }

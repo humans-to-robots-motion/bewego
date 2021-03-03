@@ -23,8 +23,8 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/trajectory_optimization/cost_terms.h>
-#include <bewego/trajectory_optimization/objective.h>
+#include <bewego/motion/cost_terms.h>
+#include <bewego/motion/objective.h>
 
 namespace bewego {
 
@@ -48,8 +48,8 @@ void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
 
 void MotionObjective::AddIsometricPotentialToAllCliques(
     DifferentiableMapPtr potential, double scalar) {
-  auto cost = std::make_shared<Compose>(potential, 
-      function_network_->CenterOfCliqueMap());
+  auto cost = std::make_shared<Compose>(potential,
+                                        function_network_->CenterOfCliqueMap());
 
   auto squared_norm_vel = std::make_shared<Compose>(
       std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
@@ -71,7 +71,6 @@ void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
   auto terminal_potential =
       std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_goal),
                                 function_network_->CenterOfCliqueMap());
-
   function_network_->RegisterFunctionForLastClique(
       std::make_shared<Scale>(terminal_potential, scalar));
 }
@@ -81,7 +80,6 @@ void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
   auto potential =
       std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_waypoint),
                                 function_network_->LeftMostOfCliqueMap());
-
   function_network_->RegisterFunctionForClique(
       t, std::make_shared<Scale>(potential, scalar));
 }
