@@ -32,9 +32,9 @@ from pyrieef.utils.collision_checking import *
 import pyrieef.learning.demonstrations as demonstrations
 from pyrieef.graph.shortest_path import *
 
-DRAW_MODE = None  # None, pyglet2d, pyglet3d or matplotlib
+DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
-BOXES = False
+BOXES = True
 
 nb_points = 40  # points for the grid on which to perform graph search.
 grid = np.ones((nb_points, nb_points))

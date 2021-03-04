@@ -139,18 +139,6 @@ set(GTEST_LIBRARY gtest_main)
 # message("where to compile : ${PROJECT_SOURCE_DIR}")
 
 ############################
-## bewego bindings         #
-############################
-set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
-add_subdirectory(pybind11)
-pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
-target_link_libraries(_pybewego PRIVATE bewego ${GTEST_LIBRARY})
-set_target_properties(_pybewego
-  PROPERTIES PREFIX ""
-  LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
-)
-
-############################
 ## bewego library          #
 ############################
 include_directories(${bewego_INCLUDE_DIRS})
@@ -189,7 +177,41 @@ target_link_libraries(${bewego_LIBRARY}
 ############################
 # numerical_optimization   #
 ############################
-# include(${bewego_SOURCE_DIR}/numerical_optimization/numerical_optimization.cmake)
+if(WITH_IPOPT)
+  include(${bewego_SOURCE_DIR}/numerical_optimization/numerical_optimization.cmake)
+  if(NOT IPOPT_LIBRARIES)
+    message(FATAL_ERROR "IPOPT library not found")
+  endif()
+endif()
+
+############################
+## bewego bindings         #
+############################
+set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
+add_subdirectory(pybind11)
+pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
+if(NOT WITH_IPOPT)
+    target_link_libraries(_pybewego PRIVATE bewego ${GTEST_LIBRARY})
+else()
+    target_include_directories(_pybewego
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
+            $<INSTALL_INTERFACE:include>
+        PRIVATE
+           ${IPOPT_INCLUDE_DIRS_STRIP}
+    )
+    target_link_libraries(_pybewego 
+        PRIVATE
+        bewego 
+        ${GTEST_LIBRARY}
+        ${IPOPT_LIBRARIES}
+        ${IPOPT_LINK_FLAGS}
+    )
+endif()
+set_target_properties(_pybewego
+  PROPERTIES PREFIX ""
+  LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
+)
 
 ############################
 # Tests                    #

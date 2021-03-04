@@ -57,7 +57,7 @@ class MotionOptimization:
 
         # Add workspace obstacles
         for o in self.workspace.obstacles:
-            if isinstance(o, Circle):
+            if hasattr(o, '_is_circle'):
                 self.problem.add_sphere(o.origin, o.radius)
             elif hasattr(o, '_is_box'):
                 self.problem.add_box(o.origin, o.dim)
