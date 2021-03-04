@@ -25,6 +25,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fstream>
