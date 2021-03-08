@@ -70,7 +70,8 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         nb_clique_elements_(3),
         clique_element_dim_(clique_element_dim),
         clique_dim_(nb_clique_elements_ * clique_element_dim_),
-        nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2) {
+        nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2),
+        nb_terms_(0) {
     functions_.resize(nb_cliques_);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       functions_[t] = std::make_shared<SumMap>();
@@ -79,6 +80,8 @@ class CliquesFunctionNetwork : public FunctionNetwork {
 
   virtual uint32_t input_dimension() const { return input_size_; }
   virtual uint32_t nb_cliques() const { return nb_cliques_; }
+  virtual uint32_t n() const { return clique_element_dim_; }
+  virtual uint32_t T() const { return nb_cliques_; }
 
   /** We call over all subfunctions in each clique */
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
@@ -171,12 +174,13 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     return H.block(c_id, c_id, clique_dim_, clique_dim_);
   }
 
+  //! returns the element of the input vector corresponding to a clique
   Eigen::VectorXd Clique(uint32_t t, const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     return x.segment(t * clique_element_dim_, clique_dim_);
   }
 
-  // returns a list of all cliques
+  //! returns a list of all cliques
   std::vector<Eigen::VectorXd> AllCliques(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     assert(input_dimension() == (nb_cliques_ + 2) * clique_element_dim_);
@@ -194,6 +198,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     functions.push_back(f);
     auto functions_copy = std::make_shared<VectorOfMaps>(functions);
     functions_[t] = std::make_shared<SumMap>(functions_copy);
+    nb_terms_++;
   }
 
   // Register function f
@@ -251,12 +256,15 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     return std::static_pointer_cast<const SumMap>(functions_[t])->terms();
   }
 
+  uint32_t nb_terms() const { return nb_terms_; }
+
  private:
   uint32_t input_size_;
   uint32_t nb_clique_elements_;
   uint32_t clique_element_dim_;
   uint32_t clique_dim_;
   uint32_t nb_cliques_;
+  uint32_t nb_terms_;
 };
 
 /**
