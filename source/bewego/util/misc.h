@@ -25,11 +25,11 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 namespace bewego {
@@ -48,8 +48,7 @@ namespace util {
 /// TODO use c++11 function instead
 /// std::stoi or std::stod
 template <class T>
-bool convert_text_to_num(T& t,
-                         const std::string& s,
+bool convert_text_to_num(T& t, const std::string& s,
                          std::ios_base& (*f)(std::ios_base&)) {
   std::istringstream iss(s);
   return !(iss >> f >> t).fail();
@@ -145,13 +144,11 @@ void SetScientificCSV(bool v);
 bool SaveMatrixToCsvFile(std::string filename, const Eigen::MatrixXd& mat);
 
 /// General interface to save matrices to file
-bool SaveMatrixToDisk(const std::string& filename,
-                      const Eigen::MatrixXd& mat,
+bool SaveMatrixToDisk(const std::string& filename, const Eigen::MatrixXd& mat,
                       bool binary);
 
 /// General interface to load matrices from file
-bool LoadMatrixFromDisk(const std::string& filename,
-                        Eigen::MatrixXd* mat,
+bool LoadMatrixFromDisk(const std::string& filename, Eigen::MatrixXd* mat,
                         bool binary);
 
 /// Float \in [0, 1]
@@ -173,6 +170,13 @@ Eigen::VectorXd RandomVector(uint32_t size, double min, double max);
 //! Get samples in [-0.5, 0.5]^N box
 std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
 SampleStartAndEndConfiguration(uint32_t nb_samples, uint32_t dim);
+
+//! Are values
+bool AlmostEqualRelative(double A, double B, double epsilon = 1e-6);
+
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
+                         double epsilon = 1e-6);
 
 // Exponentiate matrix with internal max value.
 void ExponentiateMatrix(Eigen::MatrixXd& values);
@@ -261,5 +265,5 @@ void PrintProgressBar(double progress);
 
 //! Function to print seed
 void print_seed(int seed);
-}
+}  // namespace util
 }  // namespace bewego

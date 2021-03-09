@@ -29,8 +29,9 @@
 
 // Only works on linux...
 #include <unistd.h>
-#include <iomanip>
+
 #include <atomic>
+#include <iomanip>
 
 using std::cerr;
 using std::cout;
@@ -331,6 +332,30 @@ SampleStartAndEndConfiguration(uint32_t nb_samples, uint32_t dim) {
     pairs.push_back(std::make_pair(x_init, x_goal));
   }
   return pairs;
+}
+
+bool AlmostEqualRelative(double a, double b, double epsilon) {
+  // Calculate the difference.
+  double diff = fabs(a - b);
+  a = fabs(a);
+  b = fabs(b);
+  // Find the largest
+  double largest = (b > a) ? b : a;
+  return (diff <= largest * epsilon);
+}
+
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
+                         double epsilon) {
+  if (v1.size() != v2.size()) {
+    return false;
+  }
+  for (int i = 0; i < v1.size(); i++) {
+    if (!AlmostEqualRelative(v1[i], v2[i], epsilon)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 const double max_allowed = 30;  // 30 : exp(30) = 10, 686, 474, 581, 524.00
