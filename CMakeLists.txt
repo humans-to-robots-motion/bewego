@@ -187,7 +187,7 @@ endif()
 ############################
 ## bewego bindings         #
 ############################
-set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
+# set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
 add_subdirectory(pybind11)
 pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
 if(NOT WITH_IPOPT)

@@ -153,16 +153,15 @@ TEST(cost_terms, obstacle_potential) {
   }
 }
 
-TEST(cost_terms, bound_barrier) {
+TEST_F(DifferentialMapTest, bound_barrier) {
   std::srand(SEED);
-  double alpha = 10 * util::Rand();
-
+  verbose_ = false;
+  gradient_precision_ = 1e-3;
+  hessian_precision_ = 1e-2;
+  use_relative_eq_ = true;
   Eigen::Vector3d v_lower(-1, -1, -1);
   Eigen::Vector3d v_upper(1, 1, 1);
-
   auto phi = std::make_shared<BoundBarrier>(v_lower, v_upper);
-  for (uint32_t i = 0; i < NB_TESTS; i++) {
-    ASSERT_TRUE(phi->CheckJacobian(1e-3));
-    ASSERT_TRUE(phi->CheckHessian(1e-4));
-  }
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
 }
