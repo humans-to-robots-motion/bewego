@@ -17,26 +17,34 @@ std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
 
-TEST(cost_terms, finite_differences_velocity) {
+TEST_F(DifferentialMapTest, finite_differences_velocity) {
   std::srand(SEED);
 
-  f = std::make_shared<FiniteDifferencesVelocity>(1, .01);
-  ASSERT_TRUE(f->CheckJacobian());
-  ASSERT_TRUE(f->CheckHessian());
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+  hessian_precision_ = 1e-6;
+  use_relative_eq_ = true;
+  uint32_t n = 10;
 
-  f = std::make_shared<FiniteDifferencesVelocity>(2, .01);
-  ASSERT_TRUE(f->CheckJacobian());
+  AddRandomTests(std::make_shared<FiniteDifferencesVelocity>(1, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesVelocity>(2, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesVelocity>(7, .1), n);
+  RunAllTests();
 
-  f = std::make_shared<FiniteDifferencesVelocity>(7, .1);
-  ASSERT_TRUE(f->CheckJacobian());
-
-  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_3(2 * 7);
-  x_3.head(7) = x_1;  // x_{t}
-  x_3.tail(7) = x_2;  // x_{t+1}
-  Eigen::VectorXd dx = (*f)(x_3);
-  ASSERT_TRUE(dx.isApprox((x_2 - x_1) / .1));
+  uint32_t N = 7;
+  double dt = 0.1;
+  FiniteDifferencesVelocity fd(N, dt);
+  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_3(2 * N);
+  x_3.head(N) = x_1;  // x_{t}
+  x_3.tail(N) = x_2;  // x_{t+1}
+  Eigen::VectorXd dx = fd(x_3);
+  if (verbose_) {
+    cout << "dx1 : " << dx.transpose() << endl;
+    cout << "dx2 : " << ((x_2 - x_1) / dt).transpose() << endl;
+  }
+  ASSERT_TRUE(dx.isApprox((x_2 - x_1) / dt));
 }
 
 TEST_F(DifferentialMapTest, finite_differences_acceleration) {
@@ -53,14 +61,16 @@ TEST_F(DifferentialMapTest, finite_differences_acceleration) {
   AddRandomTests(std::make_shared<FiniteDifferencesAcceleration>(7, .1), n);
   RunAllTests();
 
-  FiniteDifferencesAcceleration fd(7, .1);
-  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_3 = Eigen::VectorXd::Random(7);
-  Eigen::VectorXd x_4 = Eigen::VectorXd::Random(3 * 7);
-  x_4.head(7) = x_1;        // x_{t-1}
-  x_4.segment(7, 7) = x_2;  // x_{t}
-  x_4.tail(7) = x_3;        // x_{t+1}
+  uint32_t N = 7;
+  double dt = 0.1;
+  FiniteDifferencesAcceleration fd(N, dt);
+  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_3 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_4 = Eigen::VectorXd::Random(3 * N);
+  x_4.head(N) = x_1;        // x_{t-1}
+  x_4.segment(N, N) = x_2;  // x_{t}
+  x_4.tail(N) = x_3;        // x_{t+1}
   Eigen::VectorXd dx = fd(x_4);
   ASSERT_TRUE(dx.isApprox((x_1 + x_3 - 2 * x_2) / (.1 * .1)));
 }

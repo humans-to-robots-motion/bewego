@@ -171,14 +171,14 @@ Eigen::VectorXd RandomVector(uint32_t size, double min, double max);
 std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
 SampleStartAndEndConfiguration(uint32_t nb_samples, uint32_t dim);
 
-//! Are values
+//! Are values equal
 bool AlmostEqualRelative(double A, double B, double epsilon = 1e-6);
 
 //! Are vectors equal
 bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
                          double epsilon = 1e-6);
 
-//! Are vectors equal
+//! Are matrices equal
 bool AlmostEqualRelative(const Eigen::MatrixXd& m1, const Eigen::MatrixXd& m2,
                          double epsilon = 1e-6);
 
