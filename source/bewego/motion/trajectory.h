@@ -27,6 +27,7 @@
 
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
+#include <bewego/util/misc.h>
 #include <bewego/util/util.h>
 
 using bewego::util::range;
@@ -257,6 +258,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
   }
 
   uint32_t nb_terms() const { return nb_terms_; }
+  uint32_t clique_dim() const { return clique_dim_; }
 
  private:
   uint32_t input_size_;
@@ -318,11 +320,40 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
     return H.block(n_, n_, input_dimension(), input_dimension());
   }
 
+  /** Hessian Sparcity Patern (band diagonal)
+
+  In trajectory networks, the hessian is band diagonal.
+  The Hessian matrix is a symmetric matrix, since the hypothesis of continuity
+  of the second derivatives implies that the order of differentiation does not
+  matter (Schwarz's theorem).
+  **/
+  util::MatrixSparsityPatern HessianSparcityPatern() const {
+    util::MatrixSparsityPatern patern;
+    uint32_t clique_dim = function_network_->clique_dim();
+    for (uint32_t diag = 0; diag < clique_dim; diag++) {
+      uint32_t i = diag;
+      uint32_t j = 0;
+      while (i < input_dimension() && j < input_dimension()) {
+        if (diag == 0) {
+          // main diagonal case
+          patern.add_coefficient(i, i);
+        } else {
+          // other diagonals
+          patern.add_coefficient(i, j);
+          patern.add_coefficient(j, i);
+          j++;
+        }
+        i++;
+      }
+    }
+    return patern;
+  }
+
  protected:
   Eigen::VectorXd q_init_;
   uint32_t n_;
   std::shared_ptr<const CliquesFunctionNetwork> function_network_;
-};
+};  // namespace bewego
 
 /**
         Implement a trajectory as a single vector of configuration,

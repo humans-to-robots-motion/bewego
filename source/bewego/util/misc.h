@@ -202,6 +202,43 @@ uint32_t size_t_to_uint(long data);
 uint32_t float_to_uint(double v);
 constexpr unsigned int str2int(const char* str, int h = 0);
 
+//! Matrix sparsity patern to be used in optimization
+//! for fast linear system solving.
+struct MatrixSparsityPatern {
+  MatrixSparsityPatern() { clear(); }
+  void add_coefficient(int id_row, int id_col) {
+    ids_rows.push_back(id_row);
+    ids_cols.push_back(id_col);
+    if (id_row != id_col) nb_offdiag_terms_++;
+  }
+  void clear() {
+    ids_rows.clear();
+    ids_cols.clear();
+    nb_offdiag_terms_ = 0;
+  }
+  bool empty() const { return ids_rows.empty() && ids_cols.empty(); }
+  size_t size() const { return ids_rows.size(); }
+  size_t nb_diag_terms() const { return ids_rows.size() - nb_offdiag_terms_; }
+  size_t nb_offdiag_terms() const { return nb_offdiag_terms_; }
+
+  Eigen::MatrixXi PaternMatrix(int rows, int cols) const {
+    assert(rows > 0);
+    assert(cols > 0);
+    assert(ids_rows.size() == ids_cols.size());
+    Eigen::MatrixXi mat = Eigen::MatrixXi::Zero(rows, cols);
+    for (uint32_t c = 0; c < ids_rows.size(); c++) {
+      mat(ids_rows[c], ids_cols[c]) = 1;
+    }
+    return mat;
+  }
+
+  std::vector<int> ids_rows;
+  std::vector<int> ids_cols;
+
+ protected:
+  uint32_t nb_offdiag_terms_;
+};
+
 // Convert a vector of trajectories to a vector of shared pointer
 template <typename Type>
 inline std::vector<std::shared_ptr<const Type>> ConvertToSharedPtr(
