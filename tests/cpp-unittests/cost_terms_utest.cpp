@@ -39,19 +39,21 @@ TEST(cost_terms, finite_differences_velocity) {
   ASSERT_TRUE(dx.isApprox((x_2 - x_1) / .1));
 }
 
-TEST(cost_terms, finite_differences_acceleration) {
+TEST_F(DifferentialMapTest, finite_differences_acceleration) {
   std::srand(SEED);
 
-  f = std::make_shared<FiniteDifferencesAcceleration>(1, .01);
-  ASSERT_TRUE(f->CheckJacobian());
-  ASSERT_TRUE(f->CheckHessian());
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+  hessian_precision_ = 1e-6;
+  use_relative_eq_ = true;
+  uint32_t n = 10;
 
-  f = std::make_shared<FiniteDifferencesAcceleration>(2, .01);
-  ASSERT_TRUE(f->CheckJacobian(1e-6));
+  AddRandomTests(std::make_shared<FiniteDifferencesAcceleration>(1, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesAcceleration>(2, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesAcceleration>(7, .1), n);
+  RunAllTests();
 
-  f = std::make_shared<FiniteDifferencesAcceleration>(7, .1);
-  ASSERT_TRUE(f->CheckJacobian());
-
+  FiniteDifferencesAcceleration fd(7, .1);
   Eigen::VectorXd x_1 = Eigen::VectorXd::Random(7);
   Eigen::VectorXd x_2 = Eigen::VectorXd::Random(7);
   Eigen::VectorXd x_3 = Eigen::VectorXd::Random(7);
@@ -59,7 +61,7 @@ TEST(cost_terms, finite_differences_acceleration) {
   x_4.head(7) = x_1;        // x_{t-1}
   x_4.segment(7, 7) = x_2;  // x_{t}
   x_4.tail(7) = x_3;        // x_{t+1}
-  Eigen::VectorXd dx = (*f)(x_4);
+  Eigen::VectorXd dx = fd(x_4);
   ASSERT_TRUE(dx.isApprox((x_1 + x_3 - 2 * x_2) / (.1 * .1)));
 }
 

@@ -178,6 +178,10 @@ bool AlmostEqualRelative(double A, double B, double epsilon = 1e-6);
 bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
                          double epsilon = 1e-6);
 
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::MatrixXd& m1, const Eigen::MatrixXd& m2,
+                         double epsilon = 1e-6);
+
 // Exponentiate matrix with internal max value.
 void ExponentiateMatrix(Eigen::MatrixXd& values);
 

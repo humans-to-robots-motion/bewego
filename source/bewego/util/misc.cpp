@@ -358,6 +358,25 @@ bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
   return true;
 }
 
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::MatrixXd& m1, const Eigen::MatrixXd& m2,
+                         double epsilon) {
+  if (m1.rows() != m2.rows()) {
+    return false;
+  }
+  if (m1.cols() != m2.cols()) {
+    return false;
+  }
+  for (int i = 0; i < m1.rows(); i++) {
+    for (int j = 0; j < m1.cols(); j++) {
+      if (!AlmostEqualRelative(m1(i, j), m2(i, j), epsilon)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 const double max_allowed = 30;  // 30 : exp(30) = 10, 686, 474, 581, 524.00
 const double exp_offset = 0;
 void ExponentiateMatrix(Eigen::MatrixXd& values) {

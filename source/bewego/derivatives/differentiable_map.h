@@ -132,8 +132,7 @@ class DifferentiableMap {
   bool debug_;
 };
 
-/**
-    f round g : f(g(q))
+/** f round g : f(g(q))
 
     This function should be called pullback if we approxiate
     higher order (i.e., hessians) derivaties by pullback, here it's
@@ -156,8 +155,7 @@ class Compose : public DifferentiableMap {
     return (*f_)((*g_)(q));
   }
 
-  /**
-      d/dq f(g(q)), applies chain rule.
+  /** d/dq f(g(q)), applies chain rule.
 
             * J_f(g(q)) J_g
 
@@ -167,25 +165,25 @@ class Compose : public DifferentiableMap {
                 d/dq f(g(q)) = J_f(g(q)) J_g
         This method computes and
         returns this "pullback gradient" J_f (g(q)) J_g(q).
+
         WARNING: J_f is assumed to be a jacobian np.matrix object
     */
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
     return Evaluate(q).second;
   }
 
-  /**
-      d^2/dq^2 f(g(q)), applies chain rule.
+  /** d^2/dq^2 f(g(q)), applies chain rule.
 
             * J_g' H_f J_g + H_g J_f,
 
-        https://en.wikipedia.org/wiki/Chain_rule (Higher derivatives)
+    https://en.wikipedia.org/wiki/Chain_rule (Higher derivatives)
 
-        WARNING: If n > 1, where g : R^m -> R^n, we approximate the hessian
-                 to the first term. This is equivalent to considering H_g = 0
-                 It can be seen as operating a pullback of the curvature
-                 tensor of f by g.
+    WARNING: If n > 1, where g : R^m -> R^n, we approximate the hessian
+             to the first term. This is equivalent to considering H_g = 0
+             It can be seen as operating a pullback of the curvature
+             tensor of f by g.
 
-          https://en.wikipedia.org/wiki/Pullback_(differential_geometry)
+    https://en.wikipedia.org/wiki/Pullback_(differential_geometry)
     */
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& q) {
     assert(f_->output_dimension() == 1);
@@ -220,21 +218,21 @@ class Compose : public DifferentiableMap {
 class DifferentialMapTest : public testing::Test {
  public:
   DifferentialMapTest(bool with_hesssian = true)
-      : use_double_eq_(true),
+      : use_relative_eq_(false),
         gradient_precision_(1e-6),
         hessian_precision_(1e-6),
         verbose_(false) {}
 
-  /** \brief Returns true if implementation is the same as finite difference */
+  /* Returns true if implementation is the same as finite difference */
   void FiniteDifferenceTest(std::shared_ptr<const DifferentiableMap> phi,
                             const Eigen::VectorXd& x) const;
 
   virtual void SetUp() {}
 
-  /** \brief Run test procedure on all function tests in function_tests_. */
+  /* Run test procedure on all function tests in function_tests_. */
   void RunAllTests() const;
 
-  /** \brief Run test procedure on all function tests in function_tests_. */
+  /* Run test procedure on all function tests in function_tests_. */
   void AddRandomTests(std::shared_ptr<const DifferentiableMap> f, uint32_t n);
 
   bool verbose() const { return verbose_; }
@@ -249,7 +247,7 @@ class DifferentialMapTest : public testing::Test {
       std::pair<std::shared_ptr<const DifferentiableMap>, Eigen::VectorXd>>
       function_tests_;
 
-  bool use_double_eq_;
+  bool use_relative_eq_;
   double gradient_precision_;
   double hessian_precision_;
   bool verbose_;
