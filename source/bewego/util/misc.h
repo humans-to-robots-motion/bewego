@@ -206,6 +206,7 @@ constexpr unsigned int str2int(const char* str, int h = 0);
 //! for fast linear system solving.
 struct MatrixSparsityPatern {
   MatrixSparsityPatern() { clear(); }
+
   void add_coefficient(int id_row, int id_col) {
     ids_rows.push_back(id_row);
     ids_cols.push_back(id_col);
@@ -221,7 +222,7 @@ struct MatrixSparsityPatern {
   size_t nb_diag_terms() const { return ids_rows.size() - nb_offdiag_terms_; }
   size_t nb_offdiag_terms() const { return nb_offdiag_terms_; }
 
-  Eigen::MatrixXi PaternMatrix(int rows, int cols) const {
+  Eigen::MatrixXi Matrix(int rows, int cols) const {
     assert(rows > 0);
     assert(cols > 0);
     assert(ids_rows.size() == ids_cols.size());
