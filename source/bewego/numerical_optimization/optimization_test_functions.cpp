@@ -27,6 +27,8 @@
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/numerical_optimization/optimization_test_functions.h>
 #include <bewego/util/misc.h>
+#include <filesystem>
+namespace fs = std::__fs::filesystem;
 
 using namespace bewego;
 using namespace bewego::numerical_optimization;
@@ -50,6 +52,10 @@ void QuadricProgramOptimizationTest::SetUp() {
   a_ = Eigen::VectorXd::Random(k_inequality);
   B_ = Eigen::MatrixXd::Random(k_equality, n);
   b_ = Eigen::VectorXd::Random(k_equality);
+
+  cout << "CURRENT PATH : " <<  fs::current_path() << endl;
+
+  // util::ReadMatrixFromCsvFile
 
   if (verbose_) {
     cout << "H  : " << endl << H << endl;
