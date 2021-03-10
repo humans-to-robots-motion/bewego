@@ -26,9 +26,8 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/numerical_optimization/optimization_test_functions.h>
+#include <bewego/numerical_optimization/qp_data.h>
 #include <bewego/util/misc.h>
-#include <filesystem>
-namespace fs = std::__fs::filesystem;
 
 using namespace bewego;
 using namespace bewego::numerical_optimization;
@@ -43,8 +42,9 @@ void QuadricProgramOptimizationTest::SetUp() {
   uint32_t k_inequality = 5;  // Number of inequality constraints.
   uint32_t k_equality = 2;    // Number of equality constraints.
 
-  Eigen::MatrixXd H = Eigen::MatrixXd::Random(n, n);
-  H = H * H.transpose();  // Make sure H is symetric (and positive definite)
+  /*
+  Eigen::MatrixXd H1 = Eigen::MatrixXd::Random(n, n);
+  H1 = H1 * H1.transpose();  // Make sure H is symetric (and positive definite)
   Eigen::VectorXd d = Eigen::VectorXd::Random(n);
   double c = 2.;
 
@@ -52,10 +52,16 @@ void QuadricProgramOptimizationTest::SetUp() {
   a_ = Eigen::VectorXd::Random(k_inequality);
   B_ = Eigen::MatrixXd::Random(k_equality, n);
   b_ = Eigen::VectorXd::Random(k_equality);
+  */
 
-  cout << "CURRENT PATH : " <<  fs::current_path() << endl;
-
-  // util::ReadMatrixFromCsvFile
+  QPData data;
+  A_ = data.A;
+  a_ = data.a;
+  B_ = data.B;
+  b_ = data.b;
+  double c = data.c;
+  Eigen::VectorXd d = data.d;
+  Eigen::MatrixXd H = data.H;
 
   if (verbose_) {
     cout << "H  : " << endl << H << endl;
