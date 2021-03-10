@@ -62,7 +62,11 @@ gtest_add_tests(TARGET sparse_utest)
 
 add_executable(ipopt_utest
     ${MODULE_DIR}/tests/test_ipopt.cpp)
-target_link_libraries(ipopt_utest ${MODULE_NAME})
+target_link_libraries(ipopt_utest
+    ${MODULE_NAME} 
+    PRIVATE
+    ${IPOPT_LIBRARIES}
+    ${IPOPT_LINK_FLAGS})
 target_include_directories(ipopt_utest
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
@@ -75,7 +79,12 @@ gtest_add_tests(TARGET ipopt_utest)
 
 add_executable(trajectory_optimization_utest
     ${MODULE_DIR}/tests/test_trajectory_optimization.cpp)
-target_link_libraries(trajectory_optimization_utest ${MODULE_NAME})
+target_link_libraries(
+    trajectory_optimization_utest 
+    ${MODULE_NAME}
+    PRIVATE
+    ${IPOPT_LIBRARIES}
+    ${IPOPT_LINK_FLAGS})
 target_include_directories(trajectory_optimization_utest
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
