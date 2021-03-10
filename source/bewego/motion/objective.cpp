@@ -31,13 +31,12 @@ namespace bewego {
 void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
   if (deriv_order == 1) {
     auto derivative = std::make_shared<Compose>(
-        std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
+        std::make_shared<SquaredNormVelocity>(n_, dt_),
         function_network_->LeftOfCliqueMap());
     function_network_->RegisterFunctionForAllCliques(
         std::make_shared<Scale>(derivative, scalar));
   } else if (deriv_order == 2) {
-    auto derivative =
-        std::make_shared<SquaredNormAcceleration>(config_space_dim_, dt_);
+    auto derivative = std::make_shared<SquaredNormAcceleration>(n_, dt_);
     function_network_->RegisterFunctionForAllCliques(
         std::make_shared<Scale>(derivative, scalar));
   } else {
@@ -51,9 +50,9 @@ void MotionObjective::AddIsometricPotentialToAllCliques(
   auto cost = std::make_shared<Compose>(potential,
                                         function_network_->CenterOfCliqueMap());
 
-  auto squared_norm_vel = std::make_shared<Compose>(
-      std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
-      function_network_->RightOfCliqueMap());
+  auto squared_norm_vel =
+      std::make_shared<Compose>(std::make_shared<SquaredNormVelocity>(n_, dt_),
+                                function_network_->RightOfCliqueMap());
 
   function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
       std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));

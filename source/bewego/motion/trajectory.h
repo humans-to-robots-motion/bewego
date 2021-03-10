@@ -78,7 +78,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
       functions_[t] = std::make_shared<SumMap>();
     }
   }
-
+  static uint32_t NetworkDim(uint32_t n, uint32_t T) { return (T + 2) * n; }
   virtual uint32_t input_dimension() const { return input_size_; }
   virtual uint32_t nb_cliques() const { return nb_cliques_; }
   virtual uint32_t n() const { return clique_element_dim_; }

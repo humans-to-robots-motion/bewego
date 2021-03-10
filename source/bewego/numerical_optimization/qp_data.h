@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019
+ * Copyright (c) 2021
  * All rights reserved.
  *
  * Redistribution  and  use  in  source  and binary  forms,  with  or  without
@@ -20,7 +20,7 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *
- *                                              Jim Mainprice Tue 18 Nov 2019
+ *                                              Jim Mainprice Wed 10 Mar 2021
  */
 #pragma once
 

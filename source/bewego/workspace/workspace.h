@@ -24,8 +24,9 @@
  */
 
 #pragma once
-#include <bewego/derivatives/differentiable_map.h>
 #include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/workspace/extent.h>
 
 #include <Eigen/Geometry>
 
@@ -242,6 +243,13 @@ class Rectangle : public WorkspaceObject {
   const Eigen::Vector2d& center() const { return center_; }
   const Eigen::Vector2d& dimensions() const { return dimensions_; }
   double orientation() const { return orientation_; }
+
+  extent_t extent() const {
+    double half_dim_x = dimensions_.x() / 2.;
+    double half_dim_y = dimensions_.y() / 2.;
+    return extent_t(center_.x() - half_dim_x, center_.x() + half_dim_x,
+                    center_.y() - half_dim_y, center_.y() + half_dim_y);
+  }
 
  protected:
   Eigen::Vector2d center_;
