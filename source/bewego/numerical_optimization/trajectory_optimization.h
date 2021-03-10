@@ -111,9 +111,6 @@ class TrajectoryObjectiveTest {
 
   FunctionNetworkPtr f_;  // objective function
   FunctionNetworkPtr h_;  // equality constraint
-
-  // std::shared_ptr<lula::motion::KinematicFunctionTransformer>
-  //     kinematic_function_transformer_;  // kinematic transformer
 };
 
 /*!\brief The TrajectoryOptimizationTest class
