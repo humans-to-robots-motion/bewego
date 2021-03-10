@@ -15,6 +15,8 @@ string(REPLACE /coin
 message("IOPT include_dirs: ${IPOPT_INCLUDE_DIRS}")
 message("IPOPT_INCLUDE_DIRS_STRIP: ${IPOPT_INCLUDE_DIRS_STRIP}")
 message("IOPT version: ${IPOPT_VERSION}") 
+message(STATUS "IPOPT_CFLAGS:  ${IPOPT_CFLAGS}")
+message(STATUS "IPOPT_CFLAGS_OTHER: ${IPOPT_CFLAGS_OTHER}")
 
 # Local directory
 file(GLOB_RECURSE INC "${MODULE_DIR}/*.h")
@@ -54,19 +56,19 @@ target_compile_definitions(${MODULE_NAME}
 
 # enable_testing()
 
+# ----------------------------------------------
+
 add_executable(sparse_utest 
     ${MODULE_DIR}/tests/test_sparse.cpp)
 target_link_libraries(sparse_utest ${MODULE_NAME})
 include(GoogleTest)
 gtest_add_tests(TARGET sparse_utest)
 
+# ----------------------------------------------
+
 add_executable(ipopt_utest
     ${MODULE_DIR}/tests/test_ipopt.cpp)
-target_link_libraries(ipopt_utest
-    ${MODULE_NAME} 
-    PRIVATE
-    ${IPOPT_LIBRARIES}
-    ${IPOPT_LINK_FLAGS})
+target_link_libraries(ipopt_utest ${MODULE_NAME})
 target_include_directories(ipopt_utest
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
@@ -74,23 +76,30 @@ target_include_directories(ipopt_utest
   PRIVATE
     ${IPOPT_INCLUDE_DIRS_STRIP}
 )
+target_compile_definitions(ipopt_utest
+  PRIVATE
+    ${IPOPT_DEFINITIONS}
+)
 include(GoogleTest)
 gtest_add_tests(TARGET ipopt_utest)
+
+# ----------------------------------------------
 
 add_executable(trajectory_optimization_utest
     ${MODULE_DIR}/tests/test_trajectory_optimization.cpp)
 target_link_libraries(
     trajectory_optimization_utest 
-    ${MODULE_NAME}
-    PRIVATE
-    ${IPOPT_LIBRARIES}
-    ${IPOPT_LINK_FLAGS})
+    ${MODULE_NAME})
 target_include_directories(trajectory_optimization_utest
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
     $<INSTALL_INTERFACE:include>
   PRIVATE
     ${IPOPT_INCLUDE_DIRS_STRIP}
+    )
+target_compile_definitions(trajectory_optimization_utest
+  PRIVATE
+    ${IPOPT_DEFINITIONS}
 )
 include(GoogleTest)
 gtest_add_tests(TARGET trajectory_optimization_utest)
