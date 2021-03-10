@@ -1,8 +1,9 @@
 // Copyright (c) 2019, University of Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 
-#include <bewego/util/util.h>
 #include <bewego/util/misc.h>
+#include <bewego/util/util.h>
+#include <bewego/workspace/pixelmap.h>
 #include <bewego/workspace/workspace.h>
 #include <gtest/gtest.h>
 
@@ -12,6 +13,7 @@ using std::endl;
 
 const double error = 1e-05;
 const double nb_test_points = 10;
+const double resolution = 0.01;
 
 class SphereDistanceTest : public DifferentialMapTest {
  public:
