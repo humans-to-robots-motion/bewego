@@ -152,6 +152,7 @@ Eigen::MatrixXd EvaluateFunction(const DifferentiableMap& f,
       values(loc.y(), loc.x()) = f.ForwardFunc(world);
     }
   }
+
   return values;
 }
 

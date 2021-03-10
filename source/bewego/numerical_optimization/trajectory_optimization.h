@@ -53,13 +53,17 @@ class TrajectoryOptimizationProblem
       const std::vector<FunctionNetworkPtr>& inequality_constraints,
       const std::vector<FunctionNetworkPtr>& equality_constraints);
 
+  static std::shared_ptr<TrajectoryObjectiveFunction> CreateDiffFunction(
+      const Eigen::VectorXd& q_init, std::shared_ptr<CliquesFunctionNetwork> f);
+
  protected:
   Eigen::VectorXd q_init_;
 };
 
-/*!\brief Create a very basic trajectory objective, which first and second order
- * are exactly known convienient for testing against finite differences
- * This objective is a Quadratically Constrained Quadratic Program (QCQP)
+/*!\brief Create a very basic trajectory objective, which first and second
+ * order are exactly known convienient for testing against finite
+ * differences This objective is a Quadratically Constrained Quadratic
+ * Program (QCQP)
  *
  *        x^* = argmin_x [ 1/2 x^T A x ]
  *                s.t. 1/2| q_N - q_g |^2  = 0

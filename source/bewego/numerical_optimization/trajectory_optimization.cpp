@@ -99,19 +99,20 @@ TrajectoryObjectiveTest::TrajectoryObjectiveTest(uint32_t n, double dt,
 
 // Create a difffunction given a
 // Markov trajectory function network.
-std::shared_ptr<TrajectoryObjectiveFunction> CreateDiffFunction(
+std::shared_ptr<TrajectoryObjectiveFunction>
+TrajectoryOptimizationProblem::CreateDiffFunction(
     const Eigen::VectorXd& q_init, std::shared_ptr<CliquesFunctionNetwork> f) {
   return std::make_shared<TrajectoryObjectiveFunction>(q_init, f);
 }
 
 std::shared_ptr<TrajectoryObjectiveFunction>
 TrajectoryObjectiveTest::ObjectiveDiffFunction() const {
-  return CreateDiffFunction(q_init_, f_);
+  return TrajectoryOptimizationProblem::CreateDiffFunction(q_init_, f_);
 }
 
 std::shared_ptr<TrajectoryObjectiveFunction>
 TrajectoryObjectiveTest::EqualityConstraintDiffFunction() const {
-  return CreateDiffFunction(q_init_, h_);
+  return TrajectoryOptimizationProblem::CreateDiffFunction(q_init_, h_);
 }
 
 void TrajectoryObjectiveTest::SetUp() {
