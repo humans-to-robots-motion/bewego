@@ -62,7 +62,6 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     p.s_obstacle_alpha = 10
     p.s_obstacle_scaling = 1
     p.s_terminal_potential = 1e+6
-    problem.initialize_objective(p)
 
     options = {}
     options["tol"] = 1e-2
@@ -70,6 +69,6 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     options["acceptable_constr_viol_tol"] = 5e-1
     options["max_cpu_time"] = 30
     options["constr_viol_tol"] = 5e-2
-    options["max_iter"] = 200
+    # options["max_iter"] = 200
 
     problem.optimize(p, options)

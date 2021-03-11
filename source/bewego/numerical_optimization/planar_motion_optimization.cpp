@@ -53,11 +53,13 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
       with_rotation_(false),
       with_attractor_constraint_(false),
       ipopt_with_bounds_(false),
-      ipopt_hessian_approximation_("exact") {
+      ipopt_hessian_approximation_("limited-memory") {
   cout << "Create planar optimizer with n : " << n_ << endl;
   assert(n_ == 2);
   assert(T > 2);
   assert(dt > 0);
+
+  verbose_ = true;
 
   // For now the workspace is axis-aligned
   assert(workspace_bounds.size() == 4);
@@ -156,9 +158,15 @@ PlanarOptimizer::SetupIpoptOptimizer(
   }
   optimizer->set_verbose(verbose_);
   optimizer->set_option("print_level", verbose_ ? 4 : 0);
+
+  optimizer->set_option("derivative_test", "first-order");
+  // optimizer->set_option("derivative_test", "second-order");  // TODO remove
+  // optimizer->set_option("derivative_test_tol", 1e-4);
+
+  optimizer->set_option("constr_viol_tol", 1e-7);
   optimizer->set_option("hessian_approximation", ipopt_hessian_approximation_);
   // Parse all options from flags
-  optimizer->set_options_map(ipopt_options);
+  // optimizer->set_options_map(ipopt_options);
 
   // Logging
   /* TODO
@@ -193,10 +201,23 @@ Eigen::VectorXd PlanarOptimizer::Optimize(
   assert(n == n_);
   assert(T == T_);
 
+  cout << "-- T : " << T << endl;
+  cout << "-- n : " << n << endl;
+
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
+
   auto optimizer = SetupIpoptOptimizer(q_init, options);
+  // auto optimizer = std::make_shared<IpoptOptimizer>();
+  // optimizer->set_verbose(verbose_);
+  // optimizer->set_option("derivative_test", "first-order");
+  // optimizer->set_option("derivative_test", "second-order");
+  // optimizer->set_option("derivative_test_tol", 1e-4);
+  // optimizer->set_option("constr_viol_tol", 1e-7);
+  // optimizer->set_option("hessian_approximation", "exact");
+
+  // cout << "traj : " << init_traj.ActiveSegment() << endl;
 
   // 3) Optimizer trajectory
   auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());

@@ -55,6 +55,7 @@ class MotionOptimization:
         self.q_goal = q_goal
         self.workspace = workspace
         self.trajectory = trajectory
+        self.verbose = False
         self.problem = None
 
     def _problem(self):
@@ -178,7 +179,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             assert len(q_goal) == 2
             assert len(bounds) == 4
             self.bounds = bounds
-            self.with_goal_constraint = True
+            self.with_goal_constraint = False
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -236,12 +237,9 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.q_goal,
                 ipopt_options
             )
-            self.trajectory.x()[:] = res
+            self.trajectory.active_segment()[:] = res
             dist = np.linalg.norm(
                 self.trajectory.final_configuration() - self.q_goal)
             if self.verbose:
                 print(("gradient norm : ", np.linalg.norm(res.jac)))
-            else:
-                raise ValueError
-
-            return [dist < 1.e-3, trajectory]
+            return [dist < 1.e-3, self.trajectory]

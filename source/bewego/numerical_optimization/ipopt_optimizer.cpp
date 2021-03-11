@@ -97,7 +97,7 @@ IpoptOptimizer::IpoptOptimizer() {
   set_option("max_cpu_time", 40.0);
   set_option("tol", 0.001);
   set_option("print_timing_statistics", "no");
-  set_option("print_user_options", "no");
+  set_option("print_user_options", "yes");
   set_option("print_level", 4);
 
   // See test execuables.
@@ -164,6 +164,7 @@ IpoptOptimizer::GetGenericConstraintsBounds(uint32_t n_g, uint32_t n_h) const {
 ConstrainedSolution IpoptOptimizer::Run(
     const OptimizationProblemWithConstraints& problem,
     const Eigen::VectorXd& x0) const {
+  cout << __func__ << endl;
   using namespace Ipopt;
 
   int status = ipopt_app_->Initialize();
@@ -188,6 +189,7 @@ ConstrainedSolution IpoptOptimizer::Run(
       x0, jac_type == "finite-difference-values", publish_solution_);
   ipopt_problem->set_verbose(verbose_);
 
+  cout << "run OptimizeTNLP" << endl;
   bool success = true;
   status = ipopt_app_->OptimizeTNLP(ipopt_problem);
   if ((status != Solve_Succeeded) && (status != Solved_To_Acceptable_Level)) {
