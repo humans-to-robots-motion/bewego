@@ -147,7 +147,9 @@ void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
 }
 
 std::shared_ptr<const ConstrainedOptimizer>
-PlanarOptimizer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
+PlanarOptimizer::SetupIpoptOptimizer(
+    const Eigen::VectorXd& q_init,
+    const std::map<std::string, double>& ipopt_options) const {
   auto optimizer = std::make_shared<IpoptOptimizer>();
   if (ipopt_with_bounds_) {
     optimizer->set_bounds(TrajectoryDofBounds());
@@ -156,7 +158,7 @@ PlanarOptimizer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
   optimizer->set_option("print_level", verbose_ ? 4 : 0);
   optimizer->set_option("hessian_approximation", ipopt_hessian_approximation_);
   // Parse all options from flags
-  optimizer->SetFlagsOptions();
+  optimizer->set_options_map(ipopt_options);
 
   // Logging
   /* TODO
@@ -181,8 +183,8 @@ PlanarOptimizer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
 // Optimization function
 // -----------------------------------------------------------------------------
 Eigen::VectorXd PlanarOptimizer::Optimize(
-    const Eigen::VectorXd& initial_traj_vect,
-    const Eigen::VectorXd& x_goal) const {
+    const Eigen::VectorXd& initial_traj_vect, const Eigen::VectorXd& x_goal,
+    const std::map<std::string, double>& options) const {
   // 1) Get initial data
   Eigen::VectorXd q_init = initial_traj_vect.segment(0, n_);
   Trajectory init_traj(q_init, initial_traj_vect);
@@ -194,7 +196,7 @@ Eigen::VectorXd PlanarOptimizer::Optimize(
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
-  auto optimizer = SetupIpoptOptimizer(q_init);
+  auto optimizer = SetupIpoptOptimizer(q_init, options);
 
   // 3) Optimizer trajectory
   auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());

@@ -56,8 +56,11 @@ class PlanarOptimizer : public MotionObjective {
    * @param x_goal
    * @return an optimized trajectory
    */
-  Eigen::VectorXd Optimize(const Eigen::VectorXd& initial_traj,
-                           const Eigen::VectorXd& x_goal) const;
+  Eigen::VectorXd Optimize(
+      const Eigen::VectorXd& initial_traj,          // entire trajectory
+      const Eigen::VectorXd& x_goal,                // goal configuration
+      const std::map<std::string, double>& options  // optimizer options
+  ) const;
 
  protected:
   typedef CliquesFunctionNetwork FunctionNetwork;
@@ -65,7 +68,8 @@ class PlanarOptimizer : public MotionObjective {
   typedef std::shared_ptr<const DifferentiableMap> ElementaryFunction;
 
   std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
-      const Eigen::VectorXd& q_init) const;
+      const Eigen::VectorXd& q_init,
+      const std::map<std::string, double>& ipopt_options) const;
 
   std::vector<Bounds> DofBounds() const;            // Dof bounds limits
   std::vector<Bounds> TrajectoryDofBounds() const;  // Dof bounds trajectory
@@ -82,9 +86,6 @@ class PlanarOptimizer : public MotionObjective {
   bool with_attractor_constraint_;
   bool ipopt_with_bounds_;
   std::string ipopt_hessian_approximation_;
-
-  // Workspace
-  std::shared_ptr<const DifferentiableMap> smooth_collision_constraint_;
 
   // Logging
   bool visualize_inner_loop_;

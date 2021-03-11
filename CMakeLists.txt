@@ -204,6 +204,7 @@ else()
     target_link_libraries(_pybewego 
         PRIVATE
         bewego 
+        numerical_optimization
         ${GTEST_LIBRARY}
         ${IPOPT_LIBRARIES}
         ${IPOPT_LINK_FLAGS}

@@ -59,8 +59,7 @@ static std::map<int, std::string> ErrorTypes;
 //   "Insufficient_Memory",
 //   "Internal_Error"};
 
-std::vector<std::pair<std::string, double>>
-numerical_optimization::ParseIpoptOptions() {
+std::vector<std::pair<std::string, double>> ParseIpoptOptions() {
   std::string ipopt_options = "";  // TODO get that towork...
   auto options_str = util::ParseCsvString(ipopt_options);
   cout << "ipopt_options : " << ipopt_options << endl;
@@ -127,12 +126,13 @@ double IpoptOptimizer::total_wallclock_time() const {
 
 // Reads flags to set options
 // Parse all options from flags
-void IpoptOptimizer::SetFlagsOptions() {
-  cout << "Parse ipopt options..." << endl;
-  auto options = numerical_optimization::ParseIpoptOptions();
-  cout << "options.size() : " << options.size() << endl;
+void IpoptOptimizer::set_options_map(
+    const std::map<std::string, double>& options) {
+  // cout << "Parse ipopt options..." << endl;
+  // auto options = ParseIpoptOptions(options);
+  // cout << "options.size() : " << options.size() << endl;
   for (const auto& v : options) {
-    cout << "set option : " << v.first << " , to : " << v.second << endl;
+    cout << " -- set option : " << v.first << " , to : " << v.second << endl;
     set_option(v.first, v.second);
   }
 }

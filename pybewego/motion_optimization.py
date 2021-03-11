@@ -173,7 +173,8 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
         def __init__(self, workspace, trajectory, dt, q_goal,
                      bounds=[0., 1., 0., 1.]):
-            MotionOptimization.__init__(workspace, trajectory, dt, q_goal)
+            MotionOptimization.__init__(
+                self, workspace, trajectory, dt, q_goal)
             assert len(q_goal) == 2
             assert len(bounds) == 4
             self.bounds = bounds
@@ -196,7 +197,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             """
             self._initialize_problem()
 
-            # Objective Terms -------------------------------------------------
+            # Objective Terms
             if scalars.s_velocity_norm > 0:
                 self.problem.add_smoothness_terms(
                     1, scalars.s_velocity_norm)
@@ -211,12 +212,13 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                     scalars.s_obstacle_alpha,
                     scalars.s_obstacle_margin)
 
-            if (not with_goal_constrant) and scalars.s_terminal_potential > 0:
+            if ((not self.with_goal_constraint) and
+                    scalars.s_terminal_potential > 0):
                 self.problem.add_terminal_potential_terms(
                     self.q_goal, scalars.s_terminal_potential)
 
-            # Constraints Terms -----------------------------------------------
-            if with_goal_constrant and scalars.s_terminal_potential > 0:
+            # Constraints Terms
+            if self.with_goal_constraint and scalars.s_terminal_potential > 0:
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
 
@@ -226,27 +228,20 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
         def optimize(self,
                      scalars,
-                     nb_steps=100,
-                     optimizer="newton"):
+                     ipopt_options={}):
             self.initialize_objective(scalars)
-            xi = self.trajectory.active_segment()
 
-                res = self.problem.optimize(
-                    x0=np.array(xi),
-                    method='Newton-CG',
-                    fun=self.objective.forward,
-                    jac=self.objective.gradient,
-                    hess=self.objective.hessian,
-                    options={'maxiter': nb_steps, 'disp': self.verbose}
-                )
-                self.trajectory.active_segment()[:] = res.x
-                gradient = res.jac
-                delta = res.jac
-                dist = np.linalg.norm(
-                    self.trajectory.final_configuration() - self.q_goal)
-                if self.verbose:
-                    print(("gradient norm : ", np.linalg.norm(res.jac)))
+            res = self.problem.optimize(
+                self.trajectory.x(),
+                self.q_goal,
+                ipopt_options
+            )
+            self.trajectory.x()[:] = res
+            dist = np.linalg.norm(
+                self.trajectory.final_configuration() - self.q_goal)
+            if self.verbose:
+                print(("gradient norm : ", np.linalg.norm(res.jac)))
             else:
                 raise ValueError
 
-            return [dist < 1.e-3, trajectory, gradient, delta]
+            return [dist < 1.e-3, trajectory]

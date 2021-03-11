@@ -34,9 +34,6 @@
 namespace bewego {
 namespace numerical_optimization {
 
-// Parse options from flags
-std::vector<std::pair<std::string, double>> ParseIpoptOptions();
-
 class IpoptOptimizer : public ConstrainedOptimizer {
  public:
   IpoptOptimizer();
@@ -47,7 +44,7 @@ class IpoptOptimizer : public ConstrainedOptimizer {
    * wrong type.
    */
   ConstrainedSolution Run(const ConstrainedOptimizationProblem& problem,
-                               const Eigen::VectorXd& x0) const override {
+                          const Eigen::VectorXd& x0) const override {
     try {
       return Run(
           dynamic_cast<const OptimizationProblemWithConstraints&>(problem), x0);
@@ -60,9 +57,8 @@ class IpoptOptimizer : public ConstrainedOptimizer {
 
   /*!\brief Optimize problem with differentiable functions as input
    */
-  ConstrainedSolution Run(
-      const OptimizationProblemWithConstraints& problem,
-      const Eigen::VectorXd& x0) const;
+  ConstrainedSolution Run(const OptimizationProblemWithConstraints& problem,
+                          const Eigen::VectorXd& x0) const;
 
   /*
    * !\brief get unbounded limits
@@ -90,8 +86,8 @@ class IpoptOptimizer : public ConstrainedOptimizer {
   void set_option(const std::string& name, int value);
   void set_option(const std::string& name, double value);
 
-  // Reads flags to set options
-  void SetFlagsOptions();
+  // set options directly from map
+  void set_options_map(const std::map<std::string, double>& options);
 
   /** @brief  Get the total wall clock time for the optimization, including
    * function evaluations.
