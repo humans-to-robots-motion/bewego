@@ -33,11 +33,11 @@
 namespace bewego {
 namespace numerical_optimization {
 
-class PlanarOptimzer : public MotionObjective {
+class PlanarOptimizer : public MotionObjective {
  public:
-  PlanarOptimzer(uint32_t T,  // number of cliques
-                 double dt,   // time between cliques
-                 const std::vector<double>& workspace_bounds  // bounds
+  PlanarOptimizer(uint32_t T,  // number of cliques
+                  double dt,   // time between cliques
+                  const std::vector<double>& workspace_bounds  // bounds
   );
 
   /**

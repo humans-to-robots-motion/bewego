@@ -208,11 +208,16 @@ else()
         ${IPOPT_LIBRARIES}
         ${IPOPT_LINK_FLAGS}
     )
+    message("Add IPOPT definitions to pybewego")
+    target_compile_definitions(_pybewego
+        PRIVATE
+        ${IPOPT_DEFINITIONS}
+        WITH_IPOPT)
 endif()
 set_target_properties(_pybewego
   PROPERTIES PREFIX ""
   LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
-)
+)   
 
 ############################
 # Tests                    #

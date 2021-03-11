@@ -47,8 +47,8 @@ using std::endl;
 // DEFINE_double(ff_ipopt_tol, 1e-3, "");
 // DEFINE_bool(ff_ipopt_with_bounds, true, "");
 
-PlanarOptimzer::PlanarOptimzer(uint32_t T, double dt,
-                               const std::vector<double>& workspace_bounds)
+PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
+                                 const std::vector<double>& workspace_bounds)
     : MotionObjective(T, dt, 2),
       with_rotation_(false),
       with_attractor_constraint_(false),
@@ -66,7 +66,7 @@ PlanarOptimzer::PlanarOptimzer(uint32_t T, double dt,
       bounds.Center(), Eigen::Vector2d(bounds.ExtendX(), bounds.ExtendY()), 0);
 }
 
-std::vector<Bounds> PlanarOptimzer::DofBounds() const {
+std::vector<Bounds> PlanarOptimizer::DofBounds() const {
   assert(n_ == 2);
   std::vector<Bounds> limits(n_);
   auto extent = workspace_bounds_->extent();
@@ -75,7 +75,7 @@ std::vector<Bounds> PlanarOptimzer::DofBounds() const {
   return limits;
 }
 
-std::vector<Bounds> PlanarOptimzer::TrajectoryDofBounds() const {
+std::vector<Bounds> PlanarOptimizer::TrajectoryDofBounds() const {
   // Joint limits with rotations are for freeflyers
   // the extension of the current optimizer should not be too hard
   // For now we use the case without rotations, where the configuration
@@ -110,8 +110,8 @@ std::vector<Bounds> PlanarOptimzer::TrajectoryDofBounds() const {
   return dof_bounds;
 }
 
-void PlanarOptimzer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
-                                       double scalar) {
+void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
+                                        double scalar) {
   assert(function_network_.get() != nullptr);
   assert(n_ == 2);
 
@@ -126,8 +126,8 @@ void PlanarOptimzer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   h_constraints_.push_back(network);
 }
 
-void PlanarOptimzer::AddKeyPointsSurfaceConstraints(double margin,
-                                                    double scalar) {
+void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
+                                                     double scalar) {
   if (workspace_objects_.empty()) {
     cerr << "WARNING: no obstacles are in the workspace" << endl;
     return;
@@ -146,8 +146,8 @@ void PlanarOptimzer::AddKeyPointsSurfaceConstraints(double margin,
   g_constraints_.push_back(network);
 }
 
-std::shared_ptr<const ConstrainedOptimizer> PlanarOptimzer::SetupIpoptOptimizer(
-    const Eigen::VectorXd& q_init) const {
+std::shared_ptr<const ConstrainedOptimizer>
+PlanarOptimizer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
   auto optimizer = std::make_shared<IpoptOptimizer>();
   if (ipopt_with_bounds_) {
     optimizer->set_bounds(TrajectoryDofBounds());
@@ -180,7 +180,7 @@ std::shared_ptr<const ConstrainedOptimizer> PlanarOptimzer::SetupIpoptOptimizer(
 // -----------------------------------------------------------------------------
 // Optimization function
 // -----------------------------------------------------------------------------
-Eigen::VectorXd PlanarOptimzer::Optimize(
+Eigen::VectorXd PlanarOptimizer::Optimize(
     const Eigen::VectorXd& initial_traj_vect,
     const Eigen::VectorXd& x_goal) const {
   // 1) Get initial data

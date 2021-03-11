@@ -37,6 +37,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#ifdef WITH_IPOPT
+#include <bewego/numerical_optimization/planar_motion_optimization.h>
+#endif
+
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -210,6 +214,47 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
       .def("objective", &bewego::MotionObjective::objective)
       .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
+
+#ifdef WITH_IPOPT
+  py::class_<bewego::numerical_optimization::PlanarOptimizer>(m,
+                                                              "PlanarOptimizer")
+      .def(py::init<uint32_t, double, const std::vector<double>&>())
+
+      // Main
+      .def("optimize",
+           &bewego::numerical_optimization::PlanarOptimizer::Optimize)
+
+      // Constraints
+      .def("add_keypoints_surface_constraints",
+           &bewego::numerical_optimization::PlanarOptimizer::
+               AddKeyPointsSurfaceConstraints)
+      .def("add_goal_constraint",
+           &bewego::numerical_optimization::PlanarOptimizer::AddGoalConstraint)
+
+      // Objectives
+      .def("add_smoothness_terms",
+           &bewego::numerical_optimization::PlanarOptimizer::AddSmoothnessTerms)
+      .def("add_obstacle_terms",
+           &bewego::numerical_optimization::PlanarOptimizer::AddObstacleTerms)
+      .def("add_terminal_potential_terms",
+           &bewego::MotionObjective::AddTerminalPotentialTerms)
+      .def("add_waypoint_terms",
+           &bewego::numerical_optimization::PlanarOptimizer::AddWayPointTerms)
+
+      // Workspace
+      .def("add_sphere",
+           &bewego::numerical_optimization::PlanarOptimizer::AddSphere)
+      .def("add_box", &bewego::numerical_optimization::PlanarOptimizer::AddBox)
+      .def("clear_workspace",
+           &bewego::numerical_optimization::PlanarOptimizer::ClearWorkspace)
+
+      // Functions
+      .def("objective",
+           &bewego::numerical_optimization::PlanarOptimizer::objective)
+      .def(
+          "obstacle_potential",
+          &bewego::numerical_optimization::PlanarOptimizer::obstacle_potential);
+#endif
 
   m.attr("__version__") = "0.0.1";
 }
