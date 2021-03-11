@@ -125,10 +125,10 @@ void PlanarOptimzer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
       std::make_shared<Scale>(terminal_potential, scalar));
 }
 
-std::shared_ptr<const lula::optimization::ConstrainedOptimizer>
-PlanarOptimzer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
+std::shared_ptr<const ConstrainedOptimizer> PlanarOptimzer::SetupIpoptOptimizer(
+    const Eigen::VectorXd& q_init) const {
   dstage("constructing optimizer");
-  auto optimizer = std::make_shared<numerical_optimization::IpoptOptimizer>();
+  auto optimizer = std::make_shared<IpoptOptimizer>();
   if (FLAGS_ff_ipopt_with_bounds) {
     optimizer->set_bounds(GetDofBounds());
   }

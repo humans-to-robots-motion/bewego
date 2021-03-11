@@ -132,6 +132,9 @@ class DifferentiableMap {
   bool debug_;
 };
 
+using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
+using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
+
 /** f round g : f(g(q))
 
     This function should be called pullback if we approxiate
@@ -210,6 +213,11 @@ class Compose : public DifferentiableMap {
   std::shared_ptr<const DifferentiableMap> g_;
 };
 
+inline DifferentiableMapPtr ComposedWith(DifferentiableMapPtr f,
+                                         DifferentiableMapPtr g) {
+  return std::make_shared<Compose>(f, g);
+}
+
 /**
  * Fill up the function_tests_ vector with test points
  * RunTests will check that the gradient and hessian are correctly
@@ -252,8 +260,5 @@ class DifferentialMapTest : public testing::Test {
   double hessian_precision_;
   bool verbose_;
 };
-
-using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
-using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
 
 }  // namespace bewego

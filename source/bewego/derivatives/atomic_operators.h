@@ -311,6 +311,10 @@ class Scale : public DifferentiableMap {
   double alpha_;
 };
 
+inline DifferentiableMapPtr operator*(double scalar, DifferentiableMapPtr f) {
+  return std::make_shared<Scale>(f, scalar);
+}
+
 class Offset : public DifferentiableMap {
  public:
   Offset(DifferentiableMapPtr f, const Eigen::VectorXd& offset)
@@ -337,6 +341,11 @@ class Offset : public DifferentiableMap {
   DifferentiableMapPtr f_;
   Eigen::VectorXd offset_;
 };
+
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
+                                      const Eigen::VectorXd& offset) {
+  return std::make_shared<Offset>(f, offset);
+}
 
 /**
  * \brief Represents the sum of a set of maps f_i.
@@ -394,6 +403,14 @@ class SumMap : public DifferentiableMap {
   std::shared_ptr<const VectorOfMaps> maps_;
 };
 
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  auto maps = std::make_shared<VectorOfMaps>();
+  maps->push_back(f);
+  maps->push_back(g);
+  return std::make_shared<SumMap>(maps);
+}
+
 /**
  * \brief Represents the sum of a set of maps f_i.
  *
@@ -437,6 +454,11 @@ class ProductMap : public DifferentiableMap {
   DifferentiableMapPtr g_;
   DifferentiableMapPtr h_;
 };
+
+inline DifferentiableMapPtr operator*(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  return std::make_shared<ProductMap>(f, g);
+}
 
 // Represent a function as f(x) = argmin_i g_i(x).
 // All functions g_i must be of the same input dimensionality,
@@ -514,18 +536,19 @@ class SecondOrderTaylorApproximation : public QuadricMap {
  public:
   SecondOrderTaylorApproximation(const DifferentiableMap& f,
                                  const Eigen::VectorXd& x0);
+
  private:
   Eigen::VectorXd x0_;
   Eigen::VectorXd g0_;
   double fx0_;
 };
 
-/** 
- *   Logarithmic Barrier 
+/**
+ *   Logarithmic Barrier
  *
  *  f(x) = -log(x)
  *
- * for numerical stability 
+ * for numerical stability
         when x < margin f(x) = \infty
  */
 class LogBarrier : public DifferentiableMap {
