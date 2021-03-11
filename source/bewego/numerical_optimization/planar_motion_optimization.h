@@ -26,6 +26,8 @@
 
 #include <bewego/motion/objective.h>
 #include <bewego/motion/trajectory.h>
+#include <bewego/numerical_optimization/optimizer.h>
+#include <bewego/numerical_optimization/trajectory_optimization.h>
 #include <bewego/workspace/workspace.h>
 
 namespace bewego {
@@ -33,16 +35,20 @@ namespace numerical_optimization {
 
 class PlanarOptimzer : public MotionObjective {
  public:
-  PlanarOptimzer(uint32_t T,                        // number of cliques
-                 double dt,                         // time between cliques
-                 const Rectangle& workspace_bounds  // bounds
+  PlanarOptimzer(uint32_t T,  // number of cliques
+                 double dt,   // time between cliques
+                 const std::vector<double>& workspace_bounds  // bounds
   );
 
   /**
-   * @brief set_parameters_from_flags
-   * Reads parameters in google flags
+   * @brief Adds collsion constraints with the environment
    */
-  void set_parameters_from_flags();
+  void AddKeyPointsSurfaceConstraints(double margin, double scalar);
+
+  /**
+   * @brief Adds goal constraint
+   */
+  void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
 
   /**
    * @brief Optimize
@@ -50,8 +56,8 @@ class PlanarOptimzer : public MotionObjective {
    * @param x_goal
    * @return an optimized trajectory
    */
-  std::shared_ptr<Trajectory> Optimize(const Eigen::VectorXd& initial_traj,
-                                       const Eigen::Vector2d& x_goal) const;
+  Eigen::VectorXd Optimize(const Eigen::VectorXd& initial_traj,
+                           const Eigen::VectorXd& x_goal) const;
 
  protected:
   typedef CliquesFunctionNetwork FunctionNetwork;
@@ -61,23 +67,21 @@ class PlanarOptimzer : public MotionObjective {
   std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
       const Eigen::VectorXd& q_init) const;
 
-  std::vector<Bounds> GetJointLimits() const;
-  std::vector<Bounds> GetDofBounds() const;
-
-  // ipopt constraints
-  FunctionNetwork GetEmptyFunctionNetwork() const;
-  std::vector<FunctionNetwork> GetKeyPointsSurfaceConstraints() const;
+  std::vector<Bounds> DofBounds() const;            // Dof bounds limits
+  std::vector<Bounds> TrajectoryDofBounds() const;  // Dof bounds trajectory
 
   // Constraints networks
-  std::vector<FunctionNetwork> g_constraints_;  // inequalities
-  std::vector<FunctionNetwork> h_constraints_;  // equalities
+  std::vector<FunctionNetworkPtr> g_constraints_;  // inequalities
+  std::vector<FunctionNetworkPtr> h_constraints_;  // equalities
 
   // Bounds of the workspace
-  Rectangle workspace_bounds_;
+  std::shared_ptr<Rectangle> workspace_bounds_;
 
   // options
   bool with_rotation_;
   bool with_attractor_constraint_;
+  bool ipopt_with_bounds_;
+  std::string ipopt_hessian_approximation_;
 
   // Workspace
   std::shared_ptr<const DifferentiableMap> smooth_collision_constraint_;

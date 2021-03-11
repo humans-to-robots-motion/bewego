@@ -39,7 +39,7 @@ struct WorkspaceObject {
 class Workspace {
  public:
   Workspace(const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
-      : objects_(objects) {}
+      : objects_(objects), dimension_(2) {}
 
   VectorOfMaps ExtractSurfaceFunctions() const {
     VectorOfMaps signed_distance_functions;
@@ -57,7 +57,13 @@ class Workspace {
     return std::make_shared<Min>(ExtractSurfaceFunctions());
   }
 
+  // Ambient space dimension of the workspace (2D or 3D)
+  // For now we have only 2 dimensional cases
+  // but it should be easy to extend the rectangles and circles to the 3D case
+  uint32_t dimension() const { return dimension_; }
+
  protected:
+  uint32_t dimension_;
   std::vector<std::shared_ptr<const WorkspaceObject>> objects_;
 };
 

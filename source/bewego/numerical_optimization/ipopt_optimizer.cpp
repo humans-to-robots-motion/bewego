@@ -198,13 +198,11 @@ ConstrainedSolution IpoptOptimizer::Run(
   }
   Eigen::VectorXd g_evaluations;
   Eigen::VectorXd h_evaluations;
-  Eigen::VectorXd lagrange_multipliers;
   auto x_solution = ipopt_problem->solution();
   auto objective_value =
       problem.Evaluate(x_solution, &g_evaluations, &h_evaluations);
-  return ConstrainedSolution(x_solution, objective_value, lagrange_multipliers,
-                             g_evaluations, h_evaluations,
-                             (success)
-                                 ? (ConstrainedSolution::NO_WARNING)
-                                 : (ConstrainedSolution::DID_NOT_CONVERGE));
+  return ConstrainedSolution(
+      x_solution, objective_value, g_evaluations, h_evaluations,
+      (success) ? (ConstrainedSolution::NO_WARNING)
+                : (ConstrainedSolution::DID_NOT_CONVERGE));
 }

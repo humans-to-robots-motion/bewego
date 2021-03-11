@@ -115,6 +115,16 @@ class SquaredNormAcceleration : public SquaredNormDerivative {
   }
 };
 
+inline std::shared_ptr<SquaredNormVelocity> SquaredVelocityNorm(uint32_t n,
+                                                                double dt) {
+  return std::make_shared<SquaredNormVelocity>(n, dt);
+}
+
+inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
+    uint32_t n, double dt) {
+  return std::make_shared<SquaredNormAcceleration>(n, dt);
+}
+
 class ObstaclePotential : public DifferentiableMap {
  public:
   ObstaclePotential() {}

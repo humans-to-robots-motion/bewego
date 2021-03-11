@@ -31,6 +31,13 @@ namespace bewego {
 // TODO change the API to use this
 struct extent_t {
   extent_t() {}
+  extent_t(const std::vector<double>& v) {
+    assert(v.size() == 4 || v.size() == 6);
+    for (uint32_t i = 0; i < (v.size() / 2); i++) {
+      assert(v[2 * i + 1] > v[2 * i]);
+    }
+    extents_ = v;
+  }
   extent_t(double x_min, double x_max, double y_min, double y_max) {
     extents_.resize(4);
     extents_[0] = x_min;

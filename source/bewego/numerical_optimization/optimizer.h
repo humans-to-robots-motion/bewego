@@ -104,7 +104,6 @@ class ConstrainedSolution {
   enum WarningCode { NO_WARNING = 0, DID_NOT_CONVERGE };
   ConstrainedSolution() : success_(false), error_str_("Uninitialized") {}
   ConstrainedSolution(const Eigen::VectorXd& x, double objective_value,
-                      const Eigen::VectorXd& lagrange_multipliers,
                       const Eigen::VectorXd& inequality_constraint_values,
                       const Eigen::VectorXd& equality_constraint_values,
                       WarningCode warning_code = NO_WARNING)
@@ -112,7 +111,6 @@ class ConstrainedSolution {
         warning_code_(warning_code),
         x_(x),
         objective_value_(objective_value),
-        lagrange_multipliers_(lagrange_multipliers),
         inequality_constraint_values_(inequality_constraint_values),
         equality_constraint_values_(equality_constraint_values) {}
 
@@ -122,7 +120,6 @@ class ConstrainedSolution {
         warning_code_(solution.warning_code_),
         x_(solution.x_),
         objective_value_(solution.objective_value_),
-        lagrange_multipliers_(solution.lagrange_multipliers_),
         inequality_constraint_values_(solution.inequality_constraint_values_),
         equality_constraint_values_(solution.equality_constraint_values_) {}
 
@@ -132,9 +129,7 @@ class ConstrainedSolution {
 
   const Eigen::VectorXd x() const { return x_; }
   double objective_value() const { return objective_value_; }
-  const Eigen::VectorXd& lagrange_multipliers() const {
-    return lagrange_multipliers_;
-  }
+
   const Eigen::VectorXd& inequality_constraint_values() const {
     return inequality_constraint_values_;
   }
@@ -160,7 +155,6 @@ class ConstrainedSolution {
   WarningCode warning_code_;
   Eigen::VectorXd x_;
   double objective_value_;
-  Eigen::VectorXd lagrange_multipliers_;
   Eigen::VectorXd inequality_constraint_values_;
   Eigen::VectorXd equality_constraint_values_;
   friend class Error;

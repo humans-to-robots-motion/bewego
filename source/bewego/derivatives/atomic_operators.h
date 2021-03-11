@@ -346,6 +346,18 @@ inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
                                       const Eigen::VectorXd& offset) {
   return std::make_shared<Offset>(f, offset);
 }
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
+                                      const Eigen::VectorXd& offset) {
+  return std::make_shared<Offset>(f, -offset);
+}
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f, double offset) {
+  assert(f->output_dimension() == 1);
+  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, offset));
+}
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
+  assert(f->output_dimension() == 1);
+  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, -offset));
+}
 
 /**
  * \brief Represents the sum of a set of maps f_i.

@@ -29,7 +29,6 @@ void IpoptQPValidateSolution(const ConstrainedSolution& solution,
   inequality << 0.42007981, 2.79055742, 1.51886129, 4.42377241, 1.10013266;
 
   ExpectNear(solution.x(), sol, 2e-4, verbose);
-  // ExpectNear(solution.lagrange_multipliers(), lm, 1e-4, verbose);
   cout << "objective: " << solution.objective_value() << endl;
 
   auto objective = Eigen::VectorXd::Constant(1, solution.objective_value());
