@@ -18,9 +18,14 @@
 #                                    Jim Mainprice on Wednesday February 3 2021
 
 from pybewego import MotionObjective
+try:
+    from pybewego import PlanarOptimizer
+    WITH_IPOPT = True
+except ImportError:
+    WITH_IPOPT = False
+
 from pyrieef.motion.trajectory import Trajectory
 from pyrieef.geometry.workspace import *
-import ipopt_interface
 from scipy import optimize
 
 
@@ -32,6 +37,7 @@ class CostFunctionParameters:
         self.s_obstacles = 1
         self.s_obstacle_alpha = 10
         self.s_obstacle_margin = 0
+        self.s_obstacle_constraint = 0
         self.s_terminal_potential = 1e+5
 
 
@@ -51,9 +57,19 @@ class MotionOptimization:
         self.trajectory = trajectory
         self.problem = None
 
-    def initialize_objective(self, parameters):
+    def _problem(self):
+        """
+        this function can be derived to use different
+        versions of the motion optimization objective 
+        """
+        return MotionObjective(self.T, self.dt, self.n)
 
-        self.problem = MotionObjective(self.T, self.dt, self.n)
+    def _initialize_problem(self):
+        """
+        Initialize the motion optimization problem
+        based on the current version of the workspace
+        """
+        self.problem = self._problem()
 
         # Add workspace obstacles
         for o in self.workspace.obstacles:
@@ -64,35 +80,48 @@ class MotionOptimization:
             else:
                 print("Shape {} not supported by bewego".format(type(o)))
 
+    def initialize_objective(self, scalars):
+        """
+        Initialize the motion optimization problem
+        based on the scalars given as input
+
+        Parameters
+        ----------
+        scalars :
+            CostFunctionParameters contains scalars that define the
+            motion optimization objective
+        """
+        self._initialize_problem()
+
         # Terms
-        if parameters.s_velocity_norm > 0:
+        if scalars.s_velocity_norm > 0:
             self.problem.add_smoothness_terms(
-                1, parameters.s_velocity_norm)
+                1, scalars.s_velocity_norm)
 
-        if parameters.s_acceleration_norm > 0:
+        if scalars.s_acceleration_norm > 0:
             self.problem.add_smoothness_terms(
-                2, parameters.s_acceleration_norm)
+                2, scalars.s_acceleration_norm)
 
-        if parameters.s_obstacles > 0:
+        if scalars.s_obstacles > 0:
             self.problem.add_obstacle_terms(
-                parameters.s_obstacles,
-                parameters.s_obstacle_alpha,
-                parameters.s_obstacle_margin)
+                scalars.s_obstacles,
+                scalars.s_obstacle_alpha,
+                scalars.s_obstacle_margin)
 
-        if parameters.s_terminal_potential > 0:
+        if scalars.s_terminal_potential > 0:
             self.problem.add_terminal_potential_terms(
-                self.q_goal, parameters.s_terminal_potential)
+                self.q_goal, scalars.s_terminal_potential)
 
         # Create objective functions
         self.objective = self.problem.objective(self.q_init)
         self.obstacle_potential = self.problem.obstacle_potential()  # TODO
 
     def optimize(self,
-                 parameters,
+                 scalars,
                  nb_steps=100,
                  optimizer="newton"):
 
-        self.initialize_objective(parameters)
+        self.initialize_objective(scalars)
         xi = self.trajectory.active_segment()
 
         if optimizer is "newton":
@@ -114,22 +143,110 @@ class MotionOptimization:
         else:
             raise ValueError
 
-        if optimizer is "ipopt":
-            res = minimize_ipopt(
-                x0=np.array(xi),
-                fun=self.objective.forward,
-                jac=self.objective.gradient,
-                hess=self.objective.hessian,
-                options={'maxiter': nb_steps, 'disp': self.verbose}
-            )
-            self.trajectory.active_segment()[:] = res.x
-            gradient = res.jac
-            delta = res.jac
-            dist = np.linalg.norm(
-                self.trajectory.final_configuration() - self.q_goal)
-            if self.verbose:
-                print(("gradient norm : ", np.linalg.norm(res.jac)))
-        else:
-            raise ValueError
-
         return [dist < 1.e-3, trajectory, gradient, delta]
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
+
+    class NavigationOptimization(MotionOptimization):
+
+        """
+        Navigation Optimization
+
+            This class allows plan 2D trajectories using IPOPT
+
+        Parameters
+        ----------
+            workspace : 
+                Workspace object
+            trajectory : 
+                Trajectory object it is theinitial trajectory
+            dt : 
+                Float, time between each configuration in the trajectory
+            q_goal :
+                np.array, configuration at the goal
+            bounds :
+                np.array, [x_min, x_max, y_min, y_max]
+        """
+
+        def __init__(self, workspace, trajectory, dt, q_goal,
+                     bounds=[0., 1., 0., 1.]):
+            MotionOptimization.__init__(workspace, trajectory, dt, q_goal)
+            assert len(q_goal) == 2
+            assert len(bounds) == 4
+            self.bounds = bounds
+            self.with_goal_constraint = True
+
+        def _problem(self):
+            """ This version of the problem uses constraints """
+            return PlanarOptimizer(self.T, self.dt, self.bounds)
+
+        def initialize_objective(self, scalars):
+            """
+            Initialize the motion optimization problem
+            based on the scalars given as input
+
+            Parameters
+            ----------
+            scalars :
+                CostFunctionParameters contains scalars that define the
+                motion optimization objective
+            """
+            self._initialize_problem()
+
+            # Objective Terms -------------------------------------------------
+            if scalars.s_velocity_norm > 0:
+                self.problem.add_smoothness_terms(
+                    1, scalars.s_velocity_norm)
+
+            if scalars.s_acceleration_norm > 0:
+                self.problem.add_smoothness_terms(
+                    2, scalars.s_acceleration_norm)
+
+            if scalars.s_obstacles > 0:
+                self.problem.add_obstacle_terms(
+                    scalars.s_obstacles,
+                    scalars.s_obstacle_alpha,
+                    scalars.s_obstacle_margin)
+
+            if (not with_goal_constrant) and scalars.s_terminal_potential > 0:
+                self.problem.add_terminal_potential_terms(
+                    self.q_goal, scalars.s_terminal_potential)
+
+            # Constraints Terms -----------------------------------------------
+            if with_goal_constrant and scalars.s_terminal_potential > 0:
+                self.problem.add_goal_constraint(
+                    self.q_goal, scalars.s_terminal_potential)
+
+            # Create objective functions
+            self.objective = self.problem.objective(self.q_init)
+            self.obstacle_potential = self.problem.obstacle_potential()  # TODO
+
+        def optimize(self,
+                     scalars,
+                     nb_steps=100,
+                     optimizer="newton"):
+            self.initialize_objective(scalars)
+            xi = self.trajectory.active_segment()
+
+                res = self.problem.optimize(
+                    x0=np.array(xi),
+                    method='Newton-CG',
+                    fun=self.objective.forward,
+                    jac=self.objective.gradient,
+                    hess=self.objective.hessian,
+                    options={'maxiter': nb_steps, 'disp': self.verbose}
+                )
+                self.trajectory.active_segment()[:] = res.x
+                gradient = res.jac
+                delta = res.jac
+                dist = np.linalg.norm(
+                    self.trajectory.final_configuration() - self.q_goal)
+                if self.verbose:
+                    print(("gradient norm : ", np.linalg.norm(res.jac)))
+            else:
+                raise ValueError
+
+            return [dist < 1.e-3, trajectory, gradient, delta]
