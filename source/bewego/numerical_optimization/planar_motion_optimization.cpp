@@ -59,6 +59,9 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
   assert(T > 2);
   assert(dt > 0);
 
+  cout << "function_network_ : " << function_network_->input_dimension()
+       << endl;
+
   verbose_ = true;
 
   // For now the workspace is axis-aligned
@@ -117,13 +120,14 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   assert(function_network_.get() != nullptr);
   assert(n_ == 2);
 
-  // Create clique constraint function phi
-  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
-  auto phi = ComposedWith(d_goal, function_network_->CenterOfCliqueMap());
-
-  // Scale and register to a new network
   uint32_t dim = function_network_->input_dimension();
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
+
+  // Create clique constraint function phi
+  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
+
+  // Scale and register to a new network
   network->RegisterFunctionForLastClique(scalar * phi);
   h_constraints_.push_back(network);
 }
@@ -193,43 +197,29 @@ PlanarOptimizer::SetupIpoptOptimizer(
 Eigen::VectorXd PlanarOptimizer::Optimize(
     const Eigen::VectorXd& initial_traj_vect, const Eigen::VectorXd& x_goal,
     const std::map<std::string, double>& options) const {
-  // 1) Get initial data
-  Eigen::VectorXd q_init = initial_traj_vect.segment(0, n_);
-  Trajectory init_traj(q_init, initial_traj_vect);
+  // 1) Get input data
+  uint32_t dim = initial_traj_vect.size();
+  Eigen::VectorXd q_init = initial_traj_vect.head(n_);
+  Trajectory init_traj(q_init, initial_traj_vect.tail(dim - n_));
   uint32_t T = init_traj.T();
   uint32_t n = init_traj.n();
   assert(n == n_);
   assert(T == T_);
-
+  if(T != T_ || n != n_) {
+    // check consistency, TODO asserts are deactivated in pybind11, why?
+    throw std::exception();
+  }
   cout << "-- T : " << T << endl;
-  cout << "-- n : " << n << endl;
-  cout << "-- v : " << verbose_ << endl;
+  cout << "-- verbose : " << verbose_ << endl;
+  cout << "-- n_g : " << g_constraints_.size() << endl;
+  cout << "-- n_h : " << h_constraints_.size() << endl;
 
   // 2) Create problem and optimizer
-  // auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
-  //     q_init, function_network_, g_constraints_, h_constraints_);
-  // auto optimizer = SetupIpoptOptimizer(q_init, options);
-
-  // ---------------------------------------------------------------------------
-  // Setup the QCQP (TODO remove this part and make it work with constraints)
-  double dt = 0.01;
-  double scalar_acc = 1e-5;
-  double scalar_goal = 1;
-  auto problem_test = std::make_shared<TrajectoryObjectiveTest>(
-      n, dt, T, scalar_acc, scalar_goal, q_init, x_goal);
-  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
-      inequality_constraints;
-  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
-      equality_constraints;
-  equality_constraints.push_back(problem_test->h());
-  auto objective = problem_test->f();
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
-      q_init, objective, inequality_constraints, equality_constraints);
-  auto optimizer = SetupIpoptOptimizer(q_init, options);
-  // auto optimizer = std::make_shared<IpoptOptimizer>();
-  // ---------------------------------------------------------------------------
+      q_init, function_network_, g_constraints_, h_constraints_);
 
-  // 3) Optimizer trajectory
+  // 3) Optimize trajectory
+  auto optimizer = SetupIpoptOptimizer(q_init, options);
   auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());
 
   // 4) Return solution

@@ -32,6 +32,20 @@ using std::endl;
 
 namespace bewego {
 
+MotionObjective::MotionObjective(uint32_t T, double dt,
+                                 uint32_t config_space_dim)
+    : verbose_(false), T_(T), dt_(dt), n_(config_space_dim) {
+  assert(T_ > 2);
+  assert(dt_ > 0);
+  assert(n_ > 0);
+  cout << "T_ in MotionObjective : " << T_ << endl;
+  function_network_ =
+      std::make_shared<CliquesFunctionNetwork>((T_ + 2) * n_, n_);
+  workspace_objects_.clear();
+  workspace_ = std::make_shared<Workspace>(workspace_objects_);
+  ClearWorkspace();
+}
+
 void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
   DifferentiableMapPtr derivative;
   if (deriv_order == 1) {
@@ -43,7 +57,7 @@ void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
     cerr << "WARNING: deriv_order (" << deriv_order << ") not suported" << endl;
     return;
   }
-  function_network_->RegisterFunctionForAllCliques(scalar * derivative);
+  function_network_->RegisterFunctionForAllCliques(dt_ * scalar * derivative);
 }
 
 void MotionObjective::AddIsometricPotentialToAllCliques(
@@ -52,7 +66,7 @@ void MotionObjective::AddIsometricPotentialToAllCliques(
   auto right_clique = function_network_->RightOfCliqueMap();
   auto phi = ComposedWith(potential, center_clique);
   auto sq_norm_vel = ComposedWith(SquaredVelocityNorm(n_, dt_), right_clique);
-  auto cost = scalar * (phi * sq_norm_vel);
+  auto cost = dt_ * scalar * (phi * sq_norm_vel);
   function_network_->RegisterFunctionForAllCliques(cost);
 }
 

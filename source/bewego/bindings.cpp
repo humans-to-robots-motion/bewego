@@ -238,8 +238,7 @@ PYBIND11_MODULE(_pybewego, m) {
            &bewego::numerical_optimization::PlanarOptimizer::AddGoalConstraint)
 
       // Objectives
-      .def("add_smoothness_terms",
-           &bewego::numerical_optimization::PlanarOptimizer::AddSmoothnessTerms)
+      .def("add_smoothness_terms", &bewego::MotionObjective::AddSmoothnessTerms)
       .def("add_obstacle_terms",
            &bewego::numerical_optimization::PlanarOptimizer::AddObstacleTerms)
       .def("add_terminal_potential_terms",

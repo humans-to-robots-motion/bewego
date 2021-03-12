@@ -179,7 +179,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             assert len(q_goal) == 2
             assert len(bounds) == 4
             self.bounds = bounds
-            self.with_goal_constraint = False
+            self.with_goal_constraint = True
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -200,26 +200,36 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
             # Objective Terms
             if scalars.s_velocity_norm > 0:
+                print("-- add velocity norm ({})".format(
+                    scalars.s_velocity_norm))
                 self.problem.add_smoothness_terms(
                     1, scalars.s_velocity_norm)
 
             if scalars.s_acceleration_norm > 0:
+                print("-- add acceleration norm ({})".format(
+                    scalars.s_acceleration_norm))
                 self.problem.add_smoothness_terms(
                     2, scalars.s_acceleration_norm)
 
             if scalars.s_obstacles > 0:
+                print("-- add obstaces term ({})".format(
+                    scalars.s_obstacles))
                 self.problem.add_obstacle_terms(
                     scalars.s_obstacles,
                     scalars.s_obstacle_alpha,
                     scalars.s_obstacle_margin)
 
             if ((not self.with_goal_constraint) and
-                    scalars.s_terminal_potential > 0):
+                    (scalars.s_terminal_potential > 0)):
+                print("-- add terminal dist ({})".format(
+                    scalars.s_terminal_potential))
                 self.problem.add_terminal_potential_terms(
                     self.q_goal, scalars.s_terminal_potential)
 
             # Constraints Terms
             if self.with_goal_constraint and scalars.s_terminal_potential > 0:
+                print("-- add goal constraint ({})".format(
+                    scalars.s_terminal_potential))
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
 
@@ -237,7 +247,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.q_goal,
                 ipopt_options
             )
-            self.trajectory.x()[:] = res
+            self.trajectory.active_segment()[:] = res
             dist = np.linalg.norm(
                 self.trajectory.final_configuration() - self.q_goal)
             if self.verbose:

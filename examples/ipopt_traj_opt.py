@@ -56,19 +56,19 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
         bounds=workspace.box.box_extent())
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 1
-    p.s_acceleration_norm = 5
-    p.s_obstacles = 100
-    p.s_obstacle_alpha = 10
-    p.s_obstacle_scaling = 1
-    p.s_terminal_potential = 1e+6
+    p.s_velocity_norm = 0
+    p.s_acceleration_norm = 1e-5
+    p.s_obstacles = 0
+    p.s_obstacle_alpha = 0
+    p.s_obstacle_scaling = 0
+    p.s_terminal_potential = 1
 
     options = {}
-    options["tol"] = 1e-2
-    options["acceptable_tol"] = 5e-3
-    options["acceptable_constr_viol_tol"] = 5e-1
-    options["max_cpu_time"] = 30
-    options["constr_viol_tol"] = 5e-2
+    # options["tol"] = 1e-2
+    # options["acceptable_tol"] = 5e-3
+    # options["acceptable_constr_viol_tol"] = 5e-1
+    # options["max_cpu_time"] = 30
+    # options["constr_viol_tol"] = 5e-2
     # options["max_iter"] = 200
 
     problem.optimize(p, options)

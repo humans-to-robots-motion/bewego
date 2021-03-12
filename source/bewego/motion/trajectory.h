@@ -383,7 +383,9 @@ class Trajectory {
     // x_.tail(n_ * (T_ + 1)) = x; // TODO
   }
 
-  Trajectory(const Eigen::VectorXd& q_init, const Eigen::VectorXd& x) {
+  Trajectory(const Eigen::VectorXd& q_init,  // Inital configuration
+             const Eigen::VectorXd& x        // Active part of the trajectory
+  ) {
     assert(n > 0);
     assert(x.size() % q_init.size() == 0);
     n_ = q_init.size();

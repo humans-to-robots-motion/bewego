@@ -36,17 +36,7 @@ namespace bewego {
 
 class MotionObjective {
  public:
-  MotionObjective(uint32_t T, double dt, uint32_t config_space_dim)
-      : verbose_(false), T_(T), dt_(dt), n_(config_space_dim) {
-    assert(T_ > 2);
-    assert(dt_ > 0);
-    assert(n_ > 0);
-    function_network_ =
-        std::make_shared<CliquesFunctionNetwork>((T_ + 2) * n_, n_);
-    workspace_objects_.clear();
-    workspace_ = std::make_shared<Workspace>(workspace_objects_);
-    ClearWorkspace();
-  }
+  MotionObjective(uint32_t T, double dt, uint32_t config_space_dim);
 
   /** Apply the following euqation to all cliques:
 
