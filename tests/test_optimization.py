@@ -80,4 +80,11 @@ def test_cvox():
     print("x_opt (py)  : ", x)
     print("x_opt (cpp) : ", x_expected)
 
-test_cvox()
+
+def test_many_optimization():
+
+    for _ in range(100):
+        assert test_motion_optimization()
+
+# test_cvox()
+test_many_optimization()

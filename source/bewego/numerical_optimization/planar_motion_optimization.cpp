@@ -217,7 +217,7 @@ Eigen::VectorXd PlanarOptimizer::Optimize(
   // optimizer->set_option("constr_viol_tol", 1e-7);
   // optimizer->set_option("hessian_approximation", "exact");
 
-  // cout << "traj : " << init_traj.ActiveSegment() << endl;
+  cout << "traj : " << init_traj.Matrix() << endl;
 
   // 3) Optimizer trajectory
   auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());
