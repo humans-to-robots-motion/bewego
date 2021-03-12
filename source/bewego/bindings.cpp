@@ -216,6 +216,12 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
 
 #ifdef WITH_IPOPT
+
+  m.def("test_motion_optimization",
+        &bewego::numerical_optimization::TestMotionOptimization, R"pbdoc(
+        return true if can optimize motion with iptop
+    )pbdoc");
+
   py::class_<bewego::numerical_optimization::PlanarOptimizer>(m,
                                                               "PlanarOptimizer")
       .def(py::init<uint32_t, double, const std::vector<double>&>())

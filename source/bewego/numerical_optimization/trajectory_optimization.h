@@ -171,6 +171,9 @@ class TrajectoryQCQPTest : public TrajectoryOptimizationTest {
   // Setup the testing problem
   virtual void SetUp();
 
+  // Setsup the optimization objective
+  virtual void ConstructObjective();
+
   // Compares the optimial solution to a
   // linear interpolation between q_init and q_goal
   virtual void ValidateSolution(const ConstrainedSolution& solution,
@@ -180,6 +183,8 @@ class TrajectoryQCQPTest : public TrajectoryOptimizationTest {
   Eigen::VectorXd q_goal_;
   uint32_t T_;
 };
+
+bool TestMotionOptimization();
 
 }  // namespace numerical_optimization
 }  // namespace bewego

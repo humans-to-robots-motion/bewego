@@ -32,6 +32,7 @@
 
 #include <bewego/motion/cost_terms.h>
 #include <bewego/motion/trajectory.h>
+#include <bewego/numerical_optimization/ipopt_problem.h>
 #include <bewego/numerical_optimization/trajectory_optimization.h>
 #include <bewego/util/misc.h>
 
@@ -157,7 +158,8 @@ void TrajectoryOptimizationTest::SetupOptimizationProblem() {
 
 TrajectoryQCQPTest::~TrajectoryQCQPTest() {}
 
-void TrajectoryQCQPTest::SetUp() {
+void TrajectoryQCQPTest::SetUp() { ConstructObjective(); }
+void TrajectoryQCQPTest::ConstructObjective() {
   // Simple trajectory optimization problem defined
   q_init_ = Eigen::Vector2d(0, 0);
   q_goal_ = Eigen::Vector2d(1, 1);
@@ -207,4 +209,58 @@ void TrajectoryQCQPTest::ValidateSolution(const ConstrainedSolution& solution,
       }
     }
   }
+}
+
+bool bewego::numerical_optimization::TestMotionOptimization() {
+  // Simple trajectory optimization problem defined
+  Eigen::Vector2d q_init(0, 0);
+  Eigen::Vector2d q_goal(1, 1);
+  uint32_t n = util::size_t_to_uint(q_init.size());
+  uint32_t T = 30;
+  double dt = 0.01;
+  double scalar_acc = 1e-5;
+  double scalar_goal = 1;
+
+  // Setup the QCQP
+  auto problem_test = std::make_shared<TrajectoryObjectiveTest>(
+      n, dt, T, scalar_acc, scalar_goal, q_init, q_goal);
+  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
+      inequality_constraints;
+  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
+      equality_constraints;
+  equality_constraints.push_back(problem_test->h());
+  auto objective = problem_test->f();
+  auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
+      q_init, objective, inequality_constraints, equality_constraints);
+
+  // Zero motion trajectory
+  auto initial_solution = InitializeZeroTrajectory(q_init, T);
+  cout << "Done configuring Trajectory QCQP Test" << endl;
+
+  bool verbose = false;
+  for (uint32_t i = 0; i < 1; i++) {
+    IpoptOptimizer constrained_optimizer;
+    constrained_optimizer.set_verbose(verbose);
+    // constrained_optimizer.set_option("derivative_test", "first-order");
+    // constrained_optimizer.set_option("derivative_test", "second-order");
+    // constrained_optimizer.set_option("derivative_test_tol", 1e-4);
+    constrained_optimizer.set_option("constr_viol_tol", 1e-7);
+    ConstrainedSolution solution = constrained_optimizer.Run(
+        *nonlinear_problem, initial_solution->ActiveSegment());
+    assert(solution.success());
+
+    // Check that it is equal to linear interpolation
+    Trajectory optimal_trajectory(q_init, solution.x());
+    Trajectory interpolated_trajectory =
+        GetLinearInterpolation(q_init, q_goal, T);
+    assert(T_ == optimal_trajectory.T());
+    for (uint32_t t = 0; t <= optimal_trajectory.T(); t++) {
+      Eigen::VectorXd q_o = optimal_trajectory.Configuration(t);
+      Eigen::VectorXd q_i = interpolated_trajectory.Configuration(t);
+      assert(q_o.size() == q_i.size());
+      double max_diff = (q_o - q_i).cwiseAbs().maxCoeff();
+      assert(std::fabs(max_diff) < tol);
+    }
+  }
+  return true;
 }

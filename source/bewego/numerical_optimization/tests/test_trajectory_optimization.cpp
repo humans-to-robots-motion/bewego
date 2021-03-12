@@ -76,17 +76,15 @@ TEST_F(TrajectoryQCQPTest, OptimizeIpopt) {
   bool verbose = true;
   set_verbose(verbose);
 
-  for (uint32_t i = 0; i < 100; i++) {
-    IpoptOptimizer constrained_optimizer;
-    constrained_optimizer.set_verbose(verbose);
-    constrained_optimizer.set_option("derivative_test", "first-order");
-    constrained_optimizer.set_option("derivative_test", "second-order");
-    constrained_optimizer.set_option("derivative_test_tol", 1e-4);
-    constrained_optimizer.set_option("constr_viol_tol", 1e-7);
+  IpoptOptimizer constrained_optimizer;
+  constrained_optimizer.set_verbose(verbose);
+  constrained_optimizer.set_option("derivative_test", "first-order");
+  constrained_optimizer.set_option("derivative_test", "second-order");
+  constrained_optimizer.set_option("derivative_test_tol", 1e-4);
+  constrained_optimizer.set_option("constr_viol_tol", 1e-7);
 
-    ConstrainedSolution solution = constrained_optimizer.Run(
-        *nonlinear_problem_, initial_solution_.ActiveSegment());
-    ASSERT_TRUE(solution.success());
-    ValidateSolution(solution);
-  }
+  ConstrainedSolution solution = constrained_optimizer.Run(
+      *nonlinear_problem_, initial_solution_.ActiveSegment());
+  ASSERT_TRUE(solution.success());
+  ValidateSolution(solution);
 }

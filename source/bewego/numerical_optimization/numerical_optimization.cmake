@@ -57,53 +57,96 @@ target_compile_definitions(${MODULE_NAME}
 
 # enable_testing()
 
-# ----------------------------------------------
 
-add_executable(sparse_utest 
-    ${MODULE_DIR}/tests/test_sparse.cpp)
-target_link_libraries(sparse_utest ${MODULE_NAME})
-include(GoogleTest)
-gtest_add_tests(TARGET sparse_utest)
+# file(GLOB_RECURSE test_SOURCES
+#   RELATIVE "${MODULE_DIR}/tests/cpp-unittests" "*utest.cpp")
 
-# ----------------------------------------------
-
-add_executable(ipopt_utest
-    ${MODULE_DIR}/tests/test_ipopt.cpp)
-target_link_libraries(ipopt_utest ${MODULE_NAME})
-target_include_directories(ipopt_utest
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
-    $<INSTALL_INTERFACE:include>
-  PRIVATE
-    ${IPOPT_INCLUDE_DIRS_STRIP}
-)
-target_compile_definitions(ipopt_utest
-  PRIVATE
-    ${IPOPT_DEFINITIONS}
-)
-include(GoogleTest)
-gtest_add_tests(TARGET ipopt_utest)
-
-# ----------------------------------------------
-
-add_executable(trajectory_optimization_utest
-    ${MODULE_DIR}/tests/test_trajectory_optimization.cpp)
-target_link_libraries(
-    trajectory_optimization_utest 
-    ${MODULE_NAME})
-target_include_directories(trajectory_optimization_utest
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
-    $<INSTALL_INTERFACE:include>
-  PRIVATE
-    ${IPOPT_INCLUDE_DIRS_STRIP}
+set(test_SOURCES
+    ${MODULE_DIR}/tests/test_ipopt.cpp
+    ${MODULE_DIR}/tests/test_planar_motion_optimization.cpp
+    ${MODULE_DIR}/tests/test_sparse.cpp
+    ${MODULE_DIR}/tests/test_trajectory_optimization.cpp
     )
-target_compile_definitions(trajectory_optimization_utest
-  PRIVATE
-    ${IPOPT_DEFINITIONS}
-)
-include(GoogleTest)
-gtest_add_tests(TARGET trajectory_optimization_utest)
+
+foreach(test_exec ${test_SOURCES})
+    message("add : ${test_exec}")
+    # string(REGEX REPLACE "\\.[^.]*$" "" test_name ${test_exec})
+    get_filename_component(test_name ${test_exec} NAME_WE)
+
+    # TODO replace test names in this module
+    # by _utest and have the file(GLOB_RECURSE test_SOURCES)
+    # only focusing on the main test folder.
+
+    string(REPLACE "test_" "" test_name ${test_name})
+    set(test_name "${test_name}_utest")
+    message("test name: ${test_name}")
+    add_executable(${test_name} ${test_exec})
+    target_link_libraries(
+        ${test_name} 
+        ${MODULE_NAME})
+    target_include_directories(${test_name}
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${IPOPT_INCLUDE_DIRS_STRIP}
+        )
+    target_compile_definitions(${test_name}
+        PRIVATE
+        ${IPOPT_DEFINITIONS}
+    )
+    include(GoogleTest)
+    gtest_add_tests(TARGET ${test_name})
+endforeach()
+
+
+# ----------------------------------------------
+
+# add_executable(sparse_utest 
+#     ${MODULE_DIR}/tests/test_sparse.cpp)
+# target_link_libraries(sparse_utest ${MODULE_NAME})
+# include(GoogleTest)
+# gtest_add_tests(TARGET sparse_utest)
+
+# ----------------------------------------------
+
+# add_executable(ipopt_utest
+#     ${MODULE_DIR}/tests/test_ipopt.cpp)
+# target_link_libraries(ipopt_utest ${MODULE_NAME})
+# target_include_directories(ipopt_utest
+#   PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
+#     $<INSTALL_INTERFACE:include>
+#   PRIVATE
+#     ${IPOPT_INCLUDE_DIRS_STRIP}
+# )
+# target_compile_definitions(ipopt_utest
+#   PRIVATE
+#     ${IPOPT_DEFINITIONS}
+# )
+# include(GoogleTest)
+# gtest_add_tests(TARGET ipopt_utest)
+
+# ----------------------------------------------
+
+# add_executable(trajectory_optimization_utest
+#     ${MODULE_DIR}/tests/test_trajectory_optimization.cpp)
+# target_link_libraries(
+#     trajectory_optimization_utest 
+#     ${MODULE_NAME})
+# target_include_directories(trajectory_optimization_utest
+#   PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/bewego>
+#     $<INSTALL_INTERFACE:include>
+#   PRIVATE
+#     ${IPOPT_INCLUDE_DIRS_STRIP}
+#     )
+# target_compile_definitions(trajectory_optimization_utest
+#   PRIVATE
+#     ${IPOPT_DEFINITIONS}
+# )
+# include(GoogleTest)
+# gtest_add_tests(TARGET trajectory_optimization_utest)
 
 #-------------------------------------------------------------------------------
 # Install specifications
