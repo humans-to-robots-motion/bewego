@@ -237,7 +237,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.q_goal,
                 ipopt_options
             )
-            self.trajectory.active_segment()[:] = res
+            self.trajectory.x()[:] = res
             dist = np.linalg.norm(
                 self.trajectory.final_configuration() - self.q_goal)
             if self.verbose:

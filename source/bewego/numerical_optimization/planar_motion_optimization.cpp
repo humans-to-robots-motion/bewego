@@ -159,13 +159,13 @@ PlanarOptimizer::SetupIpoptOptimizer(
   optimizer->set_verbose(verbose_);
   optimizer->set_option("print_level", verbose_ ? 4 : 0);
 
-  optimizer->set_option("derivative_test", "first-order");
+  // optimizer->set_option("derivative_test", "first-order");
   // optimizer->set_option("derivative_test", "second-order");  // TODO remove
   // optimizer->set_option("derivative_test_tol", 1e-4);
 
   optimizer->set_option("constr_viol_tol", 1e-7);
-  optimizer->set_option("hessian_approximation", ipopt_hessian_approximation_);
-  // Parse all options from flags
+  // optimizer->set_option("hessian_approximation",
+  // ipopt_hessian_approximation_); Parse all options from flags
   // optimizer->set_options_map(ipopt_options);
 
   // Logging
@@ -203,21 +203,31 @@ Eigen::VectorXd PlanarOptimizer::Optimize(
 
   cout << "-- T : " << T << endl;
   cout << "-- n : " << n << endl;
+  cout << "-- v : " << verbose_ << endl;
 
   // 2) Create problem and optimizer
-  auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
-      q_init, function_network_, g_constraints_, h_constraints_);
+  // auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
+  //     q_init, function_network_, g_constraints_, h_constraints_);
+  // auto optimizer = SetupIpoptOptimizer(q_init, options);
 
+  // ---------------------------------------------------------------------------
+  // Setup the QCQP (TODO remove this part and make it work with constraints)
+  double dt = 0.01;
+  double scalar_acc = 1e-5;
+  double scalar_goal = 1;
+  auto problem_test = std::make_shared<TrajectoryObjectiveTest>(
+      n, dt, T, scalar_acc, scalar_goal, q_init, x_goal);
+  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
+      inequality_constraints;
+  std::vector<std::shared_ptr<const CliquesFunctionNetwork>>
+      equality_constraints;
+  equality_constraints.push_back(problem_test->h());
+  auto objective = problem_test->f();
+  auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
+      q_init, objective, inequality_constraints, equality_constraints);
   auto optimizer = SetupIpoptOptimizer(q_init, options);
   // auto optimizer = std::make_shared<IpoptOptimizer>();
-  // optimizer->set_verbose(verbose_);
-  // optimizer->set_option("derivative_test", "first-order");
-  // optimizer->set_option("derivative_test", "second-order");
-  // optimizer->set_option("derivative_test_tol", 1e-4);
-  // optimizer->set_option("constr_viol_tol", 1e-7);
-  // optimizer->set_option("hessian_approximation", "exact");
-
-  cout << "traj : " << init_traj.Matrix() << endl;
+  // ---------------------------------------------------------------------------
 
   // 3) Optimizer trajectory
   auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());
