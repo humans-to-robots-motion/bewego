@@ -31,6 +31,54 @@
 namespace bewego {
 namespace numerical_optimization {
 
+/*
+     Represents the optimization result.
+     This is a copy of the structure used by scipy
+
+    Notes
+    -----
+    There may be additional attributes not listed above depending of the
+    specific solver. Since this class is essentially a subclass of dict
+    with attribute accessors, one can see which attributes are available
+    using the `keys()` method.
+    */
+struct OptimizeResult {
+  OptimizeResult()
+      : success(false),
+        status(-1),
+        nfev(0),
+        njev(0),
+        nhev(0),
+        nit(0),
+        maxcv(std::numeric_limits<double>::max()) {}
+
+  Eigen::VectorXd x;    // The solution of the optimization.
+  bool success;         // Whether or not the optimizer exited successfully.
+  std::string message;  // Description of the cause of the termination.
+  int status;  // Termination status of the optimizer. Its value depends on the
+               // underlying solver. Refer to `message` for details.
+
+  // fun, jac, hess
+  // Values of objective function, its Jacobian and its Hessian (if
+  //       available). The Hessians may be approximations, see the documentation
+  //       of the function in question.
+  Eigen::VectorXd fun;
+  Eigen::MatrixXd jac;
+  Eigen::MatrixXd hess;
+
+  // Inverse of the objective function's Hessian; may be an approximation.
+  // Not available for all solvers. The type of this attribute may be
+  // either np.ndarray or scipy.sparse.linalg.LinearOperator.
+  Eigen::MatrixXd hess_inv;
+
+  // Number of evaluations of the objective functions and of its
+  //       Jacobian and Hessian.
+  uint32_t nfev, njev, nhev;
+
+  uint32_t nit;  // Number of iterations performed by the optimizer.
+  double maxcv;  // The maximum constraint violation.
+};
+
 class LocalSolution {
  public:
   enum WarningCode { NO_WARNING = 0, DID_NOT_CONVERGE };

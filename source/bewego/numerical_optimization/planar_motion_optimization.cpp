@@ -33,6 +33,8 @@
 #include <bewego/numerical_optimization/ipopt_optimizer.h>
 #include <bewego/numerical_optimization/planar_motion_optimization.h>
 
+#include <Eigen/Core>
+
 using namespace bewego;
 using namespace bewego::numerical_optimization;
 using namespace bewego::util;
@@ -194,7 +196,7 @@ PlanarOptimizer::SetupIpoptOptimizer(
 // -----------------------------------------------------------------------------
 // Optimization function
 // -----------------------------------------------------------------------------
-Eigen::VectorXd PlanarOptimizer::Optimize(
+OptimizeResult PlanarOptimizer::Optimize(
     const Eigen::VectorXd& initial_traj_vect, const Eigen::VectorXd& x_goal,
     const std::map<std::string, double>& options) const {
   // 1) Get input data
@@ -231,5 +233,12 @@ Eigen::VectorXd PlanarOptimizer::Optimize(
       printf("Augmented lagrangian convered!");
     }
   }
-  return solution.x();
+  OptimizeResult result;
+  result.x = solution.x();
+  result.fun = Eigen::VectorXd::Constant(1, solution.objective_value());
+  result.message = 
+            solution.warning_code() == 
+            ConstrainedSolution::DID_NOT_CONVERGE? 
+                "not converged" : "converged";
+  return result;
 }

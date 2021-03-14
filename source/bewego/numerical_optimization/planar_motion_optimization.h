@@ -56,7 +56,7 @@ class PlanarOptimizer : public MotionObjective {
    * @param x_goal
    * @return an optimized trajectory
    */
-  Eigen::VectorXd Optimize(
+  OptimizeResult Optimize(
       const Eigen::VectorXd& initial_traj,          // entire trajectory
       const Eigen::VectorXd& x_goal,                // goal configuration
       const std::map<std::string, double>& options  // optimizer options

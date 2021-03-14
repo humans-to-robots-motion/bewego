@@ -54,6 +54,7 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
         dt=0.01,
         q_goal=trajectory.final_configuration(),
         bounds=workspace.box.box_extent())
+    problem.verbose = True
 
     p = CostFunctionParameters()
     p.s_velocity_norm = 0
@@ -64,11 +65,11 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     p.s_terminal_potential = 1
 
     options = {}
-    # options["tol"] = 1e-2
-    # options["acceptable_tol"] = 5e-3
-    # options["acceptable_constr_viol_tol"] = 5e-1
-    # options["max_cpu_time"] = 30
-    # options["constr_viol_tol"] = 5e-2
-    # options["max_iter"] = 200
+    options["tol"] = 1e-2
+    options["acceptable_tol"] = 5e-3
+    options["acceptable_constr_viol_tol"] = 5e-1
+    options["max_cpu_time"] = 30
+    options["constr_viol_tol"] = 5e-2
+    options["max_iter"] = 200
 
     problem.optimize(p, options)
