@@ -39,8 +39,7 @@ using std::endl;
 TEST_F(TrajectoryQCQPTest, OptimizeMotionIpopt) {
   bool verbose = false;
   set_verbose(verbose);
-
-  for (uint32_t i = 0; i < 100; i++) {
+  for (uint32_t i = 0; i < 1; i++) {
     IpoptOptimizer constrained_optimizer;
     constrained_optimizer.set_verbose(verbose);
     // constrained_optimizer.set_option("derivative_test", "first-order");

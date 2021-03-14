@@ -1,60 +1,54 @@
-//
-//  Socket.h
-//  SocketServer
-//
-//  Created by Kay Makowsky on 14.06.16.
-//  Copyright © 2016 Kay Makowsky. All rights reserved.
-//
-// Modified by Jim Mainprice
-//
-
+/*
+ * Copyright (c) 2021
+ * All rights reserved.
+ *
+ * Redistribution  and  use  in  source  and binary  forms,  with  or  without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistributions of  source  code must retain the  above copyright
+ *      notice and this list of conditions.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice and  this list of  conditions in the  documentation and/or
+ *      other materials provided with the distribution.
+ *
+ * THE SOFTWARE  IS PROVIDED "AS IS"  AND THE AUTHOR  DISCLAIMS ALL WARRANTIES
+ * WITH  REGARD   TO  THIS  SOFTWARE  INCLUDING  ALL   IMPLIED  WARRANTIES  OF
+ * MERCHANTABILITY AND  FITNESS.  IN NO EVENT  SHALL THE AUTHOR  BE LIABLE FOR
+ * ANY  SPECIAL, DIRECT,  INDIRECT, OR  CONSEQUENTIAL DAMAGES  OR  ANY DAMAGES
+ * WHATSOEVER  RESULTING FROM  LOSS OF  USE, DATA  OR PROFITS,  WHETHER  IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR  OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ *
+ *                                              Jim Mainprice Sun 14 Mar 2021
+ */
 #pragma once
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
 
-#include <iostream>
-#include <vector>
+#include <arpa/inet.h>   //inet_addr
+#include <netdb.h>       //hostent
+#include <stdio.h>       //printf
+#include <string.h>      //strlen
+#include <sys/socket.h>  //socket
+
+#include <iostream>  //cout
+#include <string>    //string
 
 namespace bewego {
 namespace util {
 
-class Socket {
+class TcpClient {
  public:
+  TcpClient();
+  bool Connect(std::string, int);
+  bool SendData(std::string data);
+  std::string Receive(int);
+
+ private:
   int sock;
   std::string address;
-  std::string port;
-  struct addrinfo address_info;
-  Socket();
-  Socket(int domain, int type, int protocol);
-  int bind(std::string ip, std::string port);
-  int connect(std::string ip, std::string port);
-  int listen(int max_queue);
-  Socket *accept();
-  int socket_write(std::string msg);
-  int socket_read(std::string &buf, int len);
-  int socket_safe_read(std::string &buf, int len, int seconds);
-  int socket_writeTo(std::string msg, std::string ip, std::string port);
-  int socket_readFrom(std::string &buf, int len, std::string ip,
-                      std::string port);
-  int socket_set_opt(int level, int optname, void *optval);
-  int socket_get_opt(int level, int optname, void *optval);
-  int set_blocking();
-  int set_non_blocking();
-  int socket_shutdown(int how);
-  void close();
-  static int select(std::vector<Socket> *reads, std::vector<Socket> *writes,
-                    std::vector<Socket> *exceptions, int seconds);
-  static std::string ipFromHostName(std::string hostname);
+  std::string response_data = "";
+  int port;
+  struct sockaddr_in server;
 };
 
 }  // namespace util
