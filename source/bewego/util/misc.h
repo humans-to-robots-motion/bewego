@@ -116,6 +116,8 @@ bool ReadMatrixBinary(const char* filename, Matrix& matrix) {
 // Parse string as tokens
 std::vector<std::string> ParseCsvString(const std::string& str,
                                         bool trim_tokens = false);
+std::vector<std::string> ParseCsvString2(const std::string& str,
+                                         std::string delimiter);
 
 //! Fill with zeros.
 std::string LeftPaddingWithZeros(uint32_t id, uint32_t nb_zeros = 3);
@@ -251,34 +253,6 @@ inline std::vector<std::shared_ptr<const Type>> ConvertToSharedPtr(
   return trajectories;
 }
 
-inline std::vector<double> FromEigen(const Eigen::VectorXd& v) {
-  std::vector<double> vect(v.size());
-  for (int i = 0; i < v.size(); i++) {
-    vect[i] = v[i];
-  }
-  return vect;
-}
-
-template <typename Type>
-inline Eigen::Matrix<Type, Eigen::Dynamic, 1> ToEigen(
-    const std::vector<Type>& v) {
-  Eigen::Matrix<Type, Eigen::Dynamic, 1> vect(v.size());
-  for (int i = 0; i < vect.size(); i++) {
-    vect[i] = v[i];
-  }
-  return vect;
-}
-
-template <typename Integer>
-std::vector<Integer> Range(Integer start, Integer end, Integer step = 1) {
-  std::vector<Integer> indicies(end - start);
-  uint32_t k = 0;
-  for (int i = start; i < end; i += step) {
-    indicies[k++] = i;
-  }
-  return indicies;
-}
-
 //! Append two vectors.
 //! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
 template <typename Type>
@@ -288,16 +262,6 @@ inline std::vector<Type> AppendConst(const std::vector<Type>& a,
   c.insert(std::end(c), std::begin(b), std::end(b));
   return c;
 }
-
-//! Append two vectors.
-//! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
-template <typename Type>
-inline void Append(std::vector<Type>& a, const std::vector<Type>& b) {
-  a.insert(std::end(a), std::begin(b), std::end(b));
-}
-
-Eigen::MatrixXd HStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
-Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
 
 //! Prints formated vector.
 void PrintFormatedVector(const std::string& name, const Eigen::VectorXd& v);

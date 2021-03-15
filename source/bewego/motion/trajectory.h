@@ -28,7 +28,7 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/util/misc.h>
-#include <bewego/util/util.h>
+#include <bewego/util/range.h>
 
 using bewego::util::range;
 

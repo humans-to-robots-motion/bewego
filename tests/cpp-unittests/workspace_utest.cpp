@@ -2,7 +2,6 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/util/misc.h>
-#include <bewego/util/util.h>
 #include <bewego/workspace/pixelmap.h>
 #include <bewego/workspace/workspace.h>
 #include <gtest/gtest.h>

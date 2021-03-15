@@ -21,31 +21,36 @@
 import socket
 import sys
 
-import argparse
-import zmq
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-parser = argparse.ArgumentParser(description='zeromq server/client')
-parser.add_argument('--bar')
-args = parser.parse_args()
+# Bind the socket to the port
+server_address = ('127.0.0.1', 5555)
+print('starting up on {} port {}'.format(
+    server_address[0], server_address[1]))
+sock.bind(server_address)
 
-if args.bar:
-    # client
-    context = zmq.Context()
-    socket = context.socket(zmq.REQ)
-    socket.connect('tcp://127.0.0.1:5555')
-    socket.send(args.bar.encode('ascii'))
-    msg = socket.recv()
-    print(msg)
-else:
-    print("server...")
-    # server
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind('tcp://127.0.0.1:5555')
-    while True:
-        msg = socket.recv()
-        print("msg")
-        if msg == 'zeromq':
-            socket.send('ah ha!'.encode('ascii'))
-        else:
-            socket.send('...nah'.encode('ascii'))
+# Listen for incoming connections
+sock.listen(1)
+
+while True:
+    # Wait for a connection
+    print('waiting for a connection')
+    connection, client_address = sock.accept()
+
+    try:
+        print('connection from', client_address)
+        # Receive the data in small chunks and retransmit it
+        while True:
+            data = connection.recv(1024)
+            print("received ", str(data))
+            if data:
+                print('sending data back to the client')
+                connection.sendall(data)
+            else:
+                print('no more data from', client_address)
+                break
+
+    finally:
+        # Clean up the connection
+        connection.close()

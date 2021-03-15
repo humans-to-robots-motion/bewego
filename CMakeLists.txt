@@ -149,7 +149,8 @@ file(GLOB_RECURSE bewego_HEADERS
 # Build bewego library
 set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/util/misc.cpp
-    ${bewego_SOURCE_DIR}/util/util.cpp
+    ${bewego_SOURCE_DIR}/util/eigen.cpp
+    ${bewego_SOURCE_DIR}/util/range.cpp
     ${bewego_SOURCE_DIR}/util/chrono.cpp
     ${bewego_SOURCE_DIR}/util/interpolation.cpp
     ${bewego_SOURCE_DIR}/util/socket.cpp

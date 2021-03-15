@@ -66,7 +66,7 @@ std::string GetCurrentDirectory() {
 
 void SetScientificCSV(bool v) { use_scientific_csv = v; }
 
-// Parse string as tokens
+// Parse string as tokens§
 std::vector<std::string> ParseCsvString(const std::string& str,
                                         bool trim_tokens) {
   std::vector<std::string> parsed_values;
@@ -78,6 +78,37 @@ std::vector<std::string> ParseCsvString(const std::string& str,
     parsed_values.push_back(p);
     p = std::strtok(NULL, ",");
   }
+  return parsed_values;
+}
+
+// Parse string as tokens§
+std::vector<std::string> ParseCsvString2(const std::string& str,
+                                         std::string delimiter) {
+  std::vector<std::string> parsed_values;
+  std::string string_copy = str;
+  std::string token;
+  // size_t pos = 0;
+  // while (pos != std::string::npos) {
+  //   pos = string_copy.find(delimiter);
+  //   token = string_copy.substr(0, pos);
+  //   parsed_values.push_back(token);
+  //   string_copy.erase(0, pos + delimiter.length());
+  // }
+  // return parsed_values;
+
+  std::string tmp = str;
+  size_t first_pos = 0;
+  size_t second_pos = tmp.find(delimiter);
+
+  while (second_pos != std::string::npos) {
+    if (first_pos != second_pos) {
+      token = tmp.substr(first_pos, second_pos - first_pos);
+      parsed_values.push_back(token);
+    }
+    tmp = tmp.substr(second_pos + delimiter.length());
+    second_pos = tmp.find(delimiter);
+  }
+  parsed_values.push_back(tmp);
   return parsed_values;
 }
 
@@ -387,22 +418,6 @@ void ExponentiateMatrix(Eigen::MatrixXd& values) {
     // Add 1e-5 otherwise can not invert.
     values(i) = std::exp(*(values.data() + i)) + exp_offset;
   }
-}
-
-Eigen::MatrixXd HStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
-  Eigen::MatrixXd C(A.rows(), A.cols() + B.cols());
-  C << A, B;
-  return C;
-}
-
-Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
-  // eigen uses provided dimensions in declaration to determine
-  // concatenation direction
-  Eigen::MatrixXd D(A.rows() + B.rows(),
-                    A.cols());  // <-- D(A.rows() + B.rows(), ...)
-  // <-- syntax is the same for vertical and horizontal concatenation
-  D << A, B;
-  return D;
 }
 
 void PrintFormatedVector(const std::string& name, const Eigen::VectorXd& v) {

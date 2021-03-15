@@ -31,7 +31,6 @@
 #include <bewego/planning/planar_grid.h>
 #include <bewego/planning/value_iteration.h>
 #include <bewego/util/interpolation.h>
-#include <bewego/util/util.h>
 #include <bewego/workspace/geometry.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>

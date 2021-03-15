@@ -20,37 +20,43 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *
- *                                              Jim Mainprice Sun 14 Mar 2021
+ *                                                             Thu 11 Feb 2021
  */
+// author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <arpa/inet.h>   //inet_addr
-#include <netdb.h>       //hostent
-#include <stdio.h>       //printf
-#include <string.h>      //strlen
-#include <sys/socket.h>  //socket
-
-#include <iostream>  //cout
-#include <string>    //string
+#include <Eigen/Core>
+#include <stdexcept>
+#include <vector>
 
 namespace bewego {
 namespace util {
 
-class TcpClient {
- public:
-  TcpClient();
-  bool Connect(std::string, int);
-  bool SendData(std::string data);
-  std::string Receive(int);
-  void Close();
+template <typename IntType>
+std::vector<IntType> range(IntType start, IntType stop, IntType step) {
+  if (step == IntType(0)) {
+    throw std::invalid_argument("step for range must be non-zero");
+  }
 
- private:
-  int sock;
-  std::string address;
-  std::string response_data = "";
-  int port;
-  struct sockaddr_in server;
-};
+  std::vector<IntType> result;
+  IntType i = start;
+  while ((step > 0) ? (i < stop) : (i > stop)) {
+    result.push_back(i);
+    i += step;
+  }
+
+  return result;
+}
+
+template <typename IntType>
+std::vector<IntType> range(IntType start, IntType stop) {
+  return range(start, stop, IntType(1));
+}
+
+template <typename IntType>
+std::vector<IntType> range(IntType stop) {
+  return range(IntType(0), stop, IntType(1));
+}
 
 }  // namespace util
 }  // namespace bewego
