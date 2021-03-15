@@ -49,21 +49,40 @@ Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
   return D;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<std::string>& s) {
+  for (uint32_t i = 0; i < s.size(); i++) {
+    os << s[i] << " ";
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& v) {
+  for (uint32_t i = 0; i < v.size(); i++) {
+    os << v[i] << " ";
+  }
+  return os;
+}
+
 Eigen::MatrixXd FromString(const std::string& matrix_txt, int rows, int cols) {
-  cout << "matrix_txt.length() : " << matrix_txt.length() << endl;
-  cout << "matrix_txt : " << matrix_txt << endl;
+  // cout << "matrix_txt.length() : " << matrix_txt.length() << endl;
+  // cout << "matrix_txt : " << matrix_txt << endl;
   std::vector<std::string> stringRows = ParseCsvString2(matrix_txt, "\n");
   std::vector<std::string> stringVector;
   for (uint32_t i = 0; i < stringRows.size(); i++) {
     std::string row = stringRows[i];
     std::vector<std::string> stringRow = ParseCsvString2(row, ",");
+    // cout << "row[" << i << "] : " << stringRow << endl;
     stringVector.insert(stringVector.end(), stringRow.begin(), stringRow.end());
   }
   stringVector.resize(rows * cols);
+  // cout << "stringVector : " << stringVector << endl;
   std::vector<double> doubleVector(stringVector.size());
   std::transform(stringVector.begin(), stringVector.end(), doubleVector.begin(),
                  [](const std::string& val) { return std::stod(val); });
-  return Eigen::Map<Eigen::MatrixXd>(&doubleVector.data()[0], rows, cols);
+  // cout << "doubleVector : " << doubleVector << endl;
+  return Eigen::Map<
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+      &doubleVector.data()[0], rows, cols);
 }
 
 std::string ToString(const Eigen::MatrixXd& v, bool use_scientific_csv,

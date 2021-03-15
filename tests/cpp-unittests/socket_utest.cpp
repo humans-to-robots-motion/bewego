@@ -26,10 +26,24 @@ TEST(ToFromString, matrix) {
   for (uint32_t i = 0; i < 10; i++) {
     m1.col(i) = Random(10);
   }
+  cout << "m1 : " << endl << m1 << endl;
   std::string msg = bewego::util::ToString(m1, false, true);
-  cout << "msg : " << msg << endl;
+  // cout << "msg : " << msg << endl;
   Eigen::MatrixXd m2 = bewego::util::FromString(msg, 10, 10);
-  cout << "m2 : " << endl << endl;
+  cout << "m2 : " << endl << m2 << endl;
+  EXPECT_LT((m1 - m2).norm(), 1.e-6);
+}
+
+TEST(ToFromString, matrix_wide) {
+  Eigen::MatrixXd m1(2, 10);
+  for (uint32_t i = 0; i < 10; i++) {
+    m1.col(i) = Random(2);
+  }
+  cout << "m1 : " << endl << m1 << endl;
+  std::string msg = bewego::util::ToString(m1, false, true);
+  // cout << "msg : " << msg << endl;
+  Eigen::MatrixXd m2 = bewego::util::FromString(msg, 2, 10);
+  cout << "m2 : " << endl << m2 << endl;
   EXPECT_LT((m1 - m2).norm(), 1.e-6);
 }
 
