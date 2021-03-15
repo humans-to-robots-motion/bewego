@@ -83,32 +83,28 @@ std::vector<std::string> ParseCsvString(const std::string& str,
 
 // Parse string as tokens§
 std::vector<std::string> ParseCsvString2(const std::string& str,
-                                         std::string delimiter) {
+                                         std::string delimiter,
+                                         int max_length) {
   std::vector<std::string> parsed_values;
   std::string string_copy = str;
   std::string token;
-  // size_t pos = 0;
-  // while (pos != std::string::npos) {
-  //   pos = string_copy.find(delimiter);
-  //   token = string_copy.substr(0, pos);
-  //   parsed_values.push_back(token);
-  //   string_copy.erase(0, pos + delimiter.length());
-  // }
-  // return parsed_values;
-
   std::string tmp = str;
   size_t first_pos = 0;
   size_t second_pos = tmp.find(delimiter);
-
   while (second_pos != std::string::npos) {
     if (first_pos != second_pos) {
       token = tmp.substr(first_pos, second_pos - first_pos);
       parsed_values.push_back(token);
+      if(max_length > 0 && parsed_values.size() == max_length) {
+        break;
+      }
     }
     tmp = tmp.substr(second_pos + delimiter.length());
     second_pos = tmp.find(delimiter);
   }
-  parsed_values.push_back(tmp);
+  if(max_length < 0 || parsed_values.size() < max_length ) {
+    parsed_values.push_back(tmp);
+  }
   return parsed_values;
 }
 

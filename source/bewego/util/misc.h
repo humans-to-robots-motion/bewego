@@ -117,7 +117,8 @@ bool ReadMatrixBinary(const char* filename, Matrix& matrix) {
 std::vector<std::string> ParseCsvString(const std::string& str,
                                         bool trim_tokens = false);
 std::vector<std::string> ParseCsvString2(const std::string& str,
-                                         std::string delimiter);
+                                         std::string delimiter,
+                                         int max_length = -1);
 
 //! Fill with zeros.
 std::string LeftPaddingWithZeros(uint32_t id, uint32_t nb_zeros = 3);
@@ -251,6 +252,22 @@ inline std::vector<std::shared_ptr<const Type>> ConvertToSharedPtr(
     trajectories.push_back(std::make_shared<const Type>(t));
   }
   return trajectories;
+}
+
+//! Sends vector on stream flow.
+template <typename Type>
+inline std::ostream& operator<<(std::ostream& os, const std::vector<Type>& v) {
+  for (size_t i = 0; i < v.size(); i++) {
+    os << v[i] << " ";
+  }
+  return os;
+}
+
+//! Append two vectors.
+//! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
+template <typename Type>
+inline void Append(std::vector<Type>& a, const std::vector<Type>& b) {
+  a.insert(std::end(a), std::begin(b), std::end(b));
 }
 
 //! Append two vectors.

@@ -60,7 +60,6 @@ bool TcpClient::Connect(string address, int port) {
       // gethostbyname failed
       herror("gethostbyname");
       cout << "Failed to resolve hostname\n";
-
       return false;
     }
 
@@ -99,8 +98,10 @@ bool TcpClient::Connect(string address, int port) {
 // Send data to the connected host
 bool TcpClient::SendData(string data) {
   cout << "Sending data...";
-  cout << data;
-  cout << "\n";
+  if (verbose_) {
+    cout << data;
+    cout << "\n";
+  }
 
   // Send some data
   if (send(sock, data.c_str(), strlen(data.c_str()), 0) < 0) {
@@ -131,22 +132,3 @@ string TcpClient::Receive(int size = 512) {
 }
 
 void TcpClient::Close() { close(sock); }
-
-int SendData() {
-  TcpClient c;
-  string host;
-
-  cout << "Enter hostname : ";
-  cin >> host;
-
-  c.Connect(host, 80);
-  c.SendData("GET / HTTP/1.1\r\n\r\n");
-
-  // receive and echo reply
-  cout << "----------------------------\n\n";
-  cout << c.Receive(1024);
-  cout << "\n\n----------------------------\n\n";
-
-  // done
-  return 0;
-}

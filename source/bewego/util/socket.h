@@ -45,6 +45,7 @@ class TcpClient {
   void Close();
 
  private:
+  bool verbose_;
   int sock;
   std::string address;
   std::string response_data = "";

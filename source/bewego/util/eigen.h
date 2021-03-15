@@ -48,13 +48,6 @@ inline Eigen::Matrix<Type, Eigen::Dynamic, 1> ToEigen(
   return vect;
 }
 
-//! Append two vectors.
-//! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
-template <typename Type>
-inline void Append(std::vector<Type>& a, const std::vector<Type>& b) {
-  a.insert(std::end(a), std::begin(b), std::end(b));
-}
-
 Eigen::MatrixXd HStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
 Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
 
@@ -63,9 +56,13 @@ Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
 */
 class Serializer {
  public:
-  Serializer() : use_scientific_(false), full_precision_(false) {}
-  std::string Serialize(const Eigen::VectorXd& v);
-  std::string Serialize(const Eigen::MatrixXd& v);
+  Serializer() : use_scientific_(true), full_precision_(true) {}
+  std::string Serialize(const Eigen::VectorXd& v) const;
+  std::string Serialize(const Eigen::MatrixXd& v) const;
+  Eigen::MatrixXd Deserialize(const std::string& str) const;
+
+  void set_use_scientific(bool v) { use_scientific_ = v; }
+  void set_full_precision(bool v) { full_precision_ = v; }
 
  private:
   bool use_scientific_;

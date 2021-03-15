@@ -22,29 +22,83 @@ TEST(ToFromString, vector) {
 }
 
 TEST(ToFromString, matrix) {
+  bool verbose = false;
   Eigen::MatrixXd m1(10, 10);
   for (uint32_t i = 0; i < 10; i++) {
     m1.col(i) = Random(10);
   }
-  cout << "m1 : " << endl << m1 << endl;
   std::string msg = bewego::util::ToString(m1, false, true);
-  // cout << "msg : " << msg << endl;
   Eigen::MatrixXd m2 = bewego::util::FromString(msg, 10, 10);
-  cout << "m2 : " << endl << m2 << endl;
+  if (verbose) {
+    cout << "m1 : " << endl << m1 << endl;
+    cout << "m2 : " << endl << m2 << endl;
+  }
   EXPECT_LT((m1 - m2).norm(), 1.e-6);
 }
 
 TEST(ToFromString, matrix_wide) {
+  bool verbose = false;
   Eigen::MatrixXd m1(2, 10);
   for (uint32_t i = 0; i < 10; i++) {
     m1.col(i) = Random(2);
   }
-  cout << "m1 : " << endl << m1 << endl;
+
   std::string msg = bewego::util::ToString(m1, false, true);
-  // cout << "msg : " << msg << endl;
   Eigen::MatrixXd m2 = bewego::util::FromString(msg, 2, 10);
-  cout << "m2 : " << endl << m2 << endl;
+  if (verbose) {
+    cout << "m1 : " << endl << m1 << endl;
+    cout << "m2 : " << endl << m2 << endl;
+  }
   EXPECT_LT((m1 - m2).norm(), 1.e-6);
+}
+
+TEST(Serializer, matrices) {
+  bool verbose = false;
+  double epsilon_mat = 1e-12;
+
+  Eigen::MatrixXd ma1, ma2;
+  std::string msg;
+  bewego::util::Serializer s;
+
+  ma1 = Eigen::MatrixXd::Random(2, 10);
+  msg = s.Serialize(ma1);
+  ma2 = s.Deserialize(msg);
+  if (verbose) {
+    cout << "ma1 : " << endl << ma1 << endl;
+    cout << "ma2 : " << endl << ma2 << endl;
+  }
+  EXPECT_EQ(ma1.rows(), ma2.rows());
+  EXPECT_LT((ma1 - ma2).norm(), epsilon_mat);
+
+  ma1 = Eigen::MatrixXd::Random(12, 3);
+  msg = s.Serialize(ma1);
+  ma2 = s.Deserialize(msg);
+  if (verbose) {
+    cout << "ma1 : " << endl << ma1 << endl;
+    cout << "ma2 : " << endl << ma2 << endl;
+  }
+  EXPECT_EQ(ma1.rows(), ma2.rows());
+  EXPECT_LT((ma1 - ma2).norm(), epsilon_mat);
+
+  ma1 = Eigen::MatrixXd::Random(13, 1);
+  msg = s.Serialize(ma1);
+  ma2 = s.Deserialize(msg);
+  if (verbose) {
+    cout << "ma1 : " << endl << ma1 << endl;
+    cout << "ma2 : " << endl << ma2 << endl;
+  }
+  EXPECT_EQ(ma1.rows(), ma2.rows());
+  EXPECT_LT((ma1 - ma2).norm(), epsilon_mat);
+
+  ma1 = Eigen::MatrixXd::Random(1, 11);
+  msg = s.Serialize(ma1);
+  ma2 = s.Deserialize(msg);
+  if (verbose) {
+    cout << "ma1 : " << endl << ma1 << endl;
+    cout << "ma2 : " << endl << ma2 << endl;
+  }
+  EXPECT_EQ(ma1.rows(), ma2.rows());
+  EXPECT_LT((ma1 - ma2).norm(), epsilon_mat);
 }
 
 void TestSocket() {
@@ -56,18 +110,17 @@ void TestSocket() {
   c.Connect(host, port);
 
   // std::vector<int> v_i = range(1, 10);
-  Eigen::MatrixXd v(10, 1);
-  // for (uint32_t i = 0; i < v.size(); i++) {
-  //   v(i, 0) = v_i[i];
-  // }
-  v.col(0) = Random(10);
-  std::string msg = ToString(v, false, false);
+  Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(2, 10);
+  cout << "matrix : " << endl << matrix << endl;
+
+  bewego::util::Serializer s;
+  std::string msg = s.Serialize(matrix);
 
   // send some data
   c.SendData(msg);
 
   std::string echo = c.Receive(1024);
-  Eigen::MatrixXd m = FromString(msg, 10, 1);
+  Eigen::MatrixXd m = s.Deserialize(echo);
 
   // receive and echo reply
   cout << "----------------------------\n\n";
@@ -77,9 +130,7 @@ void TestSocket() {
 
 int main(int argc, char* argv[]) {
   // TestSocket();
-
+  // return 0;
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-
-  // return 0;
 }
