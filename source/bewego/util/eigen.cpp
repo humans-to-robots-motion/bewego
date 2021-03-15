@@ -49,6 +49,10 @@ Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
   return D;
 }
 
+// -----------------------------------------------------------------------------
+// Serialization Functions Implementation
+// -----------------------------------------------------------------------------
+
 Eigen::MatrixXd FromString(const std::string& matrix_txt, int rows, int cols) {
   std::vector<std::string> stringRows = ParseCsvString2(matrix_txt, "\n");
   std::vector<std::string> stringVector;
@@ -115,6 +119,9 @@ Eigen::MatrixXd Serializer::Deserialize(const std::string& str) const {
   std::string type = tokens[0];
   std::string rows = tokens[1].substr(5, tokens[1].length() - 5);
   std::string cols = tokens[2].substr(5, tokens[2].length() - 5);
+  if (type != "vector" && type != "matrix") {
+    throw std::runtime_error("Unknow serialized type");
+  }
   int nrows = std::stod(rows);
   int ncols = std::stod(cols);
   if (nrows <= 0 || ncols <= 0) {

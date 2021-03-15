@@ -21,36 +21,94 @@
 import socket
 import sys
 
-# Create a TCP/IP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+from pyrieef.rendering.optimization import *
 
-# Bind the socket to the port
-server_address = ('127.0.0.1', 5555)
-print('starting up on {} port {}'.format(
-    server_address[0], server_address[1]))
-sock.bind(server_address)
 
-# Listen for incoming connections
-sock.listen(1)
+class WorkspaceViewerServer(TrajectoryOptimizationViewer):
+    """ Workspace display based on pyglet backend """
 
-while True:
-    # Wait for a connection
-    print('waiting for a connection')
-    connection, client_address = sock.accept()
+    def __init__(self, problem):
+        TrajectoryOptimizationViewer.__init__(
+            self,
+            problem,
+            draw=True,
+            draw_gradient=True,
+            use_3d=False,
+            use_gl=True)
 
-    try:
-        print('connection from', client_address)
-        # Receive the data in small chunks and retransmit it
+        # Create a TCP/IP socket
+        self.address = ('127.0.0.1', 5555)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind(self.address)
+
+        # Listen for incoming connections
+        self.socket.listen(1)
+
+    def initialize_viewer(self, trajectory):
+        self.viewer.background_matrix_eval = False
+        self.viewer.save_images = True
+        self.viewer.workspace_id += 1
+        self.viewer.image_id = 0
+        self.reset_objective()
+        self.viewer.draw_ws_obstacles()
+        self
+
+    def run(self):
+
         while True:
-            data = connection.recv(1024)
-            print("received ", str(data))
-            if data:
-                print('sending data back to the client')
-                connection.sendall(data)
-            else:
-                print('no more data from', client_address)
-                break
+            # Wait for a connection
+        print('waiting for a connection')
+        connection, client_address = sock.accept()
 
-    finally:
-        # Clean up the connection
-        connection.close()
+        try:
+            print('connection from', client_address)
+            # Receive the data in small chunks and retransmit it
+            while True:
+                data = connection.recv(1024)
+                print("received ", str(data))
+                if data:
+                    print('sending data back to the client')
+                    connection.sendall(data)
+                else:
+                    print('no more data from', client_address)
+                    break
+
+        finally:
+            # Clean up the connection
+            connection.close()
+
+
+def setup_echo_tcp_server():
+    # Create a TCP/IP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind the socket to the port
+    server_address = ('127.0.0.1', 5555)
+    print('starting up on {} port {}'.format(
+        server_address[0], server_address[1]))
+    sock.bind(server_address)
+
+    # Listen for incoming connections
+    sock.listen(1)
+
+    while True:
+        # Wait for a connection
+        print('waiting for a connection')
+        connection, client_address = sock.accept()
+
+        try:
+            print('connection from', client_address)
+            # Receive the data in small chunks and retransmit it
+            while True:
+                data = connection.recv(1024)
+                print("received ", str(data))
+                if data:
+                    print('sending data back to the client')
+                    connection.sendall(data)
+                else:
+                    print('no more data from', client_address)
+                    break
+
+        finally:
+            # Clean up the connection
+            connection.close()

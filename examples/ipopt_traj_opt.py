@@ -20,6 +20,7 @@
 import demos_common_imports
 import numpy as np
 from tqdm import tqdm
+from multiprocessing import Process
 
 from pybewego.motion_optimization import NavigationOptimization
 from pybewego.motion_optimization import CostFunctionParameters
@@ -33,6 +34,12 @@ from pyrieef.graph.shortest_path import *
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
 BOXES = True
+
+
+def run_optimizer(problem, p, options):
+    print(p)
+    problem.optimize(p, options)
+
 
 nb_points = 40  # points for the grid on which to perform graph search.
 grid = np.ones((nb_points, nb_points))
@@ -72,4 +79,6 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     options["constr_viol_tol"] = 5e-2
     options["max_iter"] = 200
 
-    problem.optimize(p, options)
+    p = Process(target=run_optimizer, args=(problem, p, options))
+    p.start()
+    p.join()

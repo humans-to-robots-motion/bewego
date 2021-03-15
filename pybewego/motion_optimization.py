@@ -40,6 +40,19 @@ class CostFunctionParameters:
         self.s_obstacle_constraint = 0
         self.s_terminal_potential = 1e+5
 
+    def __str__(self):
+        msg = str()
+        msg += " - s_velocity_norm : {}\n".format(self.s_velocity_norm)
+        msg += " - s_acceleration_norm : {}\n".format(self.s_acceleration_norm)
+        msg += " - s_obstacles : {}\n".format(self.s_obstacles)
+        msg += " - s_obstacle_alpha : {}\n".format(self.s_obstacle_alpha)
+        msg += " - s_obstacle_margin : {}\n".format(self.s_obstacle_margin)
+        msg += " - s_obstacle_constraint : {}\n".format(
+            self.s_obstacle_constraint)
+        msg += " - s_terminal_potential : {}\n".format(
+            self.s_terminal_potential)
+        return msg
+
 
 class MotionOptimization:
 
