@@ -44,6 +44,9 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         # Listen for incoming connections
         self.socket.listen(1)
 
+        # Store the active part of the trajectory
+        self.x = None
+
     def initialize_viewer(self, trajectory):
         self.viewer.background_matrix_eval = False
         self.viewer.save_images = True
@@ -51,31 +54,27 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.viewer.image_id = 0
         self.reset_objective()
         self.viewer.draw_ws_obstacles()
-        self
+        self.draw(trajectory)
 
     def run(self):
 
         while True:
             # Wait for a connection
-        print('waiting for a connection')
-        connection, client_address = sock.accept()
+            print('waiting for a connection')
+            connection, client_address = self.socket.accept()
 
-        try:
-            print('connection from', client_address)
-            # Receive the data in small chunks and retransmit it
-            while True:
-                data = connection.recv(1024)
-                print("received ", str(data))
-                if data:
-                    print('sending data back to the client')
-                    connection.sendall(data)
-                else:
-                    print('no more data from', client_address)
-                    break
+            try:
+                print('connection from', client_address)
+                # Receive the data in small chunks and retransmit it
+                while True:
+                    data = connection.recv(1024).decode("ascii")
+                    print("data : {}".format(data))
+                    tokens = data.split('\n')
+                    print("tokens ", tokens)
 
-        finally:
-            # Clean up the connection
-            connection.close()
+            finally:
+                # Clean up the connection
+                connection.close()
 
 
 def setup_echo_tcp_server():

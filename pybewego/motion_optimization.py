@@ -31,6 +31,10 @@ from scipy import optimize
 
 class CostFunctionParameters:
 
+    """
+    A cost function is parameterized by a small set of scalars
+    """
+
     def __init__(self):
         self.s_velocity_norm = 1
         self.s_acceleration_norm = 1
@@ -56,8 +60,21 @@ class CostFunctionParameters:
 
 class MotionOptimization:
 
-    """ Motion optimization class
-        that can draw the inner optimization quantities """
+    """
+    Motion optimization class
+    that can draw the inner optimization quantities
+
+    Parameters
+    ----------
+        workspace: Workspace
+            contains the geometry of the problem
+        trajectory: Trajectory
+            contains the initial trajectory to optimizer
+        dt: float
+            time discretization
+        q_goal: array
+            goal configuration
+    """
 
     def __init__(self, workspace, trajectory, dt, q_goal):
 

@@ -24,6 +24,7 @@ from multiprocessing import Process
 
 from pybewego.motion_optimization import NavigationOptimization
 from pybewego.motion_optimization import CostFunctionParameters
+from pybewego.workspace_drawer import WorkspaceViewerServer
 
 from pyrieef.rendering.optimization import TrajectoryOptimizationViewer
 from pyrieef.motion.trajectory import *
@@ -48,7 +49,7 @@ graph.convert()
 
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
-for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
+for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
 
     trajectory = demonstrations.graph_search_path(
         graph, workspace, nb_points)
@@ -70,6 +71,11 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     p.s_obstacle_alpha = 0
     p.s_obstacle_scaling = 0
     p.s_terminal_potential = 1
+    problem.initialize_objective(p)
+
+    viewer = WorkspaceViewerServer(problem)
+    viewer.initialize_viewer(trajectory)
+    viewer.run()
 
     options = {}
     options["tol"] = 1e-2

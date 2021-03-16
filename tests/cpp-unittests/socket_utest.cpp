@@ -122,6 +122,8 @@ void TestSocket() {
   std::string echo = c.Receive(1024);
   Eigen::MatrixXd m = s.Deserialize(echo);
 
+  c.Close();
+
   // receive and echo reply
   cout << "----------------------------\n\n";
   cout << m;
@@ -129,8 +131,8 @@ void TestSocket() {
 }
 
 int main(int argc, char* argv[]) {
-  // TestSocket();
-  // return 0;
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  TestSocket();
+  return 0;
+  // testing::InitGoogleTest(&argc, argv);
+  // return RUN_ALL_TESTS();
 }
