@@ -24,7 +24,7 @@ from multiprocessing import Process
 
 from pybewego.motion_optimization import NavigationOptimization
 from pybewego.motion_optimization import CostFunctionParameters
-from pybewego.workspace_drawer import WorkspaceViewerServer
+from pybewego.workspace_viewer_server import WorkspaceViewerServer
 
 from pyrieef.rendering.optimization import TrajectoryOptimizationViewer
 from pyrieef.motion.trajectory import *
@@ -76,6 +76,7 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
     viewer = WorkspaceViewerServer(problem)
     viewer.initialize_viewer(trajectory)
     viewer.run()
+    break
 
     options = {}
     options["tol"] = 1e-2

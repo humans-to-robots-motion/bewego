@@ -105,30 +105,34 @@ void TestSocket() {
   TcpClient c;
   string host = "127.0.0.1";
   int port = 5555;
+  std::string echo, msg;
+  Eigen::MatrixXd matrix;
+  bewego::util::Serializer s;
 
   // connect to host
   c.Connect(host, port);
 
   for (uint32_t i = 0; i < 100; i++) {
     // std::vector<int> v_i = range(1, 10);
-    Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(2, 10);
+    matrix = Eigen::MatrixXd::Random(3, 10);
     cout << i << " * matrix : " << endl << matrix << endl;
 
-    bewego::util::Serializer s;
-    std::string msg = s.Serialize(matrix);
+    msg = s.Serialize(matrix);
 
     // send some data
     c.SendData(msg);
-    std::string echo = c.Receive(1024);
-    if (echo != "OK") {
-      cerr << "Error in trajectory transmission echo" << endl;
+    echo = c.Receive(4);
+    if (echo != "ackn") {
+      cerr << "Error in trajectory transmission echo (received: " << echo << ")"
+           << endl;
       break;
     }
   }
+
   c.SendData("end");
-  if (echo != "end") {
-    cerr << "Error in close transmission echo" << endl;
-    break;
+  echo = c.Receive(4);
+  if (echo != "done") {
+    cerr << "Error in close transmission echo : " << echo << endl;
   }
 
   // std::string echo = c.Receive(1024);
@@ -139,7 +143,7 @@ void TestSocket() {
   // cout << m;
   // cout << "\n\n----------------------------\n\n";
 
-  cout << "Colse socket..." << endl;
+  cout << "Close socket..." << endl;
   c.Close();
   cout << "Done." << endl;
 }

@@ -29,10 +29,26 @@ def serialize_array(arr):
     nrows = arr.shape[0]
     ncols = 1 if len(arr.shape) < 2 else arr.shape[1]
     txt = str()
-    txt += "matrix\n"
-    txt += "rows:" + str(nrows) + "\n"
-    txt += "cols:" + str(ncols) + "\n"
-    txt += np.array2string(arr.flatten(), separator=",")[1:-1]
+
+    # Vector case
+    if len(arr.shape) < 2:
+        txt += "vector\n"
+        txt += "rows:" + str(nrows) + "\n"
+        txt += "cols:" + str(ncols) + "\n"
+        txt += np.array2string(
+            arr.flatten(),
+            separator=",")[1:-1].replace("\n", "")
+
+    # Matrix case
+    else:
+        txt += "matrix\n"
+        txt += "rows:" + str(nrows) + "\n"
+        txt += "cols:" + str(ncols) + "\n"
+        for row in arr:
+            txt += np.array2string(
+                row.flatten(),
+                separator=",")[1:-1].replace("\n", "") + "\n"
+        txt = txt.rstrip("\n")
     return txt
 
 
@@ -51,10 +67,25 @@ def deserialize_array(txt):
     assert nrows > 0
     assert ncols > 0
     start = len(tokens[0]) + len(tokens[1]) + len(tokens[2]) + 3
-    matrix_str = txt[start:]
-    matrix = np.fromstring(matrix_str, sep=",")
-    new_shape = (nrows, ) if ncols == 1 else (nrows, ncols)
-    return matrix.reshape(new_shape)
+    matrix = []
+    matrix_txt = txt[start:]
+
+    # Vector case
+    if ncols == 1:
+        matrix = np.fromstring(matrix_txt, sep=",")
+
+    # Matrix case
+    else:
+        rows = matrix_txt.split("\n")
+        for row in rows:
+            matrix.append(np.fromstring(row, sep=","))
+
+    matrix = np.array(matrix)
+
+    # Check shape and return
+    shape = (nrows, ) if ncols == 1 else (nrows, ncols)
+    assert shape == matrix.shape
+    return matrix.reshape(shape)
 
 
 def setup_echo_tcp_server():

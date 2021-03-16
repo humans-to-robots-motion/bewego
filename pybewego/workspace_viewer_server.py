@@ -20,7 +20,7 @@
 
 import socket
 import sys
-
+from pybewego.message_passing import *
 from pyrieef.rendering.optimization import *
 
 
@@ -45,7 +45,9 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.socket.listen(1)
 
         # Store the active part of the trajectory
-        self.x = None
+        self.active_x = None
+        self.active_shape = (3, 10)
+        # self.active_shape = (self.objective.n * (self.objective.T + 1), )
 
     def initialize_viewer(self, trajectory):
         self.viewer.background_matrix_eval = False
@@ -57,8 +59,8 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.draw(trajectory)
 
     def run(self):
-
-        while True:
+        stop = False
+        while not stop:
             # Wait for a connection
             print('waiting for a connection...')
             connection, client_address = self.socket.accept()
@@ -69,13 +71,24 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                     # Receive the data in small chunks and retransmit it
                     data = connection.recv(1024).decode("ascii")
                     if data:
-                        connection.sendall("OK")
-                        # print("data : {}".format(data))
-                        recent = data.replace('end-transmission', '')
+                        # Check if the client is done.
                         if data == "end":
+                            echo = "done"
+                            print("send back echo : ", echo)
+                            connection.sendall(echo.encode("ascii"))
+                            stop = True
                             break
-                        tokens = data.split('\n')
-                        print("tokens ", tokens)
+
+                        # Deseralize data and check that all is ok
+                        self.active_x = deserialize_array(data)
+                        if self.active_x.shape == self.active_shape:
+                            echo = "ackn"
+                        else:
+                            echo = "fail"
+                        print(self.active_x)
+                        # print(self.active_x.shape)
+                        print("send back echo : ", echo)
+                        connection.sendall(echo.encode("ascii"))
 
             finally:
                 print("close connection.")
