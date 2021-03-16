@@ -16,65 +16,45 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 #                                        Jim Mainprice on Sunday March 14 2021
-
-
 import socket
 import sys
+import numpy as np
 
-from pyrieef.rendering.optimization import *
+
+def serialize_array(arr):
+    """
+    Serializes an array
+    """
+    assert len(arr.shape) <= 2
+    nrows = arr.shape[0]
+    ncols = 1 if len(arr.shape) < 2 else arr.shape[1]
+    txt = str()
+    txt += "matrix\n"
+    txt += "rows:" + str(nrows) + "\n"
+    txt += "cols:" + str(ncols) + "\n"
+    txt += np.array2string(arr.flatten(), separator=",")[1:-1]
+    return txt
 
 
-class WorkspaceViewerServer(TrajectoryOptimizationViewer):
-    """ Workspace display based on pyglet backend """
-
-    def __init__(self, problem):
-        TrajectoryOptimizationViewer.__init__(
-            self,
-            problem,
-            draw=True,
-            draw_gradient=True,
-            use_3d=False,
-            use_gl=True)
-
-        # Create a TCP/IP socket
-        self.address = ('127.0.0.1', 5555)
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(self.address)
-
-        # Listen for incoming connections
-        self.socket.listen(1)
-
-        # Store the active part of the trajectory
-        self.x = None
-
-    def initialize_viewer(self, trajectory):
-        self.viewer.background_matrix_eval = False
-        self.viewer.save_images = True
-        self.viewer.workspace_id += 1
-        self.viewer.image_id = 0
-        self.reset_objective()
-        self.viewer.draw_ws_obstacles()
-        self.draw(trajectory)
-
-    def run(self):
-
-        while True:
-            # Wait for a connection
-            print('waiting for a connection')
-            connection, client_address = self.socket.accept()
-
-            try:
-                print('connection from', client_address)
-                # Receive the data in small chunks and retransmit it
-                while True:
-                    data = connection.recv(1024).decode("ascii")
-                    print("data : {}".format(data))
-                    tokens = data.split('\n')
-                    print("tokens ", tokens)
-
-            finally:
-                # Clean up the connection
-                connection.close()
+def deserialize_array(txt):
+    """
+    Deserializes an array
+    """
+    tokens = txt.split("\n", 3)
+    assert len(tokens) != 3
+    otyp = tokens[0]
+    rows = tokens[1][5:]
+    cols = tokens[2][5:]
+    assert otyp == "vector" or otyp == "matrix"
+    nrows = int(rows)
+    ncols = int(cols)
+    assert nrows > 0
+    assert ncols > 0
+    start = len(tokens[0]) + len(tokens[1]) + len(tokens[2]) + 3
+    matrix_str = txt[start:]
+    matrix = np.fromstring(matrix_str, sep=",")
+    new_shape = (nrows, ) if ncols == 1 else (nrows, ncols)
+    return matrix.reshape(new_shape)
 
 
 def setup_echo_tcp_server():

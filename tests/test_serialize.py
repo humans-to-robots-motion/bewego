@@ -17,6 +17,11 @@
 #
 #                                            Jim Mainprice on Tue Mar 16 2021
 
+import numpy as np
+from numpy.testing import assert_allclose
+import conftest
+from pybewego.message_passing import *
+
 
 def test_split_string():
     test_string = "1\n2\n3\n4"
@@ -25,4 +30,22 @@ def test_split_string():
     assert len(test_string.split('\n')) == 4
 
 
+def test_serialize():
+    a = np.random.rand(10)
+    s = serialize_array(a)
+    b = deserialize_array(s)
+    assert_allclose(a, b, atol=1e-6)
+
+    a = np.random.rand(10, 2)
+    s = serialize_array(a)
+    b = deserialize_array(s)
+    assert_allclose(a, b, atol=1e-6)
+
+    a = np.random.rand(2, 10)
+    s = serialize_array(a)
+    b = deserialize_array(s)
+    assert_allclose(a, b, atol=1e-6)
+
+
 test_split_string()
+test_serialize()

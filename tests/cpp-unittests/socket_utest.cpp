@@ -109,25 +109,39 @@ void TestSocket() {
   // connect to host
   c.Connect(host, port);
 
-  // std::vector<int> v_i = range(1, 10);
-  Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(2, 10);
-  cout << "matrix : " << endl << matrix << endl;
+  for (uint32_t i = 0; i < 100; i++) {
+    // std::vector<int> v_i = range(1, 10);
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(2, 10);
+    cout << i << " * matrix : " << endl << matrix << endl;
 
-  bewego::util::Serializer s;
-  std::string msg = s.Serialize(matrix);
+    bewego::util::Serializer s;
+    std::string msg = s.Serialize(matrix);
 
-  // send some data
-  c.SendData(msg);
+    // send some data
+    c.SendData(msg);
+    std::string echo = c.Receive(1024);
+    if (echo != "OK") {
+      cerr << "Error in trajectory transmission echo" << endl;
+      break;
+    }
+  }
+  c.SendData("end");
+  if (echo != "end") {
+    cerr << "Error in close transmission echo" << endl;
+    break;
+  }
 
-  std::string echo = c.Receive(1024);
-  Eigen::MatrixXd m = s.Deserialize(echo);
-
-  c.Close();
+  // std::string echo = c.Receive(1024);
+  // Eigen::MatrixXd m = s.Deserialize(echo);
 
   // receive and echo reply
-  cout << "----------------------------\n\n";
-  cout << m;
-  cout << "\n\n----------------------------\n\n";
+  // cout << "----------------------------\n\n";
+  // cout << m;
+  // cout << "\n\n----------------------------\n\n";
+
+  cout << "Colse socket..." << endl;
+  c.Close();
+  cout << "Done." << endl;
 }
 
 int main(int argc, char* argv[]) {

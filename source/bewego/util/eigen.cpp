@@ -61,7 +61,7 @@ Eigen::MatrixXd FromString(const std::string& matrix_txt, int rows, int cols) {
     std::vector<std::string> stringRow = ParseCsvString2(row, ",");
     Append(stringVector, stringRow);
   }
-  stringVector.resize(rows * cols);
+  // stringVector.resize(rows * cols);
   std::vector<double> doubleVector(stringVector.size());
   std::transform(stringVector.begin(), stringVector.end(), doubleVector.begin(),
                  [](const std::string& val) { return std::stod(val); });
@@ -82,9 +82,9 @@ std::string ToString(const Eigen::MatrixXd& v, bool use_scientific_csv,
   }
   std::stringstream ss;
   if (use_scientific_csv) {
-    ss << std::scientific << v.format(CSVFormat) << endl;
+    ss << std::scientific << v.format(CSVFormat);
   } else {
-    ss << v.format(CSVFormat) << endl;
+    ss << v.format(CSVFormat);
   }
 
   return ss.str();
