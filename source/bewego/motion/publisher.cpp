@@ -28,11 +28,9 @@
 
 #include <chrono>
 
-using std::bind;
 using std::cerr;
 using std::cout;
 using std::endl;
-using std::thread;
 
 using namespace bewego;
 using namespace bewego::util;
@@ -63,7 +61,7 @@ void TrajectoryPublisher::Initialize(const std::string& host, uint32_t port,
   q_init_ = q_init;
   tcp_client_ = std::make_shared<TcpClient>();
   tcp_client_->Connect(host, port);
-  thread_ = thread(bind(&TrajectoryPublisher::Run, this));
+  thread_ = std::thread(std::bind(&TrajectoryPublisher::Run, this));
 }
 
 void TrajectoryPublisher::Run() {
