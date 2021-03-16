@@ -24,6 +24,8 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 
+#pragma once
+
 #include <Eigen/Core>
 #include <vector>
 

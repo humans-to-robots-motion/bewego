@@ -65,7 +65,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
             print('waiting for a connection...')
             connection, client_address = self.socket.accept()
             print('connection from', client_address)
-
+            np.set_printoptions(linewidth=300)
             try:
                 while True:
                     # Receive the data in small chunks and retransmit it

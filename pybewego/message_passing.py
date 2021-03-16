@@ -24,6 +24,14 @@ import numpy as np
 def serialize_array(arr):
     """
     Serializes an array
+
+      Notes:
+
+        Vectors are allways assumed to be column vectors with
+        a single column represented by a comma separated
+        string of numbers. Matrices are represented row major, with
+        a line feed bewteen them. The number of cols and rows is redundant
+        but allows to check that everthing is ok when deserializing. 
     """
     assert len(arr.shape) <= 2
     nrows = arr.shape[0]
@@ -55,6 +63,8 @@ def serialize_array(arr):
 def deserialize_array(txt):
     """
     Deserializes an array
+
+        See the serialization functions for some comments.
     """
     tokens = txt.split("\n", 3)
     assert len(tokens) != 3

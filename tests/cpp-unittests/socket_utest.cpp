@@ -149,8 +149,8 @@ void TestSocket() {
 }
 
 int main(int argc, char* argv[]) {
-  TestSocket();
-  return 0;
-  // testing::InitGoogleTest(&argc, argv);
-  // return RUN_ALL_TESTS();
+  // TestSocket();
+  // return 0;
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
