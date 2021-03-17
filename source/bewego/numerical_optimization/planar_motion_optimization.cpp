@@ -47,7 +47,7 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
     : MotionObjective(T, dt, 2),
       with_rotation_(false),
       with_attractor_constraint_(false),
-      ipopt_with_bounds_(false),
+      ipopt_with_bounds_(true),
       ipopt_hessian_approximation_("limited-memory"),
       visualize_inner_loop_(false),
       visualize_slow_down_(false),
@@ -151,10 +151,13 @@ void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
   auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
 
   // Scale and register to a new network
+  // Set up surface constraints for key points.
   uint32_t dim = function_network_->input_dimension();
-  auto network = std::make_shared<FunctionNetwork>(dim, n_);
-  network->RegisterFunctionForLastClique(scalar * phi);
-  g_constraints_.push_back(network);
+  for (uint32_t t = 0; t < T_; ++t) {
+    auto network = std::make_shared<FunctionNetwork>(dim, n_);
+    network->RegisterFunctionForClique(t, scalar * phi);
+    g_constraints_.push_back(network);
+  }
 }
 
 std::shared_ptr<const ConstrainedOptimizer>
@@ -172,10 +175,10 @@ PlanarOptimizer::SetupIpoptOptimizer(
   // optimizer->set_option("derivative_test", "second-order");  // TODO remove
   // optimizer->set_option("derivative_test_tol", 1e-4);
 
-  optimizer->set_option("constr_viol_tol", 1e-7);
+  // optimizer->set_option("constr_viol_tol", 1e-7);
   // optimizer->set_option("hessian_approximation",
   // ipopt_hessian_approximation_); Parse all options from flags
-  // optimizer->set_options_map(ipopt_options);
+  optimizer->set_options_map(ipopt_options);
 
   // Logging
   // stats_monitor_ = std::make_shared<StatsMonitor>();

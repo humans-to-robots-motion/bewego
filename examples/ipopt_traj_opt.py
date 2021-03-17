@@ -64,13 +64,12 @@ for k, workspace in enumerate(tqdm(workspaces)):
     problem.verbose = True
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 0
-    p.s_acceleration_norm = 1e-5
-    p.s_obstacles = 1
+    p.s_velocity_norm = 1e-3
+    p.s_acceleration_norm = 1e-6
+    p.s_obstacles = 1e-3
     p.s_obstacle_alpha = 10
-    p.s_obstacle_scaling = 1e-2
     p.s_obstacle_margin = 0
-    p.s_obstacle_constraint = 1
+    p.s_obstacle_constraint = 1e-7
     p.s_terminal_potential = 1
     problem.initialize_objective(p)
 
