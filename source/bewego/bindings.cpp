@@ -262,6 +262,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("clear_workspace", &opt::PlanarOptimizer::ClearWorkspace)
 
       // Functions
+      .def("set_trajectory_publisher",
+           &opt::PlanarOptimizer::set_trajectory_publisher)
       .def("objective", &opt::PlanarOptimizer::objective)
       .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential);
 #endif

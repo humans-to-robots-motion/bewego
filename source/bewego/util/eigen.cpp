@@ -72,6 +72,7 @@ Eigen::MatrixXd FromString(const std::string& matrix_txt, int rows, int cols) {
 
 std::string ToString(const Eigen::MatrixXd& v, bool use_scientific_csv,
                      bool full_precision_csv) {
+
   Eigen::IOFormat CSVFormat;
   if (full_precision_csv) {
     CSVFormat =
@@ -97,8 +98,10 @@ std::string ToString(const Eigen::MatrixXd& v, bool use_scientific_csv,
 std::string Serializer::Serialize(const Eigen::VectorXd& v) const {
   std::string str("");
   str += "vector\n";
-  str += "size:" + std::to_string(v.size()) + "\n";
-  str += ToString(v, use_scientific_, full_precision_);
+  // str += "size:" + std::to_string(v.size()) + "\n";
+  str += "rows:" + std::to_string(v.rows()) + "\n";
+  str += "cols:" + std::to_string(v.cols()) + "\n";
+  str += ToString(v.transpose(), use_scientific_, full_precision_);
   return str;
 }
 

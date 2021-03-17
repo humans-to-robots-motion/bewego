@@ -51,7 +51,7 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
       ipopt_hessian_approximation_("limited-memory"),
       visualize_inner_loop_(false),
       visualize_slow_down_(false),
-      visualize_t_pause_(0.01) {
+      visualize_t_pause_(100000) {
   cout << "Create planar optimizer with n : " << n_ << endl;
   assert(n_ == 2);
   assert(T > 2);
@@ -235,6 +235,7 @@ OptimizeResult PlanarOptimizer::Optimize(
     }
   }
   if (visualize_inner_loop_ && publisher_) {
+    cout << "stop visulization..." << endl;
     publisher_->Stop();
   }
   OptimizeResult result;

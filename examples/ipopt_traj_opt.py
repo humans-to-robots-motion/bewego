@@ -32,6 +32,8 @@ from pyrieef.utils.collision_checking import *
 import pyrieef.learning.demonstrations as demonstrations
 from pyrieef.graph.shortest_path import *
 
+import time
+
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
 BOXES = True
@@ -39,8 +41,8 @@ BOXES = True
 
 def run_optimizer(problem, p, options):
     print(p)
+    time.sleep(1)
     problem.optimize(p, options)
-
 
 nb_points = 40  # points for the grid on which to perform graph search.
 grid = np.ones((nb_points, nb_points))
@@ -49,7 +51,7 @@ graph.convert()
 
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
-for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
+for k, workspace in enumerate(tqdm([sampling(5) for i in range(10)])):
 
     trajectory = demonstrations.graph_search_path(
         graph, workspace, nb_points)
@@ -73,10 +75,9 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
     p.s_terminal_potential = 1
     problem.initialize_objective(p)
 
+    # Initialize the viewer with objective function etc.
     viewer = WorkspaceViewerServer(problem)
     viewer.initialize_viewer(trajectory)
-    viewer.run()
-    break
 
     options = {}
     options["tol"] = 1e-2
@@ -88,4 +89,6 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
 
     p = Process(target=run_optimizer, args=(problem, p, options))
     p.start()
+    print("run viewer...")
+    viewer.run()
     p.join()

@@ -19,9 +19,11 @@
 
 
 import socket
+from socket import SHUT_RDWR
 import sys
 from pybewego.message_passing import *
 from pyrieef.rendering.optimization import *
+import traceback
 
 
 class WorkspaceViewerServer(TrajectoryOptimizationViewer):
@@ -39,6 +41,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         # Create a TCP/IP socket
         self.address = ('127.0.0.1', 5555)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(self.address)
 
         # Listen for incoming connections
@@ -47,8 +50,6 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         # Store the active part of the trajectory
         self.q_init = None
         self.active_x = None
-        self.active_shape = (3, 10)
-        # self.active_shape = (self.objective.n * (self.objective.T + 1), )
 
     def initialize_viewer(self, trajectory):
         self.viewer.background_matrix_eval = False
@@ -58,6 +59,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.reset_objective()
         self.viewer.draw_ws_obstacles()
         self.q_init = trajectory.initial_configuration()
+        self.active_shape = (self.objective.n * (self.objective.T + 1), )
         self.draw(trajectory)
 
     def run(self):
@@ -73,6 +75,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                     # Receive the data in small chunks and retransmit it
                     data = connection.recv(1024).decode("ascii")
                     if data:
+                        print("recieved data...")
                         # Check if the client is done.
                         if data == "end":
                             echo = "done"
@@ -81,18 +84,42 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                             stop = True
                             break
 
+                        print("deserialized_data")
                         # Deseralize data and check that all is ok
+                        print("data: {}".format(data))
                         self.active_x = deserialize_array(data)
                         if self.active_x.shape == self.active_shape:
                             echo = "ackn"
                         else:
+                            print("self.active_shape : ", self.active_shape)
+                            print("self.active_x.shape : ",
+                                  self.active_x.shape)
                             echo = "fail"
-                        print(self.active_x)
+                        # print(self.active_x)
                         # print(self.active_x.shape)
+                        if not np.isnan(self.active_x).any() and (
+                                np.abs(self.active_x).max() < 1e10):
+                            print(self.active_x)
+                            self.draw(Trajectory(
+                                self, q_init=self.q_init, x=self.active_x))
                         print("send back echo : ", echo)
                         connection.sendall(echo.encode("ascii"))
+
+            except AssertionError:
+                print("AssertionError")
+                connection.sendall("fail".encode("ascii"))
+                _, _, tb = sys.exc_info()
+                traceback.print_tb(tb)  # Fixed format
+                tb_info = traceback.extract_tb(tb)
+                filename, line, func, text = tb_info[-1]
+                print('An error occurred on line {} in statement {}'.format(
+                    line, text))
+                break
 
             finally:
                 print("close connection.")
                 # Clean up the connection
-                connection.close()
+                # connection.close()
+                # self.socket.shutdown(SHUT_RDWR)
+                self.socket.close()
+                self.viewer.gl.close()

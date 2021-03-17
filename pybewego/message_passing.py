@@ -67,7 +67,7 @@ def deserialize_array(txt):
         See the serialization functions for some comments.
     """
     tokens = txt.split("\n", 3)
-    assert len(tokens) != 3
+    # assert len(tokens) != 3
     otyp = tokens[0]
     rows = tokens[1][5:]
     cols = tokens[2][5:]
