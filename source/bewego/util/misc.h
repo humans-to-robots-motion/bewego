@@ -25,11 +25,11 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
-#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 namespace bewego {
@@ -48,8 +48,7 @@ namespace util {
 /// TODO use c++11 function instead
 /// std::stoi or std::stod
 template <class T>
-bool convert_text_to_num(T& t,
-                         const std::string& s,
+bool convert_text_to_num(T& t, const std::string& s,
                          std::ios_base& (*f)(std::ios_base&)) {
   std::istringstream iss(s);
   return !(iss >> f >> t).fail();
@@ -117,6 +116,9 @@ bool ReadMatrixBinary(const char* filename, Matrix& matrix) {
 // Parse string as tokens
 std::vector<std::string> ParseCsvString(const std::string& str,
                                         bool trim_tokens = false);
+std::vector<std::string> ParseCsvString2(const std::string& str,
+                                         std::string delimiter,
+                                         int max_length = -1);
 
 //! Fill with zeros.
 std::string LeftPaddingWithZeros(uint32_t id, uint32_t nb_zeros = 3);
@@ -145,13 +147,11 @@ void SetScientificCSV(bool v);
 bool SaveMatrixToCsvFile(std::string filename, const Eigen::MatrixXd& mat);
 
 /// General interface to save matrices to file
-bool SaveMatrixToDisk(const std::string& filename,
-                      const Eigen::MatrixXd& mat,
+bool SaveMatrixToDisk(const std::string& filename, const Eigen::MatrixXd& mat,
                       bool binary);
 
 /// General interface to load matrices from file
-bool LoadMatrixFromDisk(const std::string& filename,
-                        Eigen::MatrixXd* mat,
+bool LoadMatrixFromDisk(const std::string& filename, Eigen::MatrixXd* mat,
                         bool binary);
 
 /// Float \in [0, 1]
@@ -174,6 +174,17 @@ Eigen::VectorXd RandomVector(uint32_t size, double min, double max);
 std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
 SampleStartAndEndConfiguration(uint32_t nb_samples, uint32_t dim);
 
+//! Are values equal
+bool AlmostEqualRelative(double A, double B, double epsilon = 1e-6);
+
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
+                         double epsilon = 1e-6);
+
+//! Are matrices equal
+bool AlmostEqualRelative(const Eigen::MatrixXd& m1, const Eigen::MatrixXd& m2,
+                         double epsilon = 1e-6);
+
 // Exponentiate matrix with internal max value.
 void ExponentiateMatrix(Eigen::MatrixXd& values);
 
@@ -194,6 +205,44 @@ uint32_t size_t_to_uint(long data);
 uint32_t float_to_uint(double v);
 constexpr unsigned int str2int(const char* str, int h = 0);
 
+//! Matrix sparsity patern to be used in optimization
+//! for fast linear system solving.
+struct MatrixSparsityPatern {
+  MatrixSparsityPatern() { clear(); }
+
+  void add_coefficient(int id_row, int id_col) {
+    ids_rows.push_back(id_row);
+    ids_cols.push_back(id_col);
+    if (id_row != id_col) nb_offdiag_terms_++;
+  }
+  void clear() {
+    ids_rows.clear();
+    ids_cols.clear();
+    nb_offdiag_terms_ = 0;
+  }
+  bool empty() const { return ids_rows.empty() && ids_cols.empty(); }
+  size_t size() const { return ids_rows.size(); }
+  size_t nb_diag_terms() const { return ids_rows.size() - nb_offdiag_terms_; }
+  size_t nb_offdiag_terms() const { return nb_offdiag_terms_; }
+
+  Eigen::MatrixXi Matrix(int rows, int cols) const {
+    assert(rows > 0);
+    assert(cols > 0);
+    assert(ids_rows.size() == ids_cols.size());
+    Eigen::MatrixXi mat = Eigen::MatrixXi::Zero(rows, cols);
+    for (uint32_t c = 0; c < ids_rows.size(); c++) {
+      mat(ids_rows[c], ids_cols[c]) = 1;
+    }
+    return mat;
+  }
+
+  std::vector<int> ids_rows;
+  std::vector<int> ids_cols;
+
+ protected:
+  uint32_t nb_offdiag_terms_;
+};
+
 // Convert a vector of trajectories to a vector of shared pointer
 template <typename Type>
 inline std::vector<std::shared_ptr<const Type>> ConvertToSharedPtr(
@@ -205,32 +254,20 @@ inline std::vector<std::shared_ptr<const Type>> ConvertToSharedPtr(
   return trajectories;
 }
 
-inline std::vector<double> FromEigen(const Eigen::VectorXd& v) {
-  std::vector<double> vect(v.size());
-  for (int i = 0; i < v.size(); i++) {
-    vect[i] = v[i];
-  }
-  return vect;
-}
-
+//! Sends vector on stream flow.
 template <typename Type>
-inline Eigen::Matrix<Type, Eigen::Dynamic, 1> ToEigen(
-    const std::vector<Type>& v) {
-  Eigen::Matrix<Type, Eigen::Dynamic, 1> vect(v.size());
-  for (int i = 0; i < vect.size(); i++) {
-    vect[i] = v[i];
+inline std::ostream& operator<<(std::ostream& os, const std::vector<Type>& v) {
+  for (size_t i = 0; i < v.size(); i++) {
+    os << v[i] << " ";
   }
-  return vect;
+  return os;
 }
 
-template <typename Integer>
-std::vector<Integer> Range(Integer start, Integer end, Integer step = 1) {
-  std::vector<Integer> indicies(end - start);
-  uint32_t k = 0;
-  for (int i = start; i < end; i += step) {
-    indicies[k++] = i;
-  }
-  return indicies;
+//! Append two vectors.
+//! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
+template <typename Type>
+inline void Append(std::vector<Type>& a, const std::vector<Type>& b) {
+  a.insert(std::end(a), std::begin(b), std::end(b));
 }
 
 //! Append two vectors.
@@ -243,16 +280,6 @@ inline std::vector<Type> AppendConst(const std::vector<Type>& a,
   return c;
 }
 
-//! Append two vectors.
-//! [a1, ..., aN, b1, ..., bM] <-- [a1, ..., aN] + [b1, ..., bM]
-template <typename Type>
-inline void Append(std::vector<Type>& a, const std::vector<Type>& b) {
-  a.insert(std::end(a), std::begin(b), std::end(b));
-}
-
-Eigen::MatrixXd HStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
-Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
-
 //! Prints formated vector.
 void PrintFormatedVector(const std::string& name, const Eigen::VectorXd& v);
 
@@ -261,5 +288,5 @@ void PrintProgressBar(double progress);
 
 //! Function to print seed
 void print_seed(int seed);
-}
+}  // namespace util
 }  // namespace bewego

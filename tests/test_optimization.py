@@ -17,27 +17,32 @@
 #
 #                                            Jim Mainprice on Mon Mar 1 2021
 
+import os
+import sys
+import conftest
 import cvxopt
 import numpy as np
-import os
+from numpy.testing import assert_allclose
+from pybewego import test_motion_optimization
+
 
 def load_qp():
 
     directory = os.path.abspath(os.path.dirname(__file__)) + os.sep + "qp_data"
 
     # Objective
-    H = np.loadtxt(directory + os.sep + "Hm.csv") # P
-    d = np.loadtxt(directory + os.sep + "dv.csv") # q
+    H = np.loadtxt(directory + os.sep + "Hm.csv")  # P
+    d = np.loadtxt(directory + os.sep + "dv.csv")  # q
     c = np.loadtxt(directory + os.sep + "c.csv")
 
     # Inequalities
-    A = np.loadtxt(directory + os.sep + "Am.csv") # G
-    a = np.loadtxt(directory + os.sep + "av.csv") # h
+    A = np.loadtxt(directory + os.sep + "Am.csv")  # G
+    a = np.loadtxt(directory + os.sep + "av.csv")  # h
     print(A.shape)
 
     # Equalities
-    B = np.loadtxt(directory + os.sep + "Bm.csv") # A
-    b = np.loadtxt(directory + os.sep + "bv.csv") # b
+    B = np.loadtxt(directory + os.sep + "Bm.csv")  # A
+    b = np.loadtxt(directory + os.sep + "bv.csv")  # b
 
     return H, d, A, a, B, b
 
@@ -52,13 +57,34 @@ def cvxopt_solve_qp(P, q, G=None, h=None, A=None, b=None):
     sol = cvxopt.solvers.qp(*args)
     print("z : ", sol['z'])
     print("y : ", sol['y'])
-    print("s : ", np.array(sol['s'])) # Inequality
+    print("s : ", np.array(sol['s']))  # Inequality
     print(sol)
     if 'optimal' not in sol['status']:
         return None
     return np.array(sol['x']).reshape((P.shape[1],))
 
 
-P, q, G, h, A, b = load_qp()
-x = cvxopt_solve_qp(P, q, G, h, A, b)
-print(x)
+def test_cvox():
+    """
+    The idea is to setup a QP that we can test 
+    in the C++ implementation side. The numbers here come
+    from cvxopt itself, and have been hard-coded in the
+    C++ implementation test suit.
+    """
+    P, q, G, h, A, b = load_qp()
+    x = cvxopt_solve_qp(P, q, G, h, A, b)
+    x_expected = np.array([
+        -1.10833837, 2.71244381, 1.57379586, 1.34409748, -0.98735542,
+        -1.9763331, -0.32983447, -0.11374623, 0.89995774, -2.38376993])
+    assert_allclose(x, x_expected)
+    print("x_opt (py)  : ", x)
+    print("x_opt (cpp) : ", x_expected)
+
+
+def test_many_optimization():
+
+    for _ in range(100):
+        assert test_motion_optimization()
+
+# test_cvox()
+test_many_optimization()

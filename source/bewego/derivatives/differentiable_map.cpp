@@ -24,6 +24,7 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/derivatives/differentiable_map.h>
+#include <bewego/util/misc.h>
 
 #include <iostream>
 using std::cout;
@@ -116,9 +117,6 @@ void DifferentialMapTest::FiniteDifferenceTest(
   J_diff = DifferentiableMap::FiniteDifferenceJacobian(*f, x);
   H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
 
-  double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
-  double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
-
   if (verbose_) {
     cout << "Test for  x : " << x.transpose() << endl;
     cout << "J : " << endl << J << endl;
@@ -127,13 +125,20 @@ void DifferentialMapTest::FiniteDifferenceTest(
     cout << "H_diff : " << endl << H_diff << endl;
   }
 
-  EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
-  EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+  if (use_relative_eq_) {
+    EXPECT_TRUE(util::AlmostEqualRelative(J, J_diff, gradient_precision_));
+    EXPECT_TRUE(util::AlmostEqualRelative(H, H_diff, hessian_precision_));
+  } else {
+    double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
+    double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
+    EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
+    EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+  }
 }
 
 void DifferentialMapTest::AddRandomTests(
     std::shared_ptr<const DifferentiableMap> f, uint32_t n) {
-  for (uint32_t i = 0; i <n ; i++) {
+  for (uint32_t i = 0; i < n; i++) {
     Eigen::VectorXd x = Eigen::VectorXd::Random(f->input_dimension());
     function_tests_.push_back(std::make_pair(f, x));
   }

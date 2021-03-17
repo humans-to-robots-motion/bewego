@@ -26,41 +26,56 @@
 #include <bewego/motion/cost_terms.h>
 #include <bewego/motion/objective.h>
 
+using std::cerr;
+using std::cout;
+using std::endl;
+
 namespace bewego {
 
+MotionObjective::MotionObjective(uint32_t T, double dt,
+                                 uint32_t config_space_dim)
+    : verbose_(false), T_(T), dt_(dt), n_(config_space_dim) {
+  assert(T_ > 2);
+  assert(dt_ > 0);
+  assert(n_ > 0);
+  cout << "T_ in MotionObjective : " << T_ << endl;
+  function_network_ =
+      std::make_shared<CliquesFunctionNetwork>((T_ + 2) * n_, n_);
+  workspace_objects_.clear();
+  workspace_ = std::make_shared<Workspace>(workspace_objects_);
+  ClearWorkspace();
+}
+
 void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
+  DifferentiableMapPtr derivative;
   if (deriv_order == 1) {
-    auto derivative = std::make_shared<Compose>(
-        std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
-        function_network_->LeftOfCliqueMap());
-    function_network_->RegisterFunctionForAllCliques(
-        std::make_shared<Scale>(derivative, scalar));
+    derivative = SquaredVelocityNorm(n_, dt_);
+    derivative = ComposedWith(derivative, function_network_->LeftOfCliqueMap());
   } else if (deriv_order == 2) {
-    auto derivative =
-        std::make_shared<SquaredNormAcceleration>(config_space_dim_, dt_);
-    function_network_->RegisterFunctionForAllCliques(
-        std::make_shared<Scale>(derivative, scalar));
+    derivative = SquaredAccelerationNorm(n_, dt_);
   } else {
-    std::cerr << "deriv_order (" << deriv_order << ") not suported"
-              << std::endl;
+    cerr << "WARNING: deriv_order (" << deriv_order << ") not suported" << endl;
+    return;
   }
+  function_network_->RegisterFunctionForAllCliques(dt_ * scalar * derivative);
 }
 
 void MotionObjective::AddIsometricPotentialToAllCliques(
     DifferentiableMapPtr potential, double scalar) {
-  auto cost = std::make_shared<Compose>(potential,
-                                        function_network_->CenterOfCliqueMap());
-
-  auto squared_norm_vel = std::make_shared<Compose>(
-      std::make_shared<SquaredNormVelocity>(config_space_dim_, dt_),
-      function_network_->RightOfCliqueMap());
-
-  function_network_->RegisterFunctionForAllCliques(std::make_shared<Scale>(
-      std::make_shared<ProductMap>(cost, squared_norm_vel), scalar));
+  auto center_clique = function_network_->CenterOfCliqueMap();
+  auto right_clique = function_network_->RightOfCliqueMap();
+  auto phi = ComposedWith(potential, center_clique);
+  auto sq_norm_vel = ComposedWith(SquaredVelocityNorm(n_, dt_), right_clique);
+  auto cost = dt_ * scalar * (phi * sq_norm_vel);
+  function_network_->RegisterFunctionForAllCliques(cost);
 }
 
 void MotionObjective::AddObstacleTerms(double scalar, double alpha,
                                        double margin) {
+  if (workspace_objects_.empty()) {
+    cerr << "WARNING: no obstacles are in the workspace" << endl;
+    return;
+  }
   auto sdf = workspace_->SignedDistanceField();
   obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
   AddIsometricPotentialToAllCliques(obstacle_potential_, scalar);
@@ -69,19 +84,17 @@ void MotionObjective::AddObstacleTerms(double scalar, double alpha,
 void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
                                                 double scalar) {
   auto terminal_potential =
-      std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_goal),
-                                function_network_->CenterOfCliqueMap());
-  function_network_->RegisterFunctionForLastClique(
-      std::make_shared<Scale>(terminal_potential, scalar));
+      ComposedWith(std::make_shared<SquaredNorm>(q_goal),
+                   function_network_->CenterOfCliqueMap());
+  function_network_->RegisterFunctionForLastClique(scalar * terminal_potential);
 }
 
 void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
                                        uint32_t t, double scalar) {
+  auto left_clique = function_network_->LeftMostOfCliqueMap();
   auto potential =
-      std::make_shared<Compose>(std::make_shared<SquaredNorm>(q_waypoint),
-                                function_network_->LeftMostOfCliqueMap());
-  function_network_->RegisterFunctionForClique(
-      t, std::make_shared<Scale>(potential, scalar));
+      ComposedWith(std::make_shared<SquaredNorm>(q_waypoint), left_clique);
+  function_network_->RegisterFunctionForClique(t, scalar * potential);
 }
 
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {

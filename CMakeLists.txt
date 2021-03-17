@@ -149,9 +149,11 @@ file(GLOB_RECURSE bewego_HEADERS
 # Build bewego library
 set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/util/misc.cpp
-    ${bewego_SOURCE_DIR}/util/util.cpp
+    ${bewego_SOURCE_DIR}/util/eigen.cpp
+    ${bewego_SOURCE_DIR}/util/range.cpp
     ${bewego_SOURCE_DIR}/util/chrono.cpp
     ${bewego_SOURCE_DIR}/util/interpolation.cpp
+    ${bewego_SOURCE_DIR}/util/socket.cpp
     ${bewego_SOURCE_DIR}/derivatives/differentiable_map.cpp
     ${bewego_SOURCE_DIR}/derivatives/atomic_operators.cpp
     ${bewego_SOURCE_DIR}/planning/astar.cpp
@@ -161,7 +163,9 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/motion/trajectory.cpp
     ${bewego_SOURCE_DIR}/motion/cost_terms.cpp
     ${bewego_SOURCE_DIR}/motion/objective.cpp
+    ${bewego_SOURCE_DIR}/motion/publisher.cpp
     ${bewego_SOURCE_DIR}/workspace/workspace.cpp
+    ${bewego_SOURCE_DIR}/workspace/pixelmap.cpp
 )
 add_library(${bewego_LIBRARY} 
   SHARED
@@ -187,7 +191,7 @@ endif()
 ############################
 ## bewego bindings         #
 ############################
-set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
+# set(PYBIND11_PYTHON_VERSION 3.5 CACHE STRING "")
 add_subdirectory(pybind11)
 pybind11_add_module(_pybewego SHARED source/bewego/bindings.cpp)
 if(NOT WITH_IPOPT)
@@ -203,15 +207,21 @@ else()
     target_link_libraries(_pybewego 
         PRIVATE
         bewego 
+        numerical_optimization
         ${GTEST_LIBRARY}
         ${IPOPT_LIBRARIES}
         ${IPOPT_LINK_FLAGS}
     )
+    message("Add IPOPT definitions to pybewego")
+    target_compile_definitions(_pybewego
+        PRIVATE
+        ${IPOPT_DEFINITIONS}
+        WITH_IPOPT)
 endif()
 set_target_properties(_pybewego
   PROPERTIES PREFIX ""
   LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/pybewego"
-)
+)   
 
 ############################
 # Tests                    #

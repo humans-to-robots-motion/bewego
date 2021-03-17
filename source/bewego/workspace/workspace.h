@@ -24,8 +24,9 @@
  */
 
 #pragma once
-#include <bewego/derivatives/differentiable_map.h>
 #include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+#include <bewego/workspace/extent.h>
 
 #include <Eigen/Geometry>
 
@@ -38,7 +39,7 @@ struct WorkspaceObject {
 class Workspace {
  public:
   Workspace(const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
-      : objects_(objects) {}
+      : objects_(objects), dimension_(2) {}
 
   VectorOfMaps ExtractSurfaceFunctions() const {
     VectorOfMaps signed_distance_functions;
@@ -56,7 +57,13 @@ class Workspace {
     return std::make_shared<Min>(ExtractSurfaceFunctions());
   }
 
+  // Ambient space dimension of the workspace (2D or 3D)
+  // For now we have only 2 dimensional cases
+  // but it should be easy to extend the rectangles and circles to the 3D case
+  uint32_t dimension() const { return dimension_; }
+
  protected:
+  uint32_t dimension_;
   std::vector<std::shared_ptr<const WorkspaceObject>> objects_;
 };
 
@@ -242,6 +249,13 @@ class Rectangle : public WorkspaceObject {
   const Eigen::Vector2d& center() const { return center_; }
   const Eigen::Vector2d& dimensions() const { return dimensions_; }
   double orientation() const { return orientation_; }
+
+  extent_t extent() const {
+    double half_dim_x = dimensions_.x() / 2.;
+    double half_dim_y = dimensions_.y() / 2.;
+    return extent_t(center_.x() - half_dim_x, center_.x() + half_dim_x,
+                    center_.y() - half_dim_y, center_.y() + half_dim_y);
+  }
 
  protected:
   Eigen::Vector2d center_;

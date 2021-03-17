@@ -31,11 +31,14 @@
 #include <bewego/planning/planar_grid.h>
 #include <bewego/planning/value_iteration.h>
 #include <bewego/util/interpolation.h>
-#include <bewego/util/util.h>
 #include <bewego/workspace/geometry.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#ifdef WITH_IPOPT
+#include <bewego/numerical_optimization/planar_motion_optimization.h>
+#endif
 
 #include <iostream>
 using std::cout;
@@ -210,6 +213,58 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
       .def("objective", &bewego::MotionObjective::objective)
       .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
+
+#ifdef WITH_IPOPT
+
+  namespace opt = bewego::numerical_optimization;
+
+  m.def("test_motion_optimization", &opt::TestMotionOptimization, R"pbdoc(
+        return true if can optimize motion with iptop
+    )pbdoc");
+
+  py::class_<opt::OptimizeResult>(m, "OptimizeResult")
+      .def(py::init<>())
+      .def_readonly("x", &opt::OptimizeResult::x)
+      .def_readonly("success", &opt::OptimizeResult::success)
+      .def_readonly("message", &opt::OptimizeResult::message)
+      .def_readonly("status", &opt::OptimizeResult::status)
+      .def_readonly("fun", &opt::OptimizeResult::fun)
+      .def_readonly("jac", &opt::OptimizeResult::jac)
+      .def_readonly("hess", &opt::OptimizeResult::hess)
+      .def_readonly("hess_inv", &opt::OptimizeResult::hess_inv)
+      .def_readonly("nfev", &opt::OptimizeResult::nfev)
+      .def_readonly("njev", &opt::OptimizeResult::njev)
+      .def_readonly("nhev", &opt::OptimizeResult::nhev)
+      .def_readonly("nit", &opt::OptimizeResult::nit)
+      .def_readonly("maxcv", &opt::OptimizeResult::maxcv);
+
+  py::class_<opt::PlanarOptimizer>(m, "PlanarOptimizer")
+      .def(py::init<uint32_t, double, const std::vector<double>&>())
+
+      // Main
+      .def("optimize", &opt::PlanarOptimizer::Optimize)
+
+      // Constraints
+      .def("add_keypoints_surface_constraints",
+           &opt::PlanarOptimizer::AddKeyPointsSurfaceConstraints)
+      .def("add_goal_constraint", &opt::PlanarOptimizer::AddGoalConstraint)
+
+      // Objectives
+      .def("add_smoothness_terms", &bewego::MotionObjective::AddSmoothnessTerms)
+      .def("add_obstacle_terms", &opt::PlanarOptimizer::AddObstacleTerms)
+      .def("add_terminal_potential_terms",
+           &bewego::MotionObjective::AddTerminalPotentialTerms)
+      .def("add_waypoint_terms", &opt::PlanarOptimizer::AddWayPointTerms)
+
+      // Workspace
+      .def("add_sphere", &opt::PlanarOptimizer::AddSphere)
+      .def("add_box", &opt::PlanarOptimizer::AddBox)
+      .def("clear_workspace", &opt::PlanarOptimizer::ClearWorkspace)
+
+      // Functions
+      .def("objective", &opt::PlanarOptimizer::objective)
+      .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential);
+#endif
 
   m.attr("__version__") = "0.0.1";
 }

@@ -28,7 +28,7 @@
 
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
-#include <bewego/util/util.h>
+#include <bewego/util/range.h>
 // #include <iostream>
 // using std::cout;
 // using std::endl;
@@ -114,6 +114,16 @@ class SquaredNormAcceleration : public SquaredNormDerivative {
     derivative_ = std::make_shared<FiniteDifferencesAcceleration>(dim, dt);
   }
 };
+
+inline std::shared_ptr<SquaredNormVelocity> SquaredVelocityNorm(uint32_t n,
+                                                                double dt) {
+  return std::make_shared<SquaredNormVelocity>(n, dt);
+}
+
+inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
+    uint32_t n, double dt) {
+  return std::make_shared<SquaredNormAcceleration>(n, dt);
+}
 
 class ObstaclePotential : public DifferentiableMap {
  public:

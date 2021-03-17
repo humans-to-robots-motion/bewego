@@ -29,8 +29,9 @@
 
 // Only works on linux...
 #include <unistd.h>
-#include <iomanip>
+
 #include <atomic>
+#include <iomanip>
 
 using std::cerr;
 using std::cout;
@@ -65,7 +66,7 @@ std::string GetCurrentDirectory() {
 
 void SetScientificCSV(bool v) { use_scientific_csv = v; }
 
-// Parse string as tokens
+// Parse string as tokens§
 std::vector<std::string> ParseCsvString(const std::string& str,
                                         bool trim_tokens) {
   std::vector<std::string> parsed_values;
@@ -76,6 +77,33 @@ std::vector<std::string> ParseCsvString(const std::string& str,
     cout << "Token : " << p << endl;
     parsed_values.push_back(p);
     p = std::strtok(NULL, ",");
+  }
+  return parsed_values;
+}
+
+// Parse string as tokens§
+std::vector<std::string> ParseCsvString2(const std::string& str,
+                                         std::string delimiter,
+                                         int max_length) {
+  std::vector<std::string> parsed_values;
+  std::string string_copy = str;
+  std::string token;
+  std::string tmp = str;
+  size_t first_pos = 0;
+  size_t second_pos = tmp.find(delimiter);
+  while (second_pos != std::string::npos) {
+    if (first_pos != second_pos) {
+      token = tmp.substr(first_pos, second_pos - first_pos);
+      parsed_values.push_back(token);
+      if(max_length > 0 && parsed_values.size() == max_length) {
+        break;
+      }
+    }
+    tmp = tmp.substr(second_pos + delimiter.length());
+    second_pos = tmp.find(delimiter);
+  }
+  if(max_length < 0 || parsed_values.size() < max_length ) {
+    parsed_values.push_back(tmp);
   }
   return parsed_values;
 }
@@ -333,6 +361,49 @@ SampleStartAndEndConfiguration(uint32_t nb_samples, uint32_t dim) {
   return pairs;
 }
 
+bool AlmostEqualRelative(double a, double b, double epsilon) {
+  // Calculate the difference.
+  double diff = fabs(a - b);
+  a = fabs(a);
+  b = fabs(b);
+  // Find the largest
+  double largest = (b > a) ? b : a;
+  return (diff <= largest * epsilon);
+}
+
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::VectorXd& v1, const Eigen::VectorXd& v2,
+                         double epsilon) {
+  if (v1.size() != v2.size()) {
+    return false;
+  }
+  for (int i = 0; i < v1.size(); i++) {
+    if (!AlmostEqualRelative(v1[i], v2[i], epsilon)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//! Are vectors equal
+bool AlmostEqualRelative(const Eigen::MatrixXd& m1, const Eigen::MatrixXd& m2,
+                         double epsilon) {
+  if (m1.rows() != m2.rows()) {
+    return false;
+  }
+  if (m1.cols() != m2.cols()) {
+    return false;
+  }
+  for (int i = 0; i < m1.rows(); i++) {
+    for (int j = 0; j < m1.cols(); j++) {
+      if (!AlmostEqualRelative(m1(i, j), m2(i, j), epsilon)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 const double max_allowed = 30;  // 30 : exp(30) = 10, 686, 474, 581, 524.00
 const double exp_offset = 0;
 void ExponentiateMatrix(Eigen::MatrixXd& values) {
@@ -343,22 +414,6 @@ void ExponentiateMatrix(Eigen::MatrixXd& values) {
     // Add 1e-5 otherwise can not invert.
     values(i) = std::exp(*(values.data() + i)) + exp_offset;
   }
-}
-
-Eigen::MatrixXd HStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
-  Eigen::MatrixXd C(A.rows(), A.cols() + B.cols());
-  C << A, B;
-  return C;
-}
-
-Eigen::MatrixXd VStack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
-  // eigen uses provided dimensions in declaration to determine
-  // concatenation direction
-  Eigen::MatrixXd D(A.rows() + B.rows(),
-                    A.cols());  // <-- D(A.rows() + B.rows(), ...)
-  // <-- syntax is the same for vertical and horizontal concatenation
-  D << A, B;
-  return D;
 }
 
 void PrintFormatedVector(const std::string& name, const Eigen::VectorXd& v) {

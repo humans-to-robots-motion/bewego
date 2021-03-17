@@ -27,7 +27,8 @@
 
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
-#include <bewego/util/util.h>
+#include <bewego/util/misc.h>
+#include <bewego/util/range.h>
 
 using bewego::util::range;
 
@@ -70,15 +71,18 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         nb_clique_elements_(3),
         clique_element_dim_(clique_element_dim),
         clique_dim_(nb_clique_elements_ * clique_element_dim_),
-        nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2) {
+        nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2),
+        nb_terms_(0) {
     functions_.resize(nb_cliques_);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       functions_[t] = std::make_shared<SumMap>();
     }
   }
-
+  static uint32_t NetworkDim(uint32_t n, uint32_t T) { return (T + 2) * n; }
   virtual uint32_t input_dimension() const { return input_size_; }
   virtual uint32_t nb_cliques() const { return nb_cliques_; }
+  virtual uint32_t n() const { return clique_element_dim_; }
+  virtual uint32_t T() const { return nb_cliques_; }
 
   /** We call over all subfunctions in each clique */
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
@@ -171,12 +175,13 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     return H.block(c_id, c_id, clique_dim_, clique_dim_);
   }
 
+  //! returns the element of the input vector corresponding to a clique
   Eigen::VectorXd Clique(uint32_t t, const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     return x.segment(t * clique_element_dim_, clique_dim_);
   }
 
-  // returns a list of all cliques
+  //! returns a list of all cliques
   std::vector<Eigen::VectorXd> AllCliques(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     assert(input_dimension() == (nb_cliques_ + 2) * clique_element_dim_);
@@ -194,6 +199,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     functions.push_back(f);
     auto functions_copy = std::make_shared<VectorOfMaps>(functions);
     functions_[t] = std::make_shared<SumMap>(functions_copy);
+    nb_terms_++;
   }
 
   // Register function f
@@ -251,12 +257,16 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     return std::static_pointer_cast<const SumMap>(functions_[t])->terms();
   }
 
+  uint32_t nb_terms() const { return nb_terms_; }
+  uint32_t clique_dim() const { return clique_dim_; }
+
  private:
   uint32_t input_size_;
   uint32_t nb_clique_elements_;
   uint32_t clique_element_dim_;
   uint32_t clique_dim_;
   uint32_t nb_cliques_;
+  uint32_t nb_terms_;
 };
 
 /**
@@ -310,11 +320,40 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
     return H.block(n_, n_, input_dimension(), input_dimension());
   }
 
+  /** Hessian Sparcity Patern (band diagonal)
+
+  In trajectory networks, the hessian is band diagonal.
+  The Hessian matrix is a symmetric matrix, since the hypothesis of continuity
+  of the second derivatives implies that the order of differentiation does not
+  matter (Schwarz's theorem).
+  **/
+  util::MatrixSparsityPatern HessianSparcityPatern() const {
+    util::MatrixSparsityPatern patern;
+    uint32_t clique_dim = function_network_->clique_dim();
+    for (uint32_t diag = 0; diag < clique_dim; diag++) {
+      uint32_t i = diag;
+      uint32_t j = 0;
+      while (i < input_dimension() && j < input_dimension()) {
+        if (diag == 0) {
+          // main diagonal case
+          patern.add_coefficient(i, i);
+        } else {
+          // other diagonals
+          patern.add_coefficient(i, j);
+          patern.add_coefficient(j, i);
+          j++;
+        }
+        i++;
+      }
+    }
+    return patern;
+  }
+
  protected:
   Eigen::VectorXd q_init_;
   uint32_t n_;
   std::shared_ptr<const CliquesFunctionNetwork> function_network_;
-};
+};  // namespace bewego
 
 /**
         Implement a trajectory as a single vector of configuration,
@@ -344,7 +383,9 @@ class Trajectory {
     // x_.tail(n_ * (T_ + 1)) = x; // TODO
   }
 
-  Trajectory(const Eigen::VectorXd& q_init, const Eigen::VectorXd& x) {
+  Trajectory(const Eigen::VectorXd& q_init,  // Inital configuration
+             const Eigen::VectorXd& x        // Active part of the trajectory
+  ) {
     assert(n > 0);
     assert(x.size() % q_init.size() == 0);
     n_ = q_init.size();
