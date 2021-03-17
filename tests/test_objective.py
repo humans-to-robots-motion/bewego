@@ -72,14 +72,15 @@ def test_motion_optimimization_hessian():
     print((" - H_delta dist = ", np.linalg.norm(H_delta, ord='fro')))
     print((" - H_delta maxi = ", np.max(np.absolute(H_delta))))
 
-    assert is_close
+    assert np.max(np.absolute(H_delta)) < 1e-5
+    # assert is_close
 
     # Check that the hessian has the known form
     active_size = n * (trajectory.T() - 1)
     H1 = H[:active_size, :active_size]
-    H2 = smoothness_metric(dt, T, n)
+    H2 = dt * smoothness_metric(dt, T, n)
     H2 = H2[:active_size, :active_size]
-    assert_allclose(H1, H2)
+    assert_allclose(H1, H2, atol=1e-4)
 
 
 def test_motion_optimimization_compare():
@@ -128,6 +129,5 @@ def test_motion_optimimization_compare():
     assert abs(cost1 - cost2) < 1e-6
 
 
-
-# test_motion_optimimization_hessian()
-test_motion_optimimization_compare()
+test_motion_optimimization_hessian()
+# test_motion_optimimization_compare()
