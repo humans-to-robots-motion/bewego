@@ -19,7 +19,6 @@
 import socket
 import sys
 import numpy as np
-import struct
 
 
 def serialize_array(arr):
@@ -99,19 +98,36 @@ def deserialize_array(txt):
     return matrix.reshape(shape)
 
 
+def send_msg(sock, msg):
+    """
+    Prefix each message with a 4-byte length (network byte order)
+    TODO: implement the reciever on the c++ side.
+    """
+    msg = struct.pack('>I', len(msg)) + msg
+    sock.sendall(msg)
+
+
 def recv_msg(sock):
-    # Read message length and unpack it into an integer
+    """
+    Read message length and unpack it into an integer
+
+    NOTES:
+        The message length is assumed to be encoded using 
+        unsigned int of 32 bits, which are 4 bytes long.
+    """
     raw_msglen = recvall(sock, 4)
     if not raw_msglen:
         return None
     msglen = int.from_bytes(raw_msglen, byteorder='little', signed=False)
-    print("python msglenth: ", msglen)
+
     # Read the message data
     return recvall(sock, msglen)
 
 
 def recvall(sock, n):
-    # Helper function to recv n bytes or return None if EOF is hit
+    """
+    Helper function to recv n bytes or return None if EOF is hit
+    """
     data = bytearray()
     while len(data) < n:
         packet = sock.recv(n - len(data))

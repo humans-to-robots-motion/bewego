@@ -34,29 +34,24 @@ from pyrieef.graph.shortest_path import *
 
 import time
 
-DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 VERBOSE = True
 BOXES = True
+DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
+NB_POINTS = 40          # points for the grid on which to perform graph search.
+NB_PROBLEMS = 10        # problems to evaluate
 
-
-def run_optimizer(problem, p, options):
-    print(p)
-    time.sleep(1)
-    problem.optimize(p, options)
-
-nb_points = 40  # points for the grid on which to perform graph search.
-grid = np.ones((nb_points, nb_points))
+viewer = WorkspaceViewerServer(Workspace())
+grid = np.ones((NB_POINTS, NB_POINTS))
 graph = CostmapToSparseGraph(grid, average_cost=False)
 graph.convert()
-
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
-workspaces = [sampling(5) for i in range(10)]
+workspaces = [sampling(5) for i in range(NB_PROBLEMS)]
 for k, workspace in enumerate(tqdm(workspaces)):
     print("K = ", k)
 
     trajectory = demonstrations.graph_search_path(
-        graph, workspace, nb_points)
+        graph, workspace, NB_POINTS)
     if trajectory is None:
         continue
 
@@ -81,8 +76,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     problem.initialize_objective(p)
 
     # Initialize the viewer with objective function etc.
-    viewer = WorkspaceViewerServer(problem)
-    viewer.initialize_viewer(trajectory)
+    viewer.initialize_viewer(problem, trajectory)
 
     options = {}
     options["tol"] = 1e-2
@@ -92,8 +86,10 @@ for k, workspace in enumerate(tqdm(workspaces)):
     options["constr_viol_tol"] = 5e-2
     options["max_iter"] = 200
 
-    p = Process(target=run_optimizer, args=(problem, p, options))
+    p = Process(target=problem.optimize, args=(p, options))
     p.start()
     print("run viewer...")
     viewer.run()
     p.join()
+
+viewer.viewer.gl.close()

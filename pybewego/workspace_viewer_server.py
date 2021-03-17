@@ -29,11 +29,11 @@ import traceback
 class WorkspaceViewerServer(TrajectoryOptimizationViewer):
     """ Workspace display based on pyglet backend """
 
-    def __init__(self, problem):
+    def __init__(self, workspace):
         TrajectoryOptimizationViewer.__init__(
             self,
-            problem,
-            draw=True,
+            None,
+            draw=False,
             draw_gradient=True,
             use_3d=False,
             use_gl=True)
@@ -51,7 +51,11 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.q_init = None
         self.active_x = None
 
-    def initialize_viewer(self, trajectory):
+        self.init_viewer(workspace)
+
+    def initialize_viewer(self, problem, trajectory):
+        self.objective = problem
+        self.viewer.set_workspace(problem.workspace)
         self.viewer.background_matrix_eval = False
         self.viewer.save_images = True
         self.viewer.workspace_id += 1
@@ -74,37 +78,34 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                 while True:
                     # Receive the data in small chunks and retransmit it
                     data = recv_msg(connection)
-                    if data:
-                        print("recieved data...")
+
+                    if data is not None:
+                        # print("recieved data...")
                         data = data.decode("ascii")
                         # Check if the client is done.
                         if data == "end":
                             echo = "done"
-                            print("send back echo : ", echo)
                             connection.sendall(echo.encode("ascii"))
                             stop = True
                             break
-                        print( "data length 2 : ", len(data))
 
-                        print("deserialized_data")
                         # Deseralize data and check that all is ok
-                        print("data: {}".format(data))
                         self.active_x = deserialize_array(data)
                         if self.active_x.shape == self.active_shape:
                             echo = "ackn"
                         else:
-                            print("self.active_shape : ", self.active_shape)
-                            print("self.active_x.shape : ",
-                                  self.active_x.shape)
+                            # print("self.active_shape : ", self.active_shape)
+                            # print("self.active_x.shape : ",
+                            #       self.active_x.shape)
                             echo = "fail"
                         # print(self.active_x)
                         # print(self.active_x.shape)
                         if not np.isnan(self.active_x).any() and (
                                 np.abs(self.active_x).max() < 1e10):
-                            print(self.active_x)
+                            # print(self.active_x)
                             self.draw(Trajectory(
                                 self, q_init=self.q_init, x=self.active_x))
-                        print("send back echo : ", echo)
+                        # print("send back echo : ", echo)
                         connection.sendall(echo.encode("ascii"))
 
             except AssertionError:
@@ -123,5 +124,5 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                 # Clean up the connection
                 # connection.close()
                 # self.socket.shutdown(SHUT_RDWR)
-                self.socket.close()
-                self.viewer.gl.close()
+                # self.socket.close()
+                # self.viewer.gl.close()

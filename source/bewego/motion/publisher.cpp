@@ -55,7 +55,6 @@ void TrajectoryPublisher::PublishTrajectory() {
     trajectory = std::make_shared<Trajectory>(q_init_, x_);
   }
   Eigen::VectorXd x_active = trajectory->ActiveSegment();
-  cout << x_active.transpose() << endl;
   std::string msg = to_ascii_->Serialize(x_active);
   tcp_client_->SendMessage(msg);
   std::string echo = tcp_client_->Receive(4);
@@ -103,7 +102,7 @@ void TrajectoryPublisher::Run() {
   }
 
   using namespace std::chrono;
-  auto rate = milliseconds(200);
+  auto rate = milliseconds(20);
   auto start = steady_clock::now();
   auto next = steady_clock::now();
   std::chrono::duration<double> elapsed_seconds;

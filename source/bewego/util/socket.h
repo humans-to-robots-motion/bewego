@@ -44,6 +44,7 @@ class TcpClient {
   bool SendData(std::string data);
   std::string Receive(int);
   void Close();
+  void set_verbose(bool v) { verbose_ = v; }
 
  private:
   bool verbose_;
