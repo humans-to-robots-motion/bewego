@@ -35,6 +35,14 @@ using std::endl;
 using namespace bewego;
 using namespace bewego::util;
 
+void TrajectoryPublisher::set_current_solution(const Eigen::VectorXd& x) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (slow_down_) {
+    std::this_thread::sleep_for(std::chrono::microseconds(t_pause_));
+  }
+  x_ = x;
+}
+
 void TrajectoryPublisher::PublishTrajectory() {
   if (x_.size() == 0) {
     return;
@@ -64,6 +72,22 @@ void TrajectoryPublisher::Initialize(const std::string& host, uint32_t port,
   thread_ = std::thread(std::bind(&TrajectoryPublisher::Run, this));
 }
 
+void TrajectoryPublisher::Stop() {
+  if (running_) {
+    finished_ = true;
+    thread_.join();
+  }
+}
+
+void TrajectoryPublisher::Close() {
+  tcp_client_->SendData("end");
+  std::string echo = tcp_client_->Receive(4);
+  if (echo != "done") {
+    cerr << "Error in close transmission echo : " << echo << endl;
+  }
+  tcp_client_->Close();
+}
+
 void TrajectoryPublisher::Run() {
   cout << __PRETTY_FUNCTION__ << endl;
 
@@ -87,5 +111,6 @@ void TrajectoryPublisher::Run() {
     std::this_thread::sleep_until(next);
   }
   running_ = false;
-  cout << "stop thread" << endl;
+  Close();
+  cout << "stop publishing trajectory." << endl;
 }

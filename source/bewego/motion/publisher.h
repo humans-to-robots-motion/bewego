@@ -62,26 +62,16 @@ class TrajectoryPublisher {
 
   virtual void PublishTrajectory();
 
-  void Stop() {
-    if (running_) {
-      finished_ = true;
-      thread_.join();
-    }
-  }
+  void Stop();
   void Run();
+  void Close();
 
   //! Set a pause when displaying the trajectory
   void set_slow_down(bool v) { slow_down_ = v; }
   void set_t_pause(uint32_t v) { t_pause_ = v; }
 
   //! Set the current trajectory solution.
-  void set_current_solution(const Eigen::VectorXd& x) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (slow_down_) {
-      std::this_thread::sleep_for(std::chrono::microseconds(t_pause_));
-    }
-    x_ = x;
-  }
+  void set_current_solution(const Eigen::VectorXd& x);
 
  protected:
   bool verbose_;

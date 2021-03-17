@@ -45,6 +45,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.socket.listen(1)
 
         # Store the active part of the trajectory
+        self.q_init = None
         self.active_x = None
         self.active_shape = (3, 10)
         # self.active_shape = (self.objective.n * (self.objective.T + 1), )
@@ -56,6 +57,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
         self.viewer.image_id = 0
         self.reset_objective()
         self.viewer.draw_ws_obstacles()
+        self.q_init = trajectory.initial_configuration()
         self.draw(trajectory)
 
     def run(self):

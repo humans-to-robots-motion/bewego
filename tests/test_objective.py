@@ -103,7 +103,7 @@ def test_motion_optimimization_compare():
     problem2.dt = dt
     problem2.q_init = q_init
     problem2.create_clique_network()
-    problem2.set_scalars(acceleration_scalar=20)
+    problem2.set_scalars(acceleration_scalar=20 * dt)
     problem2.add_smoothness_terms(2)
     problem2.create_objective()
     objective2 = problem2.objective
