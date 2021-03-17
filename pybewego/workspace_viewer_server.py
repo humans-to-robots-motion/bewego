@@ -73,9 +73,10 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
             try:
                 while True:
                     # Receive the data in small chunks and retransmit it
-                    data = connection.recv(1024).decode("ascii")
+                    data = recv_msg(connection)
                     if data:
                         print("recieved data...")
+                        data = data.decode("ascii")
                         # Check if the client is done.
                         if data == "end":
                             echo = "done"
@@ -83,6 +84,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                             connection.sendall(echo.encode("ascii"))
                             stop = True
                             break
+                        print( "data length 2 : ", len(data))
 
                         print("deserialized_data")
                         # Deseralize data and check that all is ok

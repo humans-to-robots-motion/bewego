@@ -57,7 +57,7 @@ void TrajectoryPublisher::PublishTrajectory() {
   Eigen::VectorXd x_active = trajectory->ActiveSegment();
   cout << x_active.transpose() << endl;
   std::string msg = to_ascii_->Serialize(x_active);
-  tcp_client_->SendData(msg);
+  tcp_client_->SendMessage(msg);
   std::string echo = tcp_client_->Receive(4);
   if (echo != "ackn") {
     cerr << "Error in trajectory transmission echo (received: " << echo << ")"
@@ -84,7 +84,7 @@ void TrajectoryPublisher::Stop() {
 }
 
 void TrajectoryPublisher::Close() {
-  tcp_client_->SendData("end");
+  tcp_client_->SendMessage("end");
   std::string echo = tcp_client_->Receive(4);
   if (echo != "done") {
     cerr << "Error in close transmission echo : " << echo << endl;

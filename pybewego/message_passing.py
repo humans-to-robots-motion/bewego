@@ -19,6 +19,7 @@
 import socket
 import sys
 import numpy as np
+import struct
 
 
 def serialize_array(arr):
@@ -96,6 +97,28 @@ def deserialize_array(txt):
     shape = (nrows, ) if ncols == 1 else (nrows, ncols)
     assert shape == matrix.shape
     return matrix.reshape(shape)
+
+
+def recv_msg(sock):
+    # Read message length and unpack it into an integer
+    raw_msglen = recvall(sock, 4)
+    if not raw_msglen:
+        return None
+    msglen = int.from_bytes(raw_msglen, byteorder='little', signed=False)
+    print("python msglenth: ", msglen)
+    # Read the message data
+    return recvall(sock, msglen)
+
+
+def recvall(sock, n):
+    # Helper function to recv n bytes or return None if EOF is hit
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return data
 
 
 def setup_echo_tcp_server():

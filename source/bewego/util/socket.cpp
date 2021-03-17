@@ -96,13 +96,24 @@ bool TcpClient::Connect(string address, int port) {
 }
 
 // Send data to the connected host
+bool TcpClient::SendMessage(string data) {
+  uint32_t msg_length = strlen(data.c_str());
+  cout << "msg_length : " << msg_length << endl;
+  if (send(sock, (char *)(&msg_length), 4, 0) < 0) {
+    perror("Send failed : ");
+    return false;
+  }
+
+  return SendData(data);
+}
+
+// Send data to the connected host
 bool TcpClient::SendData(string data) {
-  cout << "Sending data...";
   if (verbose_) {
+    cout << "Sending data...";
     cout << data;
     cout << "\n";
   }
-
   // Send some data
   if (send(sock, data.c_str(), strlen(data.c_str()), 0) < 0) {
     perror("Send failed : ");

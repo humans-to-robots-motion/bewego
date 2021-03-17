@@ -40,6 +40,7 @@ class TcpClient {
  public:
   TcpClient();
   bool Connect(std::string, int);
+  bool SendMessage(std::string data);
   bool SendData(std::string data);
   std::string Receive(int);
   void Close();

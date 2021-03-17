@@ -51,11 +51,16 @@ graph.convert()
 
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
-for k, workspace in enumerate(tqdm([sampling(5) for i in range(10)])):
+workspaces = [sampling(5) for i in range(10)]
+for k, workspace in enumerate(tqdm(workspaces)):
+    print("K = ", k)
 
     trajectory = demonstrations.graph_search_path(
         graph, workspace, nb_points)
     if trajectory is None:
+        continue
+
+    if k < 4:
         continue
 
     problem = NavigationOptimization(
