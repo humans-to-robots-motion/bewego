@@ -38,10 +38,10 @@ using namespace bewego::util;
 void TrajectoryPublisher::set_current_solution(const Eigen::VectorXd& x) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (slow_down_) {
-    cout << "sleep..." << endl;
+    // cout << "sleep..." << endl;
     std::this_thread::sleep_for(std::chrono::microseconds(t_pause_));
   }
-  cout << "set current solution (" << ++ith_ << ")," << t_pause_ << endl;
+  // cout << "set current solution (" << ++ith_ << ")," << t_pause_ << endl;
   x_ = x;
 }
 
@@ -111,8 +111,8 @@ void TrajectoryPublisher::Run() {
   finished_ = false;
 
   while (!finished_) {
-    elapsed_seconds = steady_clock::now() - start;
-    cout << "publish : " << elapsed_seconds.count() << endl;
+    // elapsed_seconds = steady_clock::now() - start;
+    // cout << "publish : " << elapsed_seconds.count() << endl;
     PublishTrajectory();
 
     // delay until time to iterate again

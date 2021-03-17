@@ -228,7 +228,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             """
             self._initialize_problem()
 
-            # Objective Terms
+            # Objective Terms --------------------------------------------
             if scalars.s_velocity_norm > 0:
                 print("-- add velocity norm ({})".format(
                     scalars.s_velocity_norm))
@@ -256,12 +256,17 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.problem.add_terminal_potential_terms(
                     self.q_goal, scalars.s_terminal_potential)
 
-            # Constraints Terms
+            # Constraints Terms ------------------------------------------
             if self.with_goal_constraint and scalars.s_terminal_potential > 0:
                 print("-- add goal constraint ({})".format(
                     scalars.s_terminal_potential))
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
+
+            if scalars.s_obstacle_constraint > 0:
+                self.problem.add_keypoints_surface_constraints(
+                    scalars.s_obstacle_margin,
+                    scalars.s_obstacle_constraint)
 
             # Create objective functions
             self.objective = self.problem.objective(self.q_init)

@@ -47,15 +47,12 @@ graph.convert()
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
 workspaces = [sampling(5) for i in range(NB_PROBLEMS)]
+
 for k, workspace in enumerate(tqdm(workspaces)):
     print("K = ", k)
-
     trajectory = demonstrations.graph_search_path(
         graph, workspace, NB_POINTS)
     if trajectory is None:
-        continue
-
-    if k < 4:
         continue
 
     problem = NavigationOptimization(
@@ -69,9 +66,11 @@ for k, workspace in enumerate(tqdm(workspaces)):
     p = CostFunctionParameters()
     p.s_velocity_norm = 0
     p.s_acceleration_norm = 1e-5
-    p.s_obstacles = 0
-    p.s_obstacle_alpha = 0
-    p.s_obstacle_scaling = 0
+    p.s_obstacles = 1
+    p.s_obstacle_alpha = 10
+    p.s_obstacle_scaling = 1e-2
+    p.s_obstacle_margin = 0
+    p.s_obstacle_constraint = 1
     p.s_terminal_potential = 1
     problem.initialize_objective(p)
 
@@ -82,7 +81,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     options["tol"] = 1e-2
     options["acceptable_tol"] = 5e-3
     options["acceptable_constr_viol_tol"] = 5e-1
-    options["max_cpu_time"] = 30
+    options["max_cpu_time"] = 10
     options["constr_viol_tol"] = 5e-2
     options["max_iter"] = 200
 

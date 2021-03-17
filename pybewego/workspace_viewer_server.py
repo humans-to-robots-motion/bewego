@@ -55,6 +55,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
 
     def initialize_viewer(self, problem, trajectory):
         self.objective = problem
+        # self.objective.problem.set_trajectory_publisher(True, 100000)
         self.viewer.set_workspace(problem.workspace)
         self.viewer.background_matrix_eval = False
         self.viewer.save_images = True
@@ -78,7 +79,6 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                 while True:
                     # Receive the data in small chunks and retransmit it
                     data = recv_msg(connection)
-
                     if data is not None:
                         # print("recieved data...")
                         data = data.decode("ascii")
@@ -94,18 +94,12 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                         if self.active_x.shape == self.active_shape:
                             echo = "ackn"
                         else:
-                            # print("self.active_shape : ", self.active_shape)
-                            # print("self.active_x.shape : ",
-                            #       self.active_x.shape)
                             echo = "fail"
-                        # print(self.active_x)
-                        # print(self.active_x.shape)
                         if not np.isnan(self.active_x).any() and (
                                 np.abs(self.active_x).max() < 1e10):
                             # print(self.active_x)
                             self.draw(Trajectory(
                                 self, q_init=self.q_init, x=self.active_x))
-                        # print("send back echo : ", echo)
                         connection.sendall(echo.encode("ascii"))
 
             except AssertionError:

@@ -100,7 +100,6 @@ bool TcpClient::Connect(string address, int port) {
 // by prefixing the data with the message length
 bool TcpClient::SendMessage(string data) {
   uint32_t msg_length = strlen(data.c_str());
-  cout << "msg_length : " << msg_length << endl;
   if (send(sock, (char *)(&msg_length), 4, 0) < 0) {
     perror("Send failed : ");
     return false;
