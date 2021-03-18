@@ -360,6 +360,8 @@ inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
 /**
  * \brief Represents the sum of a set of maps f_i.
  *
+ * Details:
+ *
  *   y(x) = \sum_{i=1}^N f_i(x)
  */
 class SumMap : public DifferentiableMap {
@@ -423,6 +425,8 @@ inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
 
 /**
  * \brief Represents the sum of a set of maps f_i.
+ *
+ * Details:
  *
  *   f(x) = g(x) h(x)
  */
@@ -556,7 +560,9 @@ class SecondOrderTaylorApproximation : public QuadricMap {
 /**
  *   Logarithmic Barrier
  *
- *  f(x) = -log(x)
+ * Details:
+ *
+ *    f(x) = -log(x)
  *
  * for numerical stability
         when x < margin f(x) = \infty
@@ -607,6 +613,8 @@ class LogBarrierWithApprox : public LogBarrier {
 
 /** A smooth version of the norm function.
  *
+ * Details:
+ *
  *   f(x; \alpha) = sqrt(x^2 + \alpha^2) - \alpha
  *
  *   since equality constraints are squared, using squared
@@ -639,10 +647,15 @@ class SoftNorm : public DifferentiableMap {
   Eigen::VectorXd x0_;
 };
 
-/** Creates a combination of the maps
-        phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
-        TODO : Test
-        */
+/*! \brief Creates a combination of the maps
+ *
+ * Details:
+ *
+ *   phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
+ *
+ * simply ``stacks" the maps output.
+ * The hessian is not defined as this has > 1 output dimension
+ */
 class CombinedOutputMap : public DifferentiableMap {
  public:
   CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
