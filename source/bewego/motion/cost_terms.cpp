@@ -58,3 +58,29 @@ Eigen::MatrixXd ObstaclePotential::Hessian(const Eigen::VectorXd& x) const {
   auto H_sdf = signed_distance_field_->Hessian(x);
   return rho * (alpha_ * alpha_ * J_sdf.transpose() * J_sdf - alpha_ * H_sdf);
 }
+
+//-----------------------------------------------------------------------------
+// SmoothCollisionConstraints function implementation.
+//-----------------------------------------------------------------------------
+
+SmoothCollisionConstraints::SmoothCollisionConstraints(
+    const VectorOfMaps& surfaces, double gamma)
+    : signed_distance_functions_(surfaces), margin_(0.0), gamma_(0.) {
+  // Check input dimensions
+  assert(signed_distance_functions_.size() > 0);
+  // First iterate through all the surfaces in the environment
+  // Add a constraint per keypoint on the freeflyer.
+  // TODO have a different model for the robot (with capsules or ellipsoids)
+  if (margin_ != 0) {
+    signed_distance_functions_.clear();
+    for (auto sdf : surfaces) {
+      signed_distance_functions_.push_back(sdf - margin_);
+    }
+  }
+  uint32_t n = signed_distance_functions_.size();
+  auto smooth_min = std::make_shared<NegLogSumExp>(n, gamma_);
+  auto stack = std::make_shared<CombinedOutputMap>(signed_distance_functions_);
+  f_ = ComposedWith(smooth_min, stack);
+}
+
+SmoothCollisionConstraints::~SmoothCollisionConstraints() {}

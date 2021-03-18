@@ -639,4 +639,93 @@ class SoftNorm : public DifferentiableMap {
   Eigen::VectorXd x0_;
 };
 
+/** Creates a combination of the maps
+        phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
+        TODO : Test
+        */
+class CombinedOutputMap : public DifferentiableMap {
+ public:
+  CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
+    uint32_t n = maps_.front()->input_dimension();
+    for (auto m : maps) {
+      m_ += m->output_dimension();
+      assert(n == m->input_dimension());
+    }
+  }
+
+  uint32_t output_dimension() const { return m_; }
+  uint32_t input_dimension() const { return maps_.front()->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    Eigen::VectorXd phi(m_);
+    for (auto m : maps_) {
+      phi.segment(idx, m->output_dimension()) = (*m)(q);
+      idx += m->output_dimension();
+    }
+    return phi;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    Eigen::MatrixXd J_phi = Eigen::MatrixXd::Zero(m_, input_dimension());
+    for (auto map : maps_) {
+      uint32_t m_map = map->output_dimension();
+      uint32_t n_map = map->input_dimension();
+      J_phi.block(idx, 0, m_map, n_map) = map->Jacobian(q);
+      idx += m_map;
+    }
+    return J_phi;
+  }
+
+ protected:
+  uint32_t m_;
+  VectorOfMaps maps_;
+};
+
+/*! \brief Implements a softmax between functions g_i.
+ *
+ * Details:
+ *
+ *   f(x; a) = 1/a log(sum_i e^{a g_i(x)})
+ *
+ * where 'a' is a constant scaling factor. Negative values of 'a' turn the
+ * softmax into a soft min.
+ */
+class LogSumExp : public DifferentiableMap {
+ public:
+  LogSumExp(uint32_t n, double alpha = 1.)
+      : n_(n), alpha_(alpha), inv_alpha_(1. / alpha) {}
+  virtual ~LogSumExp() {}
+
+  uint32_t input_dimension() const override { return n_; }
+  uint32_t output_dimension() const override { return 1; }
+
+  // Evaluates f(x) = 1/a log(sum_i e^{a g_i(x)}).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const override;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const override;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const override;
+
+ protected:
+  uint32_t n_;
+  double alpha_;
+  double inv_alpha_;
+};
+
+/*! \brief Implements a soft*min* between two functions f and h. Equivalent
+ * to using a negative alpha.
+ *
+ * Details:
+ *
+ *   f(x; a) = log(sum_i e^{-a g_i(x)})
+ *
+ * where 'a' is a constant scaling factor. Negative values of 'a' turn the
+ * softmin into a soft max.
+ */
+class NegLogSumExp : public LogSumExp {
+ public:
+  NegLogSumExp(uint32_t n, double alpha = 1.) : LogSumExp(n, -alpha) {}
+  virtual ~NegLogSumExp();
+};
+
 }  // namespace bewego

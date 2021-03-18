@@ -150,3 +150,38 @@ Eigen::MatrixXd SoftNorm::Hessian(const Eigen::VectorXd& x) const {
   auto gamma = 1. / alpha_norm;
   return gamma * (I - x_alpha_normalized * x_alpha_normalized.transpose());
 }
+
+//-----------------------------------------------------------------------------
+// LogSumExp implementation.
+//-----------------------------------------------------------------------------
+
+Eigen::VectorXd LogSumExp::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  Eigen::VectorXd z = (alpha_ * x).array().exp();
+  return Eigen::VectorXd::Constant(1, inv_alpha_ * std::log(z.sum()));
+}
+
+Eigen::MatrixXd LogSumExp::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  Eigen::VectorXd z = (alpha_ * x).array().exp();
+  double z_sum = z.sum();
+  return z.transpose() / z_sum;
+}
+
+Eigen::MatrixXd LogSumExp::Hessian(const Eigen::VectorXd& x) const {
+  assert(n_ == x.size());
+  Eigen::MatrixXd H(Eigen::MatrixXd::Zero(n_, n_));
+  Eigen::VectorXd z = (alpha_ * x).array().exp();
+  double z_sum = z.sum();
+  double p_inv = 1 / z_sum;
+  Eigen::MatrixXd M = z.asDiagonal();
+  H = p_inv * M - std::pow(p_inv, 2) * z * z.transpose();
+  H *= alpha_;
+  return H;
+}
+
+//-----------------------------------------------------------------------------
+// NegLogSumExp implementation.
+//-----------------------------------------------------------------------------
+
+NegLogSumExp::~NegLogSumExp() {}
