@@ -129,7 +129,8 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   // Create clique constraint function phi
-  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  // auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network

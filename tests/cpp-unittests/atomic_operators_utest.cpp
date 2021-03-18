@@ -237,3 +237,14 @@ TEST_F(DifferentialMapTest, log_barrier_with_approx) {
   // AddRandomTests(phi, NB_TESTS);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, soft_norm) {
+  std::srand(SEED);
+  double alpha = .05;
+  uint32_t dim = 5;
+  auto ph1 = std::make_shared<SoftNorm>(alpha, dim);
+  auto ph2 = std::make_shared<SoftNorm>(alpha, Eigen::VectorXd::Random(dim));
+  AddRandomTests(ph1, NB_TESTS);
+  AddRandomTests(ph2, NB_TESTS);
+  RunAllTests();
+}

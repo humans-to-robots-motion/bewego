@@ -99,6 +99,7 @@ IpoptOptimizer::IpoptOptimizer() {
   set_option("print_timing_statistics", "no");
   set_option("print_user_options", "yes");
   set_option("print_level", 4);
+  set_option("max_iter", 100);
 
   // See test execuables.
   // set_option("max_iter", 1);

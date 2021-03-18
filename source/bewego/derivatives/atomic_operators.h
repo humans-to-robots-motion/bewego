@@ -216,9 +216,7 @@ class SquaredNorm : public DifferentiableMap {
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    Eigen::MatrixXd J(1, input_dimension());
-    J.row(0) = x - x0_;
-    return J;
+    return (x - x0_).transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
@@ -605,6 +603,40 @@ class LogBarrierWithApprox : public LogBarrier {
   double scalar_;
   double x_splice_;
   std::shared_ptr<DifferentiableMap> approximation_;
+};
+
+/** A smooth version of the norm function.
+ *
+ *   f(x; \alpha) = sqrt(x^2 + \alpha^2) - \alpha
+ *
+ *   since equality constraints are squared, using squared
+ *   norms makes the optimization unstable. The regular norm
+ *   is not smooth.
+ *
+ *   Introduced by Tassa et al 2012 (IROS)
+ */
+class SoftNorm : public DifferentiableMap {
+ public:
+  SoftNorm(double alpha, uint32_t n)
+      : n_(n),
+        alpha_(alpha),
+        alpha_sq_(alpha * alpha),
+        x0_(Eigen::VectorXd::Zero(n)) {}
+  SoftNorm(double alpha, const Eigen::VectorXd& x0)
+      : n_(x0.size()), alpha_(alpha), alpha_sq_(alpha * alpha), x0_(x0) {}
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return n_; }
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  uint32_t n_;
+  double alpha_;
+  double alpha_sq_;
+  Eigen::VectorXd x0_;
 };
 
 }  // namespace bewego

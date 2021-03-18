@@ -122,3 +122,31 @@ std::shared_ptr<DifferentiableMap> LogBarrierWithApprox::MakeTaylorLogBarrier()
   return std::make_shared<SecondOrderTaylorApproximation>(
       *scaled_log_barrier, Eigen::VectorXd::Constant(1, x_splice_));
 }
+
+//------------------------------------------------------------------------------
+// SoftNorm implementation
+//------------------------------------------------------------------------------
+
+Eigen::VectorXd SoftNorm::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  Eigen::VectorXd xd = x - x0_;
+  double alpha_norm = sqrt(xd.transpose() * xd + alpha_sq_);
+  return Eigen::VectorXd::Constant(1, alpha_norm - alpha_);
+}
+
+Eigen::MatrixXd SoftNorm::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  Eigen::VectorXd xd = x - x0_;
+  double alpha_norm = sqrt(xd.transpose() * xd + alpha_sq_);
+  return xd.transpose() / alpha_norm;
+}
+
+Eigen::MatrixXd SoftNorm::Hessian(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  Eigen::VectorXd xd = x - x0_;
+  double alpha_norm = sqrt(xd.transpose() * xd + alpha_sq_);
+  Eigen::VectorXd x_alpha_normalized = xd / alpha_norm;
+  Eigen::MatrixXd I = Eigen::MatrixXd::Identity(n_, n_);
+  auto gamma = 1. / alpha_norm;
+  return gamma * (I - x_alpha_normalized * x_alpha_normalized.transpose());
+}
