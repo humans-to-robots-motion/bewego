@@ -27,8 +27,8 @@
 
 #include <iostream>
 using namespace bewego;
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
 //------------------------------------------------------------------------------
@@ -234,8 +234,37 @@ DifferentiableMapPtr Rectangle::ConstraintFunction() const {
                                              1e-2);
 }
 
-// std::shared_ptr<WorkspacePotentalPrimitive> ConstructPrimitveWorkspaceFromFile(
+// std::shared_ptr<WorkspacePotentalPrimitive>
+// ConstructPrimitveWorkspaceFromFile(
 //     std::string filename) {
 //   auto objects = LoadPrimitvesFromFile(filename);
 //   return std::make_shared<WorkspacePotentalPrimitive>(objects);
 // }
+
+//-----------------------------------------------------------------------------
+// SmoothCollisionConstraints function implementation.
+//-----------------------------------------------------------------------------
+
+SmoothCollisionConstraints::SmoothCollisionConstraints(
+    const VectorOfMaps& surfaces, double gamma)
+    : signed_distance_functions_(surfaces),
+      margin_(0.0),
+      gamma_(gamma),
+      f_(ConstructSmoothConstraint()) {}
+
+DifferentiableMapPtr SmoothCollisionConstraints::ConstructSmoothConstraint() {
+  // Check input dimensions
+  assert(signed_distance_functions_.size() > 0);
+  // First iterate through all the surfaces in the environment
+  // Add a constraint per keypoint on the freeflyer.
+  // TODO have a different model for the robot (with capsules or ellipsoids)
+  uint32_t n = signed_distance_functions_.size();
+  if (margin_ != 0) {
+    for (uint32_t i = 0; i < n; i++) {
+      signed_distance_functions_[i] = (signed_distance_functions_[i] - margin_);
+    }
+  }
+  auto smooth_min = std::make_shared<NegLogSumExp>(n, gamma_);
+  auto stack = std::make_shared<CombinedOutputMap>(signed_distance_functions_);
+  return ComposedWith(smooth_min, stack);
+}

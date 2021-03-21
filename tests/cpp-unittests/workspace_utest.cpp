@@ -13,6 +13,8 @@ using std::endl;
 const double error = 1e-05;
 const double nb_test_points = 10;
 const double resolution = 0.01;
+static const uint32_t NB_TESTS = 10;
+static const unsigned int SEED = 0;
 
 class SphereDistanceTest : public DifferentialMapTest {
  public:
@@ -124,4 +126,22 @@ TEST(RectangleDistance, Main) {
       EXPECT_NEAR(r->Evaluate(p), query.second, 1e-12);
     }
   }
+}
+
+std::shared_ptr<Workspace> CreateTestWorkspace() {
+  std::vector<WorkspaceObjectPtr> objects;
+  objects.push_back(std::make_shared<Circle>(Eigen::Vector2d(.5, .5), .2));
+  objects.push_back(std::make_shared<Circle>(Eigen::Vector2d(0., 0.), .1));
+  return std::make_shared<Workspace>(objects);
+}
+
+TEST_F(DifferentialMapTest, smooth_collision_constraints) {
+  std::srand(SEED);
+  verbose_ = false;
+  // gradient_precision_ = 1e-3;
+  // hessian_precision_ = 1e-2;
+  auto surfaces = CreateTestWorkspace()->ExtractSurfaceFunctions();
+  auto phi = std::make_shared<SmoothCollisionConstraints>(surfaces, 10);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
 }
