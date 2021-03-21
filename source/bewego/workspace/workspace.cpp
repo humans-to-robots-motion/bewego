@@ -234,13 +234,6 @@ DifferentiableMapPtr Rectangle::ConstraintFunction() const {
                                              1e-2);
 }
 
-// std::shared_ptr<WorkspacePotentalPrimitive>
-// ConstructPrimitveWorkspaceFromFile(
-//     std::string filename) {
-//   auto objects = LoadPrimitvesFromFile(filename);
-//   return std::make_shared<WorkspacePotentalPrimitive>(objects);
-// }
-
 //-----------------------------------------------------------------------------
 // SmoothCollisionConstraints function implementation.
 //-----------------------------------------------------------------------------
