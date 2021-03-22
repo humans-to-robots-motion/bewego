@@ -129,8 +129,8 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   // Create clique constraint function phi
-  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
-  // auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
+  // auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network
@@ -143,11 +143,14 @@ void PlanarOptimizer::AddInequalityConstraintToEachActiveClique(
   // Scale and register to a new network
   // Set up surface constraints for key points.
   uint32_t dim = function_network_->input_dimension();
-  for (uint32_t t = 0; t < T_; ++t) {
+  auto network_all = std::make_shared<FunctionNetwork>(dim, n_);
+  for (uint32_t t = 0; t < T_; t++) {
     auto network = std::make_shared<FunctionNetwork>(dim, n_);
     network->RegisterFunctionForClique(t, dt_ * scalar * phi);
-    g_constraints_.push_back(network);
+    network_all->RegisterFunctionForClique(t, scalar * phi);
+    // g_constraints_.push_back(network);
   }
+  g_constraints_.push_back(network_all);
 }
 
 void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,

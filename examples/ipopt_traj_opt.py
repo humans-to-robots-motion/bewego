@@ -35,7 +35,7 @@ from pyrieef.graph.shortest_path import *
 import time
 
 VERBOSE = False
-BOXES = False
+BOXES = True
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 10        # problems to evaluate
@@ -66,7 +66,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     problem.verbose = False
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 0
+    p.s_velocity_norm = 1
     p.s_acceleration_norm = 1
     p.s_obstacles = 1e+3
     p.s_obstacle_alpha = 7
@@ -83,9 +83,9 @@ for k, workspace in enumerate(tqdm(workspaces)):
     options["tol"] = 1e-3
     options["acceptable_tol"] = 1e-2
     # options["acceptable_constr_viol_tol"] = 1e-1
-    options["max_cpu_time"] = 5
+    options["max_cpu_time"] = 30
     options["constr_viol_tol"] = 1e-2
-    options["max_iter"] = 20
+    options["max_iter"] = 100
 
     p = Process(target=problem.optimize, args=(p, options))
     p.start()
