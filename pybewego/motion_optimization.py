@@ -40,6 +40,7 @@ class CostFunctionParameters:
         self.s_acceleration_norm = 1
         self.s_obstacles = 1
         self.s_obstacle_alpha = 10
+        self.s_obstacle_gamma = 100
         self.s_obstacle_margin = 0
         self.s_obstacle_constraint = 0
         self.s_terminal_potential = 1e+5
@@ -210,6 +211,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             assert len(bounds) == 4
             self.bounds = bounds
             self.with_goal_constraint = True
+            self.with_smooth_obstale_constraint = True
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -264,9 +266,16 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                     self.q_goal, scalars.s_terminal_potential)
 
             if scalars.s_obstacle_constraint > 0:
-                self.problem.add_keypoints_surface_constraints(
-                    scalars.s_obstacle_margin,
-                    scalars.s_obstacle_constraint)
+                if self.with_smooth_obstale_constraint:
+                    self.problem.add_smooth_keypoints_surface_constraints(
+                        scalars.s_obstacle_margin,
+                        scalars.s_obstacle_gamma,
+                        scalars.s_obstacle_constraint)
+                else:
+                    self.problem.add_keypoints_surface_constraints(
+                        scalars.s_obstacle_margin,
+                        scalars.s_obstacle_constraint)
+
 
             # Create objective functions
             self.objective = self.problem.objective(self.q_init)

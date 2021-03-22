@@ -239,9 +239,9 @@ DifferentiableMapPtr Rectangle::ConstraintFunction() const {
 //-----------------------------------------------------------------------------
 
 SmoothCollisionConstraints::SmoothCollisionConstraints(
-    const VectorOfMaps& surfaces, double gamma)
+    const VectorOfMaps& surfaces, double gamma, double margin)
     : signed_distance_functions_(surfaces),
-      margin_(0.0),
+      margin_(margin),
       gamma_(gamma),
       f_(ConstructSmoothConstraint()) {}
 

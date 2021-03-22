@@ -134,7 +134,11 @@ void IpoptOptimizer::set_options_map(
   // cout << "options.size() : " << options.size() << endl;
   for (const auto& v : options) {
     cout << " -- set option : " << v.first << " , to : " << v.second << endl;
-    set_option(v.first, v.second);
+    if (v.first == "max_iter") {
+      set_option(v.first, int(v.second));
+    } else {
+      set_option(v.first, v.second);
+    }
   }
 }
 

@@ -276,7 +276,8 @@ class Rectangle : public WorkspaceObject {
  */
 class SmoothCollisionConstraints : public DifferentiableMap {
  public:
-  SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma);
+  SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma,
+                             double margin = 0);
 
   /**
    * @brief constraints

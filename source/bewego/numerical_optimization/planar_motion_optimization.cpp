@@ -129,13 +129,43 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   // Create clique constraint function phi
-  // auto d_goal = std::make_shared<SquaredNorm>(q_goal);
-  auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
+  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  // auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForLastClique(scalar * phi);
   h_constraints_.push_back(network);
+}
+
+void PlanarOptimizer::AddInequalityConstraintToEachActiveClique(
+    DifferentiableMapPtr phi, double scalar) {
+  // Scale and register to a new network
+  // Set up surface constraints for key points.
+  uint32_t dim = function_network_->input_dimension();
+  for (uint32_t t = 0; t < T_; ++t) {
+    auto network = std::make_shared<FunctionNetwork>(dim, n_);
+    network->RegisterFunctionForClique(t, dt_ * scalar * phi);
+    g_constraints_.push_back(network);
+  }
+}
+
+void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
+                                                           double gamma,
+                                                           double scalar) {
+  if (workspace_objects_.empty()) {
+    cerr << "WARNING: no obstacles are in the workspace" << endl;
+    return;
+  }
+  assert(function_network_.get() != nullptr);
+  assert(n_ == 2);
+
+  // Create clique constraint function phi
+  auto surfaces = workspace_->ExtractSurfaceFunctions();
+  auto sdf =
+      std::make_shared<SmoothCollisionConstraints>(surfaces, gamma, margin);
+  auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
+  AddInequalityConstraintToEachActiveClique(phi, scalar);
 }
 
 void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
@@ -150,15 +180,7 @@ void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
   // Create clique constraint function phi
   auto sdf = workspace_->SignedDistanceField() - margin;
   auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
-
-  // Scale and register to a new network
-  // Set up surface constraints for key points.
-  uint32_t dim = function_network_->input_dimension();
-  for (uint32_t t = 0; t < T_; ++t) {
-    auto network = std::make_shared<FunctionNetwork>(dim, n_);
-    network->RegisterFunctionForClique(t, scalar * phi);
-    g_constraints_.push_back(network);
-  }
+  AddInequalityConstraintToEachActiveClique(phi, scalar);
 }
 
 std::shared_ptr<const ConstrainedOptimizer>

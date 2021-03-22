@@ -34,11 +34,12 @@ from pyrieef.graph.shortest_path import *
 
 import time
 
-VERBOSE = True
+VERBOSE = False
 BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 10        # problems to evaluate
+TRAJ_LENGTH = 100
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))
@@ -55,26 +56,28 @@ for k, workspace in enumerate(tqdm(workspaces)):
     if trajectory is None:
         continue
 
-    problem = NavigationOptimization(
+    problem = NavigationOptimization(   
         workspace,
-        trajectory,
+        resample(trajectory, TRAJ_LENGTH),
+        # trajectory,
         dt=0.01,
         q_goal=trajectory.final_configuration(),
         bounds=workspace.box.box_extent())
-    problem.verbose = True
+    problem.verbose = False
 
     p = CostFunctionParameters()
     p.s_velocity_norm = 0
-    p.s_acceleration_norm = 1e-3
-    p.s_obstacles = 1
+    p.s_acceleration_norm = 1
+    p.s_obstacles = 1e+3
     p.s_obstacle_alpha = 7
+    p.s_obstacle_gamma = 100
     p.s_obstacle_margin = 0
     p.s_obstacle_constraint = 1
     p.s_terminal_potential = 1
     problem.initialize_objective(p)
 
     # Initialize the viewer with objective function etc.
-    viewer.initialize_viewer(problem, trajectory)
+    viewer.initialize_viewer(problem, problem.trajectory)
 
     options = {}
     options["tol"] = 1e-3
@@ -82,7 +85,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     # options["acceptable_constr_viol_tol"] = 1e-1
     options["max_cpu_time"] = 5
     options["constr_viol_tol"] = 1e-2
-    options["max_iter"] = 200
+    options["max_iter"] = 20
 
     p = Process(target=problem.optimize, args=(p, options))
     p.start()

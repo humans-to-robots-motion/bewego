@@ -41,8 +41,16 @@ class PlanarOptimizer : public MotionObjective {
                   const std::vector<double>& workspace_bounds  // bounds
   );
 
-  /** @brief Adds collsion constraints with the environment */
+  /** @brief Adds collision constraints with the environment */
   void AddKeyPointsSurfaceConstraints(double margin, double scalar);
+
+  /** @brief Adds collision constraints with the environment */
+  void AddSmoothKeyPointsSurfaceConstraints(double margin, double gamma,
+                                            double scalar);
+
+  /** @brief Adds goal constraint */
+  void AddInequalityConstraintToEachActiveClique(DifferentiableMapPtr phi,
+                                                 double scalar);
 
   /** @brief Adds goal constraint */
   void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
