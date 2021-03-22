@@ -17,12 +17,9 @@
 #
 #                                        Jim Mainprice on Sunday June 13 2018
 
+import demos_common_imports
 import os
 import sys
-driectory = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, driectory)
-sys.path.insert(0, driectory + os.sep + "../python")
-sys.path.insert(0, driectory + os.sep + "../../pyrieef")
 sys.path.insert(0, "/Users/jmainpri/Dropbox/Work/workspace/dstar/python")
 
 import numpy as np

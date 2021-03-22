@@ -143,14 +143,11 @@ void PlanarOptimizer::AddInequalityConstraintToEachActiveClique(
   // Scale and register to a new network
   // Set up surface constraints for key points.
   uint32_t dim = function_network_->input_dimension();
-  auto network_all = std::make_shared<FunctionNetwork>(dim, n_);
   for (uint32_t t = 0; t < T_; t++) {
     auto network = std::make_shared<FunctionNetwork>(dim, n_);
     network->RegisterFunctionForClique(t, dt_ * scalar * phi);
-    network_all->RegisterFunctionForClique(t, scalar * phi);
-    // g_constraints_.push_back(network);
+    g_constraints_.push_back(network);
   }
-  g_constraints_.push_back(network_all);
 }
 
 void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
@@ -168,7 +165,10 @@ void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
   auto sdf =
       std::make_shared<SmoothCollisionConstraints>(surfaces, gamma, margin);
   auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
+
   AddInequalityConstraintToEachActiveClique(phi, scalar);
+  // auto phi = TrajectoryConstraintNetwork(T_, n_, sdf, gamma);
+  // g_constraints_unstructured_.push_back(scalar * phi);
 }
 
 void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
@@ -249,6 +249,9 @@ OptimizeResult PlanarOptimizer::Optimize(
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
+  for (auto g : g_constraints_unstructured_) {
+    nonlinear_problem->add_inequality_constraint(g);
+  }
 
   // 3) Optimize trajectory
   auto optimizer = SetupIpoptOptimizer(q_init, options);

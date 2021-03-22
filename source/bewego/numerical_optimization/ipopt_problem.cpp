@@ -268,15 +268,19 @@ bool IpoptProblem::eval_h(Index n, const Number* x, bool new_x,
     Eigen::MatrixXd Hess(n, n);
     // Inequalities
     for (uint32_t i = 0; i < n_g_; i++) {
-      const auto& g = *nlp_->inequality_constraints()[i];
-      Hess = g.Hessian(x_t);
-      H += lambda[i] * Hess;
+      if (lambda[i] != 0.) {
+        const auto& g = *nlp_->inequality_constraints()[i];
+        Hess = g.Hessian(x_t);
+        H += lambda[i] * Hess;
+      }
     }
     // Equalities
     for (uint32_t i = n_g_; i < n_h_ + n_g_; i++) {
-      const auto& h = *nlp_->equality_constraints()[i - n_g_];
-      Hess = h.Hessian(x_t);
-      H += lambda[i] * Hess;
+      if (lambda[i] != 0.) {
+        const auto& h = *nlp_->equality_constraints()[i - n_g_];
+        Hess = h.Hessian(x_t);
+        H += lambda[i] * Hess;
+      }
     }
 
     // Copy lower triangle of augmented-Lagrangian Hessian matrix

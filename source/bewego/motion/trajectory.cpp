@@ -33,6 +33,25 @@ using std::endl;
 
 namespace bewego {
 
+DifferentiableMapPtr TrajectoryConstraintNetwork(uint32_t T, uint32_t n,
+                                                 DifferentiableMapPtr g,
+                                                 double gamma) {
+  uint32_t dimension = (T + 1) * n;
+  std::vector<DifferentiableMapPtr> configurations_maps(T + 1);
+  for (uint32_t t = 0; t < T + 1; t++) {
+    std::vector<uint32_t> q_indices;
+    for (uint32_t i = 0; i < n; i++) {
+      q_indices.push_back(t * n + i);
+    }
+    configurations_maps[t] = ComposedWith(
+        g, std::make_shared<RangeSubspaceMap>(dimension, q_indices));
+  }
+  auto stack = std::make_shared<CombinedOutputMap>(configurations_maps);
+  auto smooth_min = std::make_shared<NegLogSumExp>(T + 1, gamma);
+  return ComposedWith(smooth_min, stack);
+  // return std::make_shared<Min>(configurations_maps);
+}
+
 std::shared_ptr<Trajectory> InitializeZeroTrajectory(
     const Eigen::VectorXd& q_init, uint32_t T) {
   uint32_t n = q_init.size();
@@ -76,7 +95,7 @@ Trajectory Resample(const Trajectory& trajectory, uint32_t T) {
 }
 
 //! Samples trajectories with 0 mean
-/** 
+/**
 std::vector<Trajectory> SampleTrajectoriesZeroMean(
     uint32_t T, double dt, uint32_t n, uint32_t nb_samples, double std_dev) {
   // Get the precision matrix using the hessian of the control costs
@@ -173,4 +192,5 @@ Trajectory InitializeFromMatrix(const Eigen::MatrixXd& Xi) {
 
   return trajectory;
 }
+
 }  // namespace bewego

@@ -98,6 +98,9 @@ class OptimizationProblemWithConstraints
     return equality_constraints_;
   }
 
+  void add_inequality_constraint(DifferentiableMapPtr g);
+  void add_equality_constraint(DifferentiableMapPtr h);
+
  protected:
   DifferentiableMapPtr objective_function_;
   std::vector<DifferentiableMapPtr> inequality_constraints_;

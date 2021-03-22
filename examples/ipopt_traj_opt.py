@@ -35,11 +35,11 @@ from pyrieef.graph.shortest_path import *
 import time
 
 VERBOSE = False
-BOXES = True
+BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 10        # problems to evaluate
-TRAJ_LENGTH = 100
+TRAJ_LENGTH = 50
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))
@@ -67,8 +67,8 @@ for k, workspace in enumerate(tqdm(workspaces)):
 
     p = CostFunctionParameters()
     p.s_velocity_norm = 1
-    p.s_acceleration_norm = 1
-    p.s_obstacles = 1e+3
+    p.s_acceleration_norm = 10
+    p.s_obstacles = 1e+2
     p.s_obstacle_alpha = 7
     p.s_obstacle_gamma = 100
     p.s_obstacle_margin = 0

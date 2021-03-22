@@ -353,7 +353,14 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
   Eigen::VectorXd q_init_;
   uint32_t n_;
   std::shared_ptr<const CliquesFunctionNetwork> function_network_;
-};  // namespace bewego
+};
+
+/**
+ Applies a constraints simultaneously to all configurations
+*/
+DifferentiableMapPtr TrajectoryConstraintNetwork(uint32_t T, uint32_t n,
+                                                 DifferentiableMapPtr g,
+                                                 double gamma);
 
 /**
         Implement a trajectory as a single vector of configuration,

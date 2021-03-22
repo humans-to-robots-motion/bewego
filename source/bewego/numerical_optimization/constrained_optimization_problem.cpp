@@ -75,6 +75,22 @@ OptimizationProblemWithConstraints::OptimizationProblemWithConstraints(
 
 OptimizationProblemWithConstraints::~OptimizationProblemWithConstraints() {}
 
+void OptimizationProblemWithConstraints::add_inequality_constraint(
+    DifferentiableMapPtr g) {
+  assert(objective_function_);
+  assert(objective_function_->input_dimension() == g->input_dimension());
+  inequality_constraints_.push_back(g);
+  n_g_++;
+}
+
+void OptimizationProblemWithConstraints::add_equality_constraint(
+    DifferentiableMapPtr h) {
+  assert(objective_function_);
+  assert(objective_function_->input_dimension() == h->input_dimension());
+  equality_constraints_.push_back(h);
+  n_h_++;
+}
+
 double OptimizationProblemWithConstraints::Evaluate(
     const Eigen::VectorXd& x, Eigen::VectorXd* g_evaluations,
     Eigen::VectorXd* h_evaluations) const {

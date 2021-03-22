@@ -245,14 +245,17 @@ class ExpTestFunction : public DifferentiableMap {
   }
 };
 
-/**
-    Takes only some outputs
-    n is the input dimension, indices are the output
+/** Takes only some outputs
+     - n : input dimension
+     - indices.size() : output dimension
 **/
 class RangeSubspaceMap : public DifferentiableMap {
  public:
   RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
-      : dim_(n), indices_(indices) {}
+      : dim_(n), indices_(indices) {
+    PrealocateJacobian();
+    PrealocateHessian();
+  }
 
   uint32_t output_dimension() const { return indices_.size(); }
   uint32_t input_dimension() const { return dim_; }
@@ -265,23 +268,31 @@ class RangeSubspaceMap : public DifferentiableMap {
     return x_sub;
   }
 
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
-    Eigen::MatrixXd J(output_dimension(), input_dimension());
-    for (int i = 0; i < J.rows(); i++) {
-      J.row(i) = I.row(indices_[i]);
-    }
-    return J;
-  }
-
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const { return J_; }
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
-    return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    return H_;
   }
 
  protected:
+  void PrealocateJacobian() {
+    Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
+    J_ = Eigen::MatrixXd(output_dimension(), input_dimension());
+    for (int i = 0; i < J_.rows(); i++) {
+      J_.row(i) = I.row(indices_[i]);
+    }
+  }
+
+  void PrealocateHessian() {
+    if (output_dimension() == 1) {
+      H_ = Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    }
+  }
+
   uint32_t dim_;
   std::vector<uint32_t> indices_;
+  Eigen::MatrixXd J_;
+  Eigen::MatrixXd H_;
 };
 
 class Scale : public DifferentiableMap {

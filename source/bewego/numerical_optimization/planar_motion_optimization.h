@@ -78,6 +78,8 @@ class PlanarOptimizer : public MotionObjective {
   std::vector<Bounds> TrajectoryDofBounds() const;  // Dof bounds trajectory
 
   // Constraints networks
+  std::vector<DifferentiableMapPtr>
+      g_constraints_unstructured_;                 // inequalities
   std::vector<FunctionNetworkPtr> g_constraints_;  // inequalities
   std::vector<FunctionNetworkPtr> h_constraints_;  // equalities
 
