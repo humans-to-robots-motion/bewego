@@ -38,8 +38,8 @@ VERBOSE = False
 BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
-NB_PROBLEMS = 10        # problems to evaluate
-TRAJ_LENGTH = 50
+NB_PROBLEMS = 100       # problems to evaluate
+TRAJ_LENGTH = 100
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))
@@ -56,19 +56,19 @@ for k, workspace in enumerate(tqdm(workspaces)):
     if trajectory is None:
         continue
 
-    problem = NavigationOptimization(   
+    problem = NavigationOptimization(
         workspace,
         resample(trajectory, TRAJ_LENGTH),
         # trajectory,
-        dt=0.01,
+        dt=0.3 / float(TRAJ_LENGTH),
         q_goal=trajectory.final_configuration(),
         bounds=workspace.box.box_extent())
     problem.verbose = False
 
     p = CostFunctionParameters()
     p.s_velocity_norm = 1
-    p.s_acceleration_norm = 10
-    p.s_obstacles = 1e+2
+    p.s_acceleration_norm = 100
+    p.s_obstacles = 1e+3
     p.s_obstacle_alpha = 7
     p.s_obstacle_gamma = 100
     p.s_obstacle_margin = 0
@@ -90,7 +90,9 @@ for k, workspace in enumerate(tqdm(workspaces)):
     p = Process(target=problem.optimize, args=(p, options))
     p.start()
     print("run viewer...")
+    t0 = time.time()
     viewer.run()
+    print("time : ", time.time() - t0)
     p.join()
 
 viewer.viewer.gl.close()
