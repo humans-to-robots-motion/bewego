@@ -67,7 +67,7 @@ def deserialize_array(txt):
         See the serialization functions for some comments.
     """
     tokens = txt.split("\n", 3)
-    assert len(tokens) != 3
+    # assert len(tokens) != 3
     otyp = tokens[0]
     rows = tokens[1][5:]
     cols = tokens[2][5:]
@@ -96,6 +96,45 @@ def deserialize_array(txt):
     shape = (nrows, ) if ncols == 1 else (nrows, ncols)
     assert shape == matrix.shape
     return matrix.reshape(shape)
+
+
+def send_msg(sock, msg):
+    """
+    Prefix each message with a 4-byte length (network byte order)
+    TODO: implement the reciever on the c++ side.
+    """
+    msg = struct.pack('>I', len(msg)) + msg
+    sock.sendall(msg)
+
+
+def recv_msg(sock):
+    """
+    Read message length and unpack it into an integer
+
+    NOTES:
+        The message length is assumed to be encoded using 
+        unsigned int of 32 bits, which are 4 bytes long.
+    """
+    raw_msglen = recvall(sock, 4)
+    if not raw_msglen:
+        return None
+    msglen = int.from_bytes(raw_msglen, byteorder='little', signed=False)
+
+    # Read the message data
+    return recvall(sock, msglen)
+
+
+def recvall(sock, n):
+    """
+    Helper function to recv n bytes or return None if EOF is hit
+    """
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return data
 
 
 def setup_echo_tcp_server():

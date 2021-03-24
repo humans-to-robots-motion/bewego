@@ -53,8 +53,10 @@ class TrajectoryPublisher {
       : running_(false),
         finished_(false),
         x_(Eigen::VectorXd()),
+        to_ascii_(std::make_shared<util::Serializer>()),
         slow_down_(false),
-        t_pause_(100000) {}
+        t_pause_(100000),
+        ith_(0) {}
   virtual ~TrajectoryPublisher() {}
 
   void Initialize(const std::string& host, uint32_t port,
@@ -62,26 +64,16 @@ class TrajectoryPublisher {
 
   virtual void PublishTrajectory();
 
-  void Stop() {
-    if (running_) {
-      finished_ = true;
-      thread_.join();
-    }
-  }
+  void Stop();
   void Run();
+  void Close();
 
   //! Set a pause when displaying the trajectory
   void set_slow_down(bool v) { slow_down_ = v; }
   void set_t_pause(uint32_t v) { t_pause_ = v; }
 
   //! Set the current trajectory solution.
-  void set_current_solution(const Eigen::VectorXd& x) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (slow_down_) {
-      std::this_thread::sleep_for(std::chrono::microseconds(t_pause_));
-    }
-    x_ = x;
-  }
+  void set_current_solution(const Eigen::VectorXd& x);
 
  protected:
   bool verbose_;
@@ -101,9 +93,15 @@ class TrajectoryPublisher {
   mutable std::mutex mutex_;
   std::thread thread_;
 
+  std::string host_;
+  uint32_t port_;
+
   // Slow down
   bool slow_down_;
   uint32_t t_pause_;
+
+  // Iteration count
+  uint32_t ith_;
 };
 
 }  // namespace bewego

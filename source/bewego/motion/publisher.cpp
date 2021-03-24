@@ -35,6 +35,16 @@ using std::endl;
 using namespace bewego;
 using namespace bewego::util;
 
+void TrajectoryPublisher::set_current_solution(const Eigen::VectorXd& x) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (slow_down_) {
+    // cout << "sleep..." << endl;
+    std::this_thread::sleep_for(std::chrono::microseconds(t_pause_));
+  }
+  // cout << "set current solution (" << ++ith_ << ")," << t_pause_ << endl;
+  x_ = x;
+}
+
 void TrajectoryPublisher::PublishTrajectory() {
   if (x_.size() == 0) {
     return;
@@ -46,12 +56,13 @@ void TrajectoryPublisher::PublishTrajectory() {
   }
   Eigen::VectorXd x_active = trajectory->ActiveSegment();
   std::string msg = to_ascii_->Serialize(x_active);
-  tcp_client_->SendData(msg);
+  tcp_client_->SendMessage(msg);
   std::string echo = tcp_client_->Receive(4);
   if (echo != "ackn") {
     cerr << "Error in trajectory transmission echo (received: " << echo << ")"
          << endl;
-    throw std::runtime_error("TCP communication with server error");
+    running_ = true;
+    // throw std::runtime_error("TCP communication with server error");
   }
 }
 
@@ -59,33 +70,56 @@ void TrajectoryPublisher::Initialize(const std::string& host, uint32_t port,
                                      const Eigen::VectorXd& q_init) {
   cout << __PRETTY_FUNCTION__ << endl;
   q_init_ = q_init;
-  tcp_client_ = std::make_shared<TcpClient>();
-  tcp_client_->Connect(host, port);
+  host_ = host;
+  port_ = port;
   thread_ = std::thread(std::bind(&TrajectoryPublisher::Run, this));
+}
+
+void TrajectoryPublisher::Stop() {
+  if (running_) {
+    finished_ = true;
+    thread_.join();
+  }
+}
+
+void TrajectoryPublisher::Close() {
+  tcp_client_->SendMessage("end");
+  std::string echo = tcp_client_->Receive(4);
+  if (echo != "done") {
+    cerr << "Error in close transmission echo : " << echo << endl;
+  }
+  tcp_client_->Close();
+  cout << "tcp server closed." << endl;
 }
 
 void TrajectoryPublisher::Run() {
   cout << __PRETTY_FUNCTION__ << endl;
 
+  tcp_client_ = std::make_shared<TcpClient>();
+  if (!tcp_client_->Connect(host_, port_)) {
+    throw std::runtime_error(
+        "Trajectory publisher Could not connect to server");
+  }
+
   using namespace std::chrono;
-  auto rate = milliseconds(200);
+  auto rate = milliseconds(20);
+  auto start = steady_clock::now();
   auto next = steady_clock::now();
-  auto prev = next - rate;
+  std::chrono::duration<double> elapsed_seconds;
 
   running_ = true;
   finished_ = false;
 
   while (!finished_) {
-    auto now = steady_clock::now();
-    // Only spins when the subscriber is available
-    // in the case of lqr controler
+    // elapsed_seconds = steady_clock::now() - start;
+    // cout << "publish : " << elapsed_seconds.count() << endl;
     PublishTrajectory();
-    prev = now;
 
     // delay until time to iterate again
     next += rate;
     std::this_thread::sleep_until(next);
   }
   running_ = false;
-  cout << "stop thread" << endl;
+  Close();
+  cout << "stop publishing trajectory." << endl;
 }

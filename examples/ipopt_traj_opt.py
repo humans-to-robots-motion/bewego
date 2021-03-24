@@ -32,60 +32,67 @@ from pyrieef.utils.collision_checking import *
 import pyrieef.learning.demonstrations as demonstrations
 from pyrieef.graph.shortest_path import *
 
+import time
+
+VERBOSE = False
+BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
-VERBOSE = True
-BOXES = True
+NB_POINTS = 40          # points for the grid on which to perform graph search.
+NB_PROBLEMS = 100       # problems to evaluate
+TRAJ_LENGTH = 100
 
-
-def run_optimizer(problem, p, options):
-    print(p)
-    problem.optimize(p, options)
-
-
-nb_points = 40  # points for the grid on which to perform graph search.
-grid = np.ones((nb_points, nb_points))
+viewer = WorkspaceViewerServer(Workspace())
+grid = np.ones((NB_POINTS, NB_POINTS))
 graph = CostmapToSparseGraph(grid, average_cost=False)
 graph.convert()
-
 np.random.seed(0)
 sampling = sample_box_workspaces if BOXES else sample_circle_workspaces
-for k, workspace in enumerate(tqdm([sampling(5) for i in range(1)])):
+workspaces = [sampling(5) for i in range(NB_PROBLEMS)]
 
+for k, workspace in enumerate(tqdm(workspaces)):
+    print("K = ", k)
     trajectory = demonstrations.graph_search_path(
-        graph, workspace, nb_points)
+        graph, workspace, NB_POINTS)
     if trajectory is None:
         continue
 
     problem = NavigationOptimization(
         workspace,
-        trajectory,
-        dt=0.01,
+        resample(trajectory, TRAJ_LENGTH),
+        # trajectory,
+        dt=0.3 / float(TRAJ_LENGTH),
         q_goal=trajectory.final_configuration(),
         bounds=workspace.box.box_extent())
-    problem.verbose = True
+    problem.verbose = False
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 0
-    p.s_acceleration_norm = 1e-5
-    p.s_obstacles = 0
-    p.s_obstacle_alpha = 0
-    p.s_obstacle_scaling = 0
+    p.s_velocity_norm = 1
+    p.s_acceleration_norm = 100
+    p.s_obstacles = 1e+3
+    p.s_obstacle_alpha = 7
+    p.s_obstacle_gamma = 100
+    p.s_obstacle_margin = 0
+    p.s_obstacle_constraint = 1
     p.s_terminal_potential = 1
     problem.initialize_objective(p)
 
-    viewer = WorkspaceViewerServer(problem)
-    viewer.initialize_viewer(trajectory)
-    viewer.run()
-    break
+    # Initialize the viewer with objective function etc.
+    viewer.initialize_viewer(problem, problem.trajectory)
 
     options = {}
-    options["tol"] = 1e-2
-    options["acceptable_tol"] = 5e-3
-    options["acceptable_constr_viol_tol"] = 5e-1
+    options["tol"] = 1e-3
+    options["acceptable_tol"] = 1e-2
+    # options["acceptable_constr_viol_tol"] = 1e-1
     options["max_cpu_time"] = 30
-    options["constr_viol_tol"] = 5e-2
-    options["max_iter"] = 200
+    options["constr_viol_tol"] = 1e-2
+    options["max_iter"] = 100
 
-    p = Process(target=run_optimizer, args=(problem, p, options))
+    p = Process(target=problem.optimize, args=(p, options))
     p.start()
+    print("run viewer...")
+    t0 = time.time()
+    viewer.run()
+    print("time : ", time.time() - t0)
     p.join()
+
+viewer.viewer.gl.close()

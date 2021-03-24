@@ -99,6 +99,7 @@ IpoptOptimizer::IpoptOptimizer() {
   set_option("print_timing_statistics", "no");
   set_option("print_user_options", "yes");
   set_option("print_level", 4);
+  set_option("max_iter", 100);
 
   // See test execuables.
   // set_option("max_iter", 1);
@@ -133,7 +134,11 @@ void IpoptOptimizer::set_options_map(
   // cout << "options.size() : " << options.size() << endl;
   for (const auto& v : options) {
     cout << " -- set option : " << v.first << " , to : " << v.second << endl;
-    set_option(v.first, v.second);
+    if (v.first == "max_iter") {
+      set_option(v.first, int(v.second));
+    } else {
+      set_option(v.first, v.second);
+    }
   }
 }
 

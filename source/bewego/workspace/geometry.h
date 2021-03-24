@@ -45,7 +45,7 @@ Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
   assert(rpy.size() == 3);
   Eigen::Quaterniond q;
   q = Eigen::AngleAxisd(rpy[2], Eigen::Vector3d::UnitZ()) *
-      Eigen::AngleAxisd(rpy[1], Eigen::Vector3d::UnitY()) * 
+      Eigen::AngleAxisd(rpy[1], Eigen::Vector3d::UnitY()) *
       Eigen::AngleAxisd(rpy[0], Eigen::Vector3d::UnitX());
   Eigen::Vector4d quaternion;
   quaternion[0] = q.x();

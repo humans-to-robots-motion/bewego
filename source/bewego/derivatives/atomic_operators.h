@@ -216,9 +216,7 @@ class SquaredNorm : public DifferentiableMap {
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    Eigen::MatrixXd J(1, input_dimension());
-    J.row(0) = x - x0_;
-    return J;
+    return (x - x0_).transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
@@ -247,14 +245,17 @@ class ExpTestFunction : public DifferentiableMap {
   }
 };
 
-/**
-    Takes only some outputs
-    n is the input dimension, indices are the output
+/** Takes only some outputs
+     - n : input dimension
+     - indices.size() : output dimension
 **/
 class RangeSubspaceMap : public DifferentiableMap {
  public:
   RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
-      : dim_(n), indices_(indices) {}
+      : dim_(n), indices_(indices) {
+    PrealocateJacobian();
+    PrealocateHessian();
+  }
 
   uint32_t output_dimension() const { return indices_.size(); }
   uint32_t input_dimension() const { return dim_; }
@@ -267,23 +268,31 @@ class RangeSubspaceMap : public DifferentiableMap {
     return x_sub;
   }
 
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
-    Eigen::MatrixXd J(output_dimension(), input_dimension());
-    for (int i = 0; i < J.rows(); i++) {
-      J.row(i) = I.row(indices_[i]);
-    }
-    return J;
-  }
-
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const { return J_; }
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
-    return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    return H_;
   }
 
  protected:
+  void PrealocateJacobian() {
+    Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
+    J_ = Eigen::MatrixXd(output_dimension(), input_dimension());
+    for (int i = 0; i < J_.rows(); i++) {
+      J_.row(i) = I.row(indices_[i]);
+    }
+  }
+
+  void PrealocateHessian() {
+    if (output_dimension() == 1) {
+      H_ = Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    }
+  }
+
   uint32_t dim_;
   std::vector<uint32_t> indices_;
+  Eigen::MatrixXd J_;
+  Eigen::MatrixXd H_;
 };
 
 class Scale : public DifferentiableMap {
@@ -362,6 +371,8 @@ inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
 /**
  * \brief Represents the sum of a set of maps f_i.
  *
+ * Details:
+ *
  *   y(x) = \sum_{i=1}^N f_i(x)
  */
 class SumMap : public DifferentiableMap {
@@ -425,6 +436,8 @@ inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
 
 /**
  * \brief Represents the sum of a set of maps f_i.
+ *
+ * Details:
  *
  *   f(x) = g(x) h(x)
  */
@@ -558,7 +571,9 @@ class SecondOrderTaylorApproximation : public QuadricMap {
 /**
  *   Logarithmic Barrier
  *
- *  f(x) = -log(x)
+ * Details:
+ *
+ *    f(x) = -log(x)
  *
  * for numerical stability
         when x < margin f(x) = \infty
@@ -605,6 +620,136 @@ class LogBarrierWithApprox : public LogBarrier {
   double scalar_;
   double x_splice_;
   std::shared_ptr<DifferentiableMap> approximation_;
+};
+
+/** A smooth version of the norm function.
+ *
+ * Details:
+ *
+ *   f(x; \alpha) = sqrt(x^2 + \alpha^2) - \alpha
+ *
+ *   since equality constraints are squared, using squared
+ *   norms makes the optimization unstable. The regular norm
+ *   is not smooth.
+ *
+ *   Introduced by Tassa et al 2012 (IROS)
+ */
+class SoftNorm : public DifferentiableMap {
+ public:
+  SoftNorm(double alpha, uint32_t n)
+      : n_(n),
+        alpha_(alpha),
+        alpha_sq_(alpha * alpha),
+        x0_(Eigen::VectorXd::Zero(n)) {}
+  SoftNorm(double alpha, const Eigen::VectorXd& x0)
+      : n_(x0.size()), alpha_(alpha), alpha_sq_(alpha * alpha), x0_(x0) {}
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return n_; }
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  uint32_t n_;
+  double alpha_;
+  double alpha_sq_;
+  Eigen::VectorXd x0_;
+};
+
+/*! \brief Creates a combination of the maps
+ *
+ * Details:
+ *
+ *   phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
+ *
+ * simply ``stacks" the maps output.
+ * The hessian is not defined as this has > 1 output dimension
+ */
+class CombinedOutputMap : public DifferentiableMap {
+ public:
+  CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
+    uint32_t n = maps_.front()->input_dimension();
+    for (auto m : maps) {
+      m_ += m->output_dimension();
+      assert(n == m->input_dimension());
+    }
+  }
+
+  uint32_t output_dimension() const { return m_; }
+  uint32_t input_dimension() const { return maps_.front()->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    Eigen::VectorXd phi(m_);
+    for (auto m : maps_) {
+      phi.segment(idx, m->output_dimension()) = (*m)(q);
+      idx += m->output_dimension();
+    }
+    return phi;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    Eigen::MatrixXd J_phi = Eigen::MatrixXd::Zero(m_, input_dimension());
+    for (auto map : maps_) {
+      uint32_t m_map = map->output_dimension();
+      uint32_t n_map = map->input_dimension();
+      J_phi.block(idx, 0, m_map, n_map) = map->Jacobian(q);
+      idx += m_map;
+    }
+    return J_phi;
+  }
+
+ protected:
+  uint32_t m_;
+  VectorOfMaps maps_;
+};
+
+/*! \brief Implements a softmax between functions g_i.
+ *
+ * Details:
+ *
+ *   f(x; a) = 1/a log(sum_i e^{a g_i(x)})
+ *
+ * where 'a' is a constant scaling factor. Negative values of 'a' turn the
+ * softmax into a soft min.
+ */
+class LogSumExp : public DifferentiableMap {
+ public:
+  LogSumExp(uint32_t n, double alpha = 1.)
+      : n_(n), alpha_(alpha), inv_alpha_(1. / alpha) {}
+  virtual ~LogSumExp() {}
+
+  uint32_t input_dimension() const override { return n_; }
+  uint32_t output_dimension() const override { return 1; }
+
+  // Evaluates f(x) = 1/a log(sum_i e^{a g_i(x)}).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const override;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const override;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const override;
+
+ protected:
+  uint32_t n_;
+  double alpha_;
+  double inv_alpha_;
+};
+
+/*! \brief Implements a soft*min* between two functions f and h. Equivalent
+ * to using a negative alpha.
+ *
+ * Details:
+ *
+ *   f(x; a) = log(sum_i e^{-a g_i(x)})
+ *
+ * where 'a' is a constant scaling factor. Negative values of 'a' turn the
+ * softmin into a soft max.
+ */
+class NegLogSumExp : public LogSumExp {
+ public:
+  NegLogSumExp(uint32_t n, double alpha = 1.) : LogSumExp(n, -alpha) {}
+  virtual ~NegLogSumExp();
 };
 
 }  // namespace bewego

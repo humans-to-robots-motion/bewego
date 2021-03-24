@@ -25,6 +25,7 @@
 #pragma once
 
 #include <bewego/motion/objective.h>
+#include <bewego/motion/publisher.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/numerical_optimization/optimizer.h>
 #include <bewego/numerical_optimization/trajectory_optimization.h>
@@ -40,27 +41,29 @@ class PlanarOptimizer : public MotionObjective {
                   const std::vector<double>& workspace_bounds  // bounds
   );
 
-  /**
-   * @brief Adds collsion constraints with the environment
-   */
+  /** @brief Adds collision constraints with the environment */
   void AddKeyPointsSurfaceConstraints(double margin, double scalar);
 
-  /**
-   * @brief Adds goal constraint
-   */
+  /** @brief Adds collision constraints with the environment */
+  void AddSmoothKeyPointsSurfaceConstraints(double margin, double gamma,
+                                            double scalar);
+
+  /** @brief Adds goal constraint */
+  void AddInequalityConstraintToEachActiveClique(DifferentiableMapPtr phi,
+                                                 double scalar);
+
+  /** @brief Adds goal constraint */
   void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
 
-  /**
-   * @brief Optimize
-   * @param initial_traj
-   * @param x_goal
-   * @return an optimized trajectory
-   */
+  /** @brief Optimize a given trajectory */
   OptimizeResult Optimize(
       const Eigen::VectorXd& initial_traj,          // entire trajectory
       const Eigen::VectorXd& x_goal,                // goal configuration
       const std::map<std::string, double>& options  // optimizer options
   ) const;
+
+  // @brief Adds trajectory publisher (t_pause in microseconds)
+  void set_trajectory_publisher(bool with_slow_down, uint32_t t_pause = 100000);
 
  protected:
   typedef CliquesFunctionNetwork FunctionNetwork;
@@ -75,6 +78,8 @@ class PlanarOptimizer : public MotionObjective {
   std::vector<Bounds> TrajectoryDofBounds() const;  // Dof bounds trajectory
 
   // Constraints networks
+  std::vector<DifferentiableMapPtr>
+      g_constraints_unstructured_;                 // inequalities
   std::vector<FunctionNetworkPtr> g_constraints_;  // inequalities
   std::vector<FunctionNetworkPtr> h_constraints_;  // equalities
 
@@ -89,9 +94,11 @@ class PlanarOptimizer : public MotionObjective {
 
   // Logging
   bool visualize_inner_loop_;
+  bool visualize_slow_down_;
+  uint32_t visualize_t_pause_;
   bool monitor_inner_statistics_;
-  // mutable std::shared_ptr<rieef::FreeflyerOptimizationVisualizer>
-  // visualizer_; mutable std::shared_ptr<rieef::StatsMonitor> stats_monitor_;
+  mutable std::shared_ptr<TrajectoryPublisher> publisher_;
+  // visualizer_; mutable std::shared_ptr<util::StatsMonitor> stats_monitor_;
 };
 
 }  // namespace numerical_optimization

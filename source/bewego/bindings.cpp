@@ -247,6 +247,8 @@ PYBIND11_MODULE(_pybewego, m) {
       // Constraints
       .def("add_keypoints_surface_constraints",
            &opt::PlanarOptimizer::AddKeyPointsSurfaceConstraints)
+      .def("add_smooth_keypoints_surface_constraints",
+           &opt::PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints)
       .def("add_goal_constraint", &opt::PlanarOptimizer::AddGoalConstraint)
 
       // Objectives
@@ -262,6 +264,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("clear_workspace", &opt::PlanarOptimizer::ClearWorkspace)
 
       // Functions
+      .def("set_trajectory_publisher",
+           &opt::PlanarOptimizer::set_trajectory_publisher)
       .def("objective", &opt::PlanarOptimizer::objective)
       .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential);
 #endif

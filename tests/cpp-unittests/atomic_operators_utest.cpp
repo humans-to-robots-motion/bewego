@@ -237,3 +237,37 @@ TEST_F(DifferentialMapTest, log_barrier_with_approx) {
   // AddRandomTests(phi, NB_TESTS);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, soft_norm) {
+  std::srand(SEED);
+  double alpha = .05;
+  uint32_t dim = 5;
+  auto phi1 = std::make_shared<SoftNorm>(alpha, dim);
+  auto phi2 = std::make_shared<SoftNorm>(alpha, Eigen::VectorXd::Random(dim));
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  RunAllTests();
+}
+
+TEST_F(DifferentialMapTest, log_sum_exp) {
+  std::srand(SEED);
+  auto phi1 = std::make_shared<LogSumExp>(10, 1);
+  auto phi2 = std::make_shared<LogSumExp>(10, 10);
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  RunAllTests();
+}
+
+TEST_F(DifferentialMapTest, combined_output_map) {
+  std::srand(SEED);
+  auto maps = std::make_shared<VectorOfMaps>();
+  for (uint32_t i = 0; i < 4; i++) {
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
+    Eigen::VectorXd b = Eigen::VectorXd::Random(5);
+    Eigen::VectorXd c = Eigen::VectorXd::Random(1);
+    maps->push_back(std::make_shared<QuadricMap>(a, b, c));
+  }
+  auto phi = std::make_shared<CombinedOutputMap>(*maps);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+}

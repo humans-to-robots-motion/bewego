@@ -36,9 +36,12 @@ struct WorkspaceObject {
   virtual DifferentiableMapPtr ConstraintFunction() const = 0;
 };
 
+using WorkspaceObjectPtr = std::shared_ptr<const WorkspaceObject>;
+using VectorOfWorkpaceObjects = std::vector<WorkspaceObjectPtr>;
+
 class Workspace {
  public:
-  Workspace(const std::vector<std::shared_ptr<const WorkspaceObject>>& objects)
+  Workspace(const VectorOfWorkpaceObjects& objects)
       : objects_(objects), dimension_(2) {}
 
   VectorOfMaps ExtractSurfaceFunctions() const {
@@ -261,6 +264,47 @@ class Rectangle : public WorkspaceObject {
   Eigen::Vector2d center_;
   Eigen::Vector2d dimensions_;
   double orientation_;
+};
+
+/**
+ Collision constraint function that averages all collision points.
+ Also provides an interface for dissociating each constraint
+ The vector of collision points contains a pointer to each
+ foward kinematics map (task map).
+ to get the surfaces simply use workspace->ExtractSurfaceFunctions
+ there is a surface per object in the workspace
+ */
+class SmoothCollisionConstraints : public DifferentiableMap {
+ public:
+  SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma,
+                             double margin = 0);
+
+  /**
+   * @brief constraints
+   * @return a vector of signed distance function defined over
+   * configuration space. One for each collsion point
+   */
+  VectorOfMaps constraints() const { return signed_distance_functions_; }
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return f_->input_dimension(); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return f_->Forward(x);
+  }
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return f_->Jacobian(x);
+  }
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return f_->Hessian(x);
+  }
+
+ protected:
+  DifferentiableMapPtr ConstructSmoothConstraint();
+  double margin_;
+  VectorOfMaps signed_distance_functions_;
+  double gamma_;
+  DifferentiableMapPtr f_;
 };
 
 }  // namespace bewego

@@ -34,6 +34,7 @@ TcpClient::TcpClient() {
   sock = -1;
   port = 0;
   address = "";
+  verbose_ = false;
 }
 
 // Connect to a host on a certain port number
@@ -96,21 +97,32 @@ bool TcpClient::Connect(string address, int port) {
 }
 
 // Send data to the connected host
+// by prefixing the data with the message length
+bool TcpClient::SendMessage(string data) {
+  uint32_t msg_length = strlen(data.c_str());
+  if (send(sock, (char *)(&msg_length), 4, 0) < 0) {
+    perror("Send failed : ");
+    return false;
+  }
+  return SendData(data);
+}
+
+// Send data to the connected host
 bool TcpClient::SendData(string data) {
-  cout << "Sending data...";
   if (verbose_) {
+    cout << "Sending data...";
     cout << data;
     cout << "\n";
   }
-
   // Send some data
   if (send(sock, data.c_str(), strlen(data.c_str()), 0) < 0) {
     perror("Send failed : ");
     return false;
   }
 
-  cout << "Data send\n";
-
+  if (verbose_) {
+    cout << "Data send\n";
+  }
   return true;
 }
 

@@ -76,7 +76,9 @@ void MotionObjective::AddObstacleTerms(double scalar, double alpha,
     cerr << "WARNING: no obstacles are in the workspace" << endl;
     return;
   }
-  auto sdf = workspace_->SignedDistanceField();
+  // auto sdf = workspace_->SignedDistanceField();
+  auto surfaces = workspace_->ExtractSurfaceFunctions();
+  auto sdf = std::make_shared<SmoothCollisionConstraints>(surfaces, 100, 0);
   obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
   AddIsometricPotentialToAllCliques(obstacle_potential_, scalar);
 }

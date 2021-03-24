@@ -1,34 +1,27 @@
 /**
- * Copyright (c) 2020, Jim Mainprice
+ * Copyright (c) 2021
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution  and  use  in  source  and binary  forms,  with  or  without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice,
- *this
- * list of conditions and the following disclaimer.
+ *   1. Redistributions of  source  code must retain the  above copyright
+ *      notice and this list of conditions.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice and  this list of  conditions in the  documentation and/or
+ *      other materials provided with the distribution.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
+ * THE SOFTWARE  IS PROVIDED "AS IS"  AND THE AUTHOR  DISCLAIMS ALL WARRANTIES
+ * WITH  REGARD   TO  THIS  SOFTWARE  INCLUDING  ALL   IMPLIED  WARRANTIES  OF
+ * MERCHANTABILITY AND  FITNESS.  IN NO EVENT  SHALL THE AUTHOR  BE LIABLE FOR
+ * ANY  SPECIAL, DIRECT,  INDIRECT, OR  CONSEQUENTIAL DAMAGES  OR  ANY DAMAGES
+ * WHATSOEVER  RESULTING FROM  LOSS OF  USE, DATA  OR PROFITS,  WHETHER  IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR  OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/numerical_optimization/ipopt_optimizer.h>
 #include <bewego/numerical_optimization/planar_motion_optimization.h>
@@ -54,8 +47,11 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
     : MotionObjective(T, dt, 2),
       with_rotation_(false),
       with_attractor_constraint_(false),
-      ipopt_with_bounds_(false),
-      ipopt_hessian_approximation_("limited-memory") {
+      ipopt_with_bounds_(true),
+      ipopt_hessian_approximation_("limited-memory"),
+      visualize_inner_loop_(false),
+      visualize_slow_down_(false),
+      visualize_t_pause_(100000) {
   cout << "Create planar optimizer with n : " << n_ << endl;
   assert(n_ == 2);
   assert(T > 2);
@@ -71,6 +67,13 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
   extent_t bounds(workspace_bounds);
   workspace_bounds_ = std::make_shared<Rectangle>(
       bounds.Center(), Eigen::Vector2d(bounds.ExtendX(), bounds.ExtendY()), 0);
+}
+
+void PlanarOptimizer::set_trajectory_publisher(bool with_slow_down,
+                                               uint32_t t_pause) {
+  visualize_inner_loop_ = true;
+  visualize_slow_down_ = with_slow_down;
+  visualize_t_pause_ = t_pause;
 }
 
 std::vector<Bounds> PlanarOptimizer::DofBounds() const {
@@ -126,12 +129,46 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   // Create clique constraint function phi
-  auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  // auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForLastClique(scalar * phi);
   h_constraints_.push_back(network);
+}
+
+void PlanarOptimizer::AddInequalityConstraintToEachActiveClique(
+    DifferentiableMapPtr phi, double scalar) {
+  // Scale and register to a new network
+  // Set up surface constraints for key points.
+  uint32_t dim = function_network_->input_dimension();
+  for (uint32_t t = 0; t < T_; t++) {
+    auto network = std::make_shared<FunctionNetwork>(dim, n_);
+    network->RegisterFunctionForClique(t, dt_ * scalar * phi);
+    g_constraints_.push_back(network);
+  }
+}
+
+void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
+                                                           double gamma,
+                                                           double scalar) {
+  if (workspace_objects_.empty()) {
+    cerr << "WARNING: no obstacles are in the workspace" << endl;
+    return;
+  }
+  assert(function_network_.get() != nullptr);
+  assert(n_ == 2);
+
+  // Create clique constraint function phi
+  auto surfaces = workspace_->ExtractSurfaceFunctions();
+  auto sdf =
+      std::make_shared<SmoothCollisionConstraints>(surfaces, gamma, margin);
+  auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
+
+  AddInequalityConstraintToEachActiveClique(phi, scalar);
+  // auto phi = TrajectoryConstraintNetwork(T_, n_, sdf, gamma);
+  // g_constraints_unstructured_.push_back(scalar * phi);
 }
 
 void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
@@ -146,12 +183,7 @@ void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
   // Create clique constraint function phi
   auto sdf = workspace_->SignedDistanceField() - margin;
   auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
-
-  // Scale and register to a new network
-  uint32_t dim = function_network_->input_dimension();
-  auto network = std::make_shared<FunctionNetwork>(dim, n_);
-  network->RegisterFunctionForLastClique(scalar * phi);
-  g_constraints_.push_back(network);
+  AddInequalityConstraintToEachActiveClique(phi, scalar);
 }
 
 std::shared_ptr<const ConstrainedOptimizer>
@@ -169,27 +201,25 @@ PlanarOptimizer::SetupIpoptOptimizer(
   // optimizer->set_option("derivative_test", "second-order");  // TODO remove
   // optimizer->set_option("derivative_test_tol", 1e-4);
 
-  optimizer->set_option("constr_viol_tol", 1e-7);
+  // optimizer->set_option("constr_viol_tol", 1e-7);
   // optimizer->set_option("hessian_approximation",
   // ipopt_hessian_approximation_); Parse all options from flags
-  // optimizer->set_options_map(ipopt_options);
+  optimizer->set_options_map(ipopt_options);
 
   // Logging
-  /* TODO
-  visualizer_ = std::make_shared<FreeflyerOptimizationVisualizer>();
-  stats_monitor_ = std::make_shared<rieef::StatsMonitor>();
+  // stats_monitor_ = std::make_shared<StatsMonitor>();
   if (visualize_inner_loop_) {
+    publisher_ = std::make_shared<TrajectoryPublisher>();
+    if (visualize_slow_down_) {
+      publisher_->set_slow_down(true);
+      publisher_->set_t_pause(visualize_t_pause_);
+    }
     std::function<void(const Eigen::VectorXd&)> getter_function =
-        std::bind(&FreeflyerOptimizationVisualizer::set_current_solution,
-                  visualizer_.get(), std::placeholders::_1);
+        std::bind(&TrajectoryPublisher::set_current_solution, publisher_.get(),
+                  std::placeholders::_1);
     optimizer->set_current_solution_accessor(getter_function);
-    visualizer_->set_slow_down(FLAGS_visualize_slow_down);
-    visualizer_->set_t_pause(FLAGS_visualize_t_pause);
-    visualizer_->set_end_effector(end_effector_id_);
-    visualizer_->InitializeFreeflyer("trajectory_array_3d", robot_->Clone(),
-                                     q_init);
+    publisher_->Initialize("127.0.0.1", 5555, q_init);
   }
-  */
   return optimizer;
 }
 
@@ -207,7 +237,7 @@ OptimizeResult PlanarOptimizer::Optimize(
   uint32_t n = init_traj.n();
   assert(n == n_);
   assert(T == T_);
-  if(T != T_ || n != n_) {
+  if (T != T_ || n != n_) {
     // check consistency, TODO asserts are deactivated in pybind11, why?
     throw std::exception();
   }
@@ -219,6 +249,9 @@ OptimizeResult PlanarOptimizer::Optimize(
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
+  for (auto g : g_constraints_unstructured_) {
+    nonlinear_problem->add_inequality_constraint(g);
+  }
 
   // 3) Optimize trajectory
   auto optimizer = SetupIpoptOptimizer(q_init, options);
@@ -233,12 +266,16 @@ OptimizeResult PlanarOptimizer::Optimize(
       printf("Augmented lagrangian convered!");
     }
   }
+  if (visualize_inner_loop_ && publisher_) {
+    cout << "stop visulization..." << endl;
+    publisher_->Stop();
+  }
   OptimizeResult result;
   result.x = solution.x();
   result.fun = Eigen::VectorXd::Constant(1, solution.objective_value());
-  result.message = 
-            solution.warning_code() == 
-            ConstrainedSolution::DID_NOT_CONVERGE? 
-                "not converged" : "converged";
+  result.message =
+      solution.warning_code() == ConstrainedSolution::DID_NOT_CONVERGE
+          ? "not converged"
+          : "converged";
   return result;
 }
