@@ -144,7 +144,7 @@ void PlanarOptimizer::AddWayPointConstraint(const Eigen::VectorXd& q_waypoint,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   auto d_waypoint = std::make_shared<SoftNorm>(.05, q_waypoint);
-  auto phi = ComposedWith(d_waypoint, network->CenterOfCliqueMap());
+  auto phi = ComposedWith(d_waypoint, network->LeftMostOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForClique(t, scalar * phi);

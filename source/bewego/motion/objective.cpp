@@ -94,7 +94,7 @@ void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
 void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
                                        uint32_t t, double scalar) {
   auto d_waypoint = std::make_shared<SquaredNorm>(q_waypoint);
-  auto phi = ComposedWith(d_waypoint, function_network_->CenterOfCliqueMap());
+  auto phi = ComposedWith(d_waypoint, function_network_->LeftMostOfCliqueMap());
   function_network_->RegisterFunctionForClique(t, scalar * phi);
 }
 
