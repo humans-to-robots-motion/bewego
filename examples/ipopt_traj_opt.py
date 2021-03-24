@@ -39,7 +39,7 @@ BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 100       # problems to evaluate
-TRAJ_LENGTH = 100
+TRAJ_LENGTH = 40
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))
@@ -62,6 +62,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
         # trajectory,
         dt=0.3 / float(TRAJ_LENGTH),
         q_goal=trajectory.final_configuration(),
+        q_waypoint=np.array([.5, .5]),
         bounds=workspace.box.box_extent())
     problem.verbose = False
 
@@ -72,8 +73,9 @@ for k, workspace in enumerate(tqdm(workspaces)):
     p.s_obstacle_alpha = 7
     p.s_obstacle_gamma = 100
     p.s_obstacle_margin = 0
-    p.s_obstacle_constraint = 1
+    p.s_obstacle_constraint = 1e-1
     p.s_terminal_potential = 1
+    p.s_waypoint_constraint = 0
     problem.initialize_objective(p)
 
     # Initialize the viewer with objective function etc.
