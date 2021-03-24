@@ -93,10 +93,9 @@ void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
 
 void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
                                        uint32_t t, double scalar) {
-  auto left_clique = function_network_->LeftMostOfCliqueMap();
-  auto potential =
-      ComposedWith(std::make_shared<SquaredNorm>(q_waypoint), left_clique);
-  function_network_->RegisterFunctionForClique(t, scalar * potential);
+  auto d_waypoint = std::make_shared<SquaredNorm>(q_waypoint);
+  auto phi = ComposedWith(d_waypoint, function_network_->CenterOfCliqueMap());
+  function_network_->RegisterFunctionForClique(t, scalar * phi);
 }
 
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {

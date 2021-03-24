@@ -43,6 +43,7 @@ class CostFunctionParameters:
         self.s_obstacle_gamma = 100
         self.s_obstacle_margin = 0
         self.s_obstacle_constraint = 0
+        self.s_waypoint_constraint = 0
         self.s_terminal_potential = 1e+5
 
     def __str__(self):
@@ -84,6 +85,7 @@ class MotionOptimization:
         self.T = trajectory.T()
         self.q_init = trajectory.initial_configuration()
         self.q_goal = q_goal
+        self.q_waypoint = None
         self.workspace = workspace
         self.trajectory = trajectory
         self.verbose = False
@@ -204,6 +206,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
         """
 
         def __init__(self, workspace, trajectory, dt, q_goal,
+                     q_waypoint=None,
                      bounds=[0., 1., 0., 1.]):
             MotionOptimization.__init__(
                 self, workspace, trajectory, dt, q_goal)
@@ -212,6 +215,8 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             self.bounds = bounds
             self.with_goal_constraint = True
             self.with_smooth_obstale_constraint = True
+            self.with_waypoint_constraint = True
+            self.q_waypoint = q_waypoint
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -265,7 +270,17 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
 
+            if (self.with_waypoint_constraint and
+                    scalars.s_waypoint_constraint > 0 and
+                    self.q_waypoint is not None):
+                print("-- add waypoint constraint ({})".format(
+                    scalars.s_waypoint_constraint))
+                self.problem.add_waypoint_constraint(
+                    self.q_waypoint, 15, scalars.s_waypoint_constraint)
+
             if scalars.s_obstacle_constraint > 0:
+                print("-- add keypoints surface constraint ({})".format(
+                    scalars.s_obstacle_constraint))
                 if self.with_smooth_obstale_constraint:
                     self.problem.add_smooth_keypoints_surface_constraints(
                         scalars.s_obstacle_margin,
@@ -275,7 +290,6 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                     self.problem.add_keypoints_surface_constraints(
                         scalars.s_obstacle_margin,
                         scalars.s_obstacle_constraint)
-
 
             # Create objective functions
             self.objective = self.problem.objective(self.q_init)
