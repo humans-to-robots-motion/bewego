@@ -287,7 +287,9 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
       std::shared_ptr<const CliquesFunctionNetwork> function_network)
       : q_init_(q_init),
         n_(q_init.size()),
-        function_network_(function_network) {}
+        function_network_(function_network) {
+    gradient_sparcity_patern_.InitializeDense(1, input_dimension());
+  }
 
   Eigen::VectorXd FullVector(const Eigen::VectorXd& x_active) const {
     assert(x_active.size() == input_dimension());
@@ -298,7 +300,8 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
   }
 
   uint32_t output_dimension() const {
-    return function_network_->output_dimension();
+    assert(1 == function_network_->output_dimension());
+    return 1;
   }
 
   uint32_t input_dimension() const {
@@ -320,12 +323,20 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
     return H.block(n_, n_, input_dimension(), input_dimension());
   }
 
+  util::MatrixSparsityPatern gradient_sparcity_patern() const {
+    return gradient_sparcity_patern_;
+  }
+
+  void set_gradient_sparcity_patern(const util::MatrixSparsityPatern& v) {
+    gradient_sparcity_patern_ = v;
+  }
+
   /** Hessian Sparcity Patern (band diagonal)
 
-  In trajectory networks, the hessian is band diagonal.
-  The Hessian matrix is a symmetric matrix, since the hypothesis of continuity
-  of the second derivatives implies that the order of differentiation does not
-  matter (Schwarz's theorem).
+    In trajectory networks, the hessian is band diagonal.
+    The Hessian matrix is a symmetric matrix, since the hypothesis of continuity
+    of the second derivatives implies that the order of differentiation does not
+    matter (Schwarz's theorem).
   **/
   util::MatrixSparsityPatern HessianSparcityPatern() const {
     util::MatrixSparsityPatern patern;
@@ -353,6 +364,7 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
   Eigen::VectorXd q_init_;
   uint32_t n_;
   std::shared_ptr<const CliquesFunctionNetwork> function_network_;
+  util::MatrixSparsityPatern gradient_sparcity_patern_;
 };
 
 /**

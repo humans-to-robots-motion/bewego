@@ -24,10 +24,11 @@ import time
 
 # connect to pybullet
 # new direct client, GUI for graphic
-p = bc.BulletClient(connection_mode=pybullet.DIRECT)
+# p = bc.BulletClient(connection_mode=pybullet.DIRECT)
+p = bc.BulletClient(connection_mode=pybullet.GUI)
 
 # load robot
-robot = p.loadURDF("../data/r2_robot.urdf")
+robot = p.loadURDF("../data/r3_robot.urdf")
 njoints = p.getNumJoints(robot)
 for i in range(njoints):
     jointInfo = p.getJointInfo(robot, i)
@@ -44,7 +45,7 @@ eff_idx = njoints - 1
 zero_vec = [0.] * njoints
 
 np.random.seed(0)
-configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 3))
+configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
 
 t_0 = time.time()
 for q in configurations:
@@ -55,3 +56,7 @@ t = time.time() - t_0
 print("pos jacobian:")
 print(np.array(J[0]))
 print("Done. ({} sec., {:0.0} Hz)".format(t, len(configurations) / t))
+
+while True:
+    p.stepSimulation()
+    # time.sleep(0.1)

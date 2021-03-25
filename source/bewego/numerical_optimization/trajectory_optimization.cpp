@@ -52,14 +52,17 @@ TrajectoryOptimizationProblem::TrajectoryOptimizationProblem(
     const std::vector<FunctionNetworkPtr>& equality_constraints_networks)
     : q_init_(q_init) {
   // Convert to objective functions
-  objective_function_ =
+  auto f =
       std::make_shared<TrajectoryObjectiveFunction>(q_init_, objective_network);
+  hessian_sparcity_patern_ = f->HessianSparcityPatern();
+  objective_function_ = f;
 
   // Convert inequality to dense
   inequality_constraints_.clear();
   for (auto& g : inequality_constraints_networks) {
-    inequality_constraints_.push_back(
-        std::make_shared<TrajectoryObjectiveFunction>(q_init_, g));
+    auto g_i = std::make_shared<TrajectoryObjectiveFunction>(q_init_, g);
+    inequality_constraints_.push_back(g_i);
+    g_gradient_sparcity_paterns_.push_back(g_i->gradient_sparcity_patern());
     assert(objective_function_->input_dimension() ==
            inequality_constraints_.back()->input_dimension());
   }
@@ -67,8 +70,9 @@ TrajectoryOptimizationProblem::TrajectoryOptimizationProblem(
   // Convert equality to dense
   equality_constraints_.clear();
   for (auto& h : equality_constraints_networks) {
-    equality_constraints_.push_back(
-        std::make_shared<TrajectoryObjectiveFunction>(q_init_, h));
+    auto h_i = std::make_shared<TrajectoryObjectiveFunction>(q_init_, h);
+    equality_constraints_.push_back(h_i);
+    h_gradient_sparcity_paterns_.push_back(h_i->gradient_sparcity_patern());
     assert(objective_function_->input_dimension() ==
            equality_constraints_.back()->input_dimension());
   }

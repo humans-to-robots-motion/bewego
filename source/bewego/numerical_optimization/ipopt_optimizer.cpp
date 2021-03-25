@@ -94,7 +94,7 @@ IpoptOptimizer::IpoptOptimizer() {
    */
   set_option("jacobian_approximation", "exact");
   set_option("hessian_approximation", "exact");
-  set_option("max_cpu_time", 40.0);
+
   set_option("tol", 0.001);
   set_option("print_timing_statistics", "no");
   set_option("print_user_options", "yes");
@@ -193,6 +193,7 @@ ConstrainedSolution IpoptOptimizer::Run(
                                   nlp->num_equality_constraints()),
       x0, jac_type == "finite-difference-values", publish_solution_);
   ipopt_problem->set_verbose(verbose_);
+  ipopt_problem->set_hessian_sparcity_patern(nlp->hessian_sparcity_patern());
 
   cout << "run OptimizeTNLP" << endl;
   bool success = true;

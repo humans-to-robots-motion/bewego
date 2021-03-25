@@ -144,7 +144,7 @@ void PlanarOptimizer::AddWayPointConstraint(const Eigen::VectorXd& q_waypoint,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   auto d_waypoint = std::make_shared<SoftNorm>(.05, q_waypoint);
-  auto phi = ComposedWith(d_waypoint, network->CenterOfCliqueMap());
+  auto phi = ComposedWith(d_waypoint, network->LeftMostOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForClique(t, scalar * phi);
@@ -262,9 +262,6 @@ OptimizeResult PlanarOptimizer::Optimize(
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
-  for (auto g : g_constraints_unstructured_) {
-    nonlinear_problem->add_inequality_constraint(g);
-  }
 
   // 3) Optimize trajectory
   auto optimizer = SetupIpoptOptimizer(q_init, options);
