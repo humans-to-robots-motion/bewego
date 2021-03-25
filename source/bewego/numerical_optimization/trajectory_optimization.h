@@ -35,6 +35,7 @@
 #include <bewego/motion/trajectory.h>
 #include <bewego/numerical_optimization/constrained_optimization_problem.h>
 #include <bewego/numerical_optimization/optimizer.h>
+#include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
 namespace bewego {

@@ -71,8 +71,14 @@ class IpoptProblem : public Ipopt::TNLP {
   // Get solution
   Eigen::VectorXd solution() const { return x_solution_; }
   void set_verbose(bool v) { verbose_ = v; }
-  void set_sparcity_hessian_patern(const util::MatrixSparsityPatern& v) {
+  void set_hessian_sparcity_patern(const util::MatrixSparsityPatern& v) {
     hessian_sparcity_patern_ = v;
+  }
+  void set_g_sparcity_patern(const std::vector<util::MatrixSparsityPatern>& v) {
+    g_gradient_sparcity_paterns_ = v;
+  }
+  void set_h_sparcity_patern(const std::vector<util::MatrixSparsityPatern>& v) {
+    h_gradient_sparcity_paterns_ = v;
   }
 
  protected:
@@ -88,6 +94,9 @@ class IpoptProblem : public Ipopt::TNLP {
   std::vector<numerical_optimization::Bounds> bounds_x_;
   std::vector<numerical_optimization::Bounds> bounds_g_;
   bool finite_diff_;  ///< Flag that indicates the "finite-difference-values"
+
+  std::vector<util::MatrixSparsityPatern> g_gradient_sparcity_paterns_;
+  std::vector<util::MatrixSparsityPatern> h_gradient_sparcity_paterns_;
   util::MatrixSparsityPatern hessian_sparcity_patern_;
 
   /// solution

@@ -193,6 +193,7 @@ ConstrainedSolution IpoptOptimizer::Run(
                                   nlp->num_equality_constraints()),
       x0, jac_type == "finite-difference-values", publish_solution_);
   ipopt_problem->set_verbose(verbose_);
+  ipopt_problem->set_hessian_sparcity_patern(nlp->hessian_sparcity_patern());
 
   cout << "run OptimizeTNLP" << endl;
   bool success = true;

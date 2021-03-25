@@ -230,10 +230,25 @@ struct MatrixSparsityPatern {
     assert(cols > 0);
     assert(ids_rows.size() == ids_cols.size());
     Eigen::MatrixXi mat = Eigen::MatrixXi::Zero(rows, cols);
-    for (uint32_t c = 0; c < ids_rows.size(); c++) {
-      mat(ids_rows[c], ids_cols[c]) = 1;
+    for (uint32_t i = 0; i < ids_rows.size(); i++) {
+      mat(ids_rows[i], ids_cols[i]) = 1;
     }
     return mat;
+  }
+
+  // Initialize RowMajor sparcity patern.
+  void InitializeDense(uint32_t rows, uint32_t cols) {
+    uint32_t nb_coeff = rows * cols;
+    ids_rows.resize(nb_coeff);
+    ids_cols.resize(nb_coeff);
+    uint32_t i = 0;
+    for (uint32_t r = 0; r < rows; r++) {
+      for (uint32_t c = 0; c < cols; c++) {
+        ids_rows[i] = r;
+        ids_cols[i] = c;
+        i++;
+      }
+    }
   }
 
   std::vector<int> ids_rows;

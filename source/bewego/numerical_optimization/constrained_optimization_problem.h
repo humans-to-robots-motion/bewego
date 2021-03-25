@@ -26,6 +26,7 @@
 #pragma once
 
 #include <bewego/derivatives/differentiable_map.h>
+#include <bewego/util/misc.h>
 
 namespace bewego {
 namespace numerical_optimization {
@@ -101,6 +102,10 @@ class OptimizationProblemWithConstraints
   void add_inequality_constraint(DifferentiableMapPtr g);
   void add_equality_constraint(DifferentiableMapPtr h);
 
+  const util::MatrixSparsityPatern& hessian_sparcity_patern() const {
+    return hessian_sparcity_patern_;
+  }
+
  protected:
   DifferentiableMapPtr objective_function_;
   std::vector<DifferentiableMapPtr> inequality_constraints_;
@@ -108,6 +113,10 @@ class OptimizationProblemWithConstraints
 
   uint32_t n_g_;  // number of inequality constraints.
   uint32_t n_h_;  // number of equality constraints.
+
+  std::vector<util::MatrixSparsityPatern> g_gradient_sparcity_paterns_;
+  std::vector<util::MatrixSparsityPatern> h_gradient_sparcity_paterns_;
+  util::MatrixSparsityPatern hessian_sparcity_patern_;
 };
 
 }  // namespace numerical_optimization

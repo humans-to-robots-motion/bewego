@@ -262,9 +262,6 @@ OptimizeResult PlanarOptimizer::Optimize(
   // 2) Create problem and optimizer
   auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
       q_init, function_network_, g_constraints_, h_constraints_);
-  for (auto g : g_constraints_unstructured_) {
-    nonlinear_problem->add_inequality_constraint(g);
-  }
 
   // 3) Optimize trajectory
   auto optimizer = SetupIpoptOptimizer(q_init, options);

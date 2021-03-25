@@ -46,8 +46,12 @@ class PybulletRobot:
     Parses the URDF using pybullet
     """
 
-    def __init__(self, urdf_file, json_config=None):
-        self._p = bc.BulletClient(connection_mode=pybullet.DIRECT)
+    def __init__(self, urdf_file, json_config=None, with_gui=False):
+        if with_gui:
+            self._p = bc.BulletClient(connection_mode=pybullet.GUI)
+        else:
+            self._p = bc.BulletClient(connection_mode=pybullet.DIRECT)
+
         self._robot_id = self._p.loadURDF(urdf_file)
         self._njoints = self._p.getNumJoints(self._robot_id)
         self.rigid_bodies = []

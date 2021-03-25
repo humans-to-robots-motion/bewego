@@ -57,6 +57,7 @@ bool IpoptProblem::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
   if (hessian_sparcity_patern_.empty()) {
     nnz_h_lag = n * (n + 1) / 2;  // lower triange hessian (can not change that)
   } else {
+    cout << "with sparse system" << endl;
     uint32_t nnz_diag = hessian_sparcity_patern_.nb_diag_terms();
     uint32_t nnz_offd = hessian_sparcity_patern_.nb_offdiag_terms();
     nnz_h_lag = nnz_diag + nnz_offd / 2;
@@ -230,8 +231,10 @@ bool IpoptProblem::eval_h(Index n, const Number* x, bool new_x,
     if (!hessian_sparcity_patern_.empty()) {
       Index nele = 0;
       // Define a ColMajor patern
-      for (Index col = 0; col < n; col++) {
-        for (Index row = 0; row <= col; row++) {
+      for (uint i = 0; i < hessian_sparcity_patern_.size(); i++) {
+        int row = hessian_sparcity_patern_.ids_rows[i];
+        int col = hessian_sparcity_patern_.ids_cols[i];
+        if (col < n && row <= col) {
           iRow[nele] = row;
           jCol[nele] = col;
           nele++;
@@ -283,11 +286,22 @@ bool IpoptProblem::eval_h(Index n, const Number* x, bool new_x,
       }
     }
 
-    // Copy lower triangle of augmented-Lagrangian Hessian matrix
     Index nele = 0;
-    for (Index col = 0; col < n; col++) {
-      for (Index row = 0; row <= col; row++) {
-        values[nele++] = H(row, col);
+    if (!hessian_sparcity_patern_.empty()) {
+      // Define a ColMajor patern
+      for (uint i = 0; i < hessian_sparcity_patern_.size(); i++) {
+        int row = hessian_sparcity_patern_.ids_rows[i];
+        int col = hessian_sparcity_patern_.ids_cols[i];
+        if (col < n && row <= col) {
+          values[nele++] = H(row, col);
+        }
+      }
+    } else {
+      // Copy lower triangle of augmented-Lagrangian Hessian matrix
+      for (Index col = 0; col < n; col++) {
+        for (Index row = 0; row <= col; row++) {
+          values[nele++] = H(row, col);
+        }
       }
     }
     assert(nele == nele_hess);
