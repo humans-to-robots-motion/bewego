@@ -39,7 +39,7 @@ BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 100       # problems to evaluate
-TRAJ_LENGTH = 400
+TRAJ_LENGTH = 40
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))
@@ -51,6 +51,8 @@ workspaces = [sampling(5) for i in range(NB_PROBLEMS)]
 
 for k, workspace in enumerate(tqdm(workspaces)):
     print("K = ", k)
+    # workspace = workspaces[9]
+    np.random.seed(0)
     trajectory = demonstrations.graph_search_path(
         graph, workspace, NB_POINTS)
     if trajectory is None:
@@ -67,14 +69,14 @@ for k, workspace in enumerate(tqdm(workspaces)):
     problem.verbose = False
 
     p = CostFunctionParameters()
-    p.s_velocity_norm = 1
-    p.s_acceleration_norm = 100
+    p.s_velocity_norm = 0
+    p.s_acceleration_norm = 10
     p.s_obstacles = 1e+3
     p.s_obstacle_alpha = 7
-    p.s_obstacle_gamma = 100
+    p.s_obstacle_gamma = 60
     p.s_obstacle_margin = 0
-    p.s_obstacle_constraint = 1e-1
-    p.s_terminal_potential = 1
+    p.s_obstacle_constraint = 1
+    p.s_terminal_potential = 1e+6
     p.s_waypoint_constraint = 0
     problem.initialize_objective(p)
 
@@ -82,12 +84,13 @@ for k, workspace in enumerate(tqdm(workspaces)):
     viewer.initialize_viewer(problem, problem.trajectory)
 
     options = {}
-    options["tol"] = 1e-3
-    options["acceptable_tol"] = 1e-2
-    # options["acceptable_constr_viol_tol"] = 1e-1
-    # options["max_cpu_time"] = 1.
-    options["constr_viol_tol"] = 1e-2
-    options["max_iter"] = 100
+    options["tol"] = 1e-2
+    options["acceptable_tol"] = 5e-3
+    options["acceptable_constr_viol_tol"] = 5e-1
+    options["constr_viol_tol"] = 5e-2
+    options["max_iter"] = 200
+    options["bound_relax_factor"] = 0
+    options["obj_scaling_factor"] = 1e+2
 
     p = Process(target=problem.optimize, args=(p, options))
     p.start()

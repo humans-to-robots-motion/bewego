@@ -294,7 +294,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             # Create objective functions
             self.objective = self.problem.objective(self.q_init)
             self.obstacle_potential = self.problem.obstacle_potential()  # TODO
-            self.problem.set_trajectory_publisher(False, 100000)
+            self.problem.set_trajectory_publisher(False, 300000)
 
         def optimize(self,
                      scalars,
