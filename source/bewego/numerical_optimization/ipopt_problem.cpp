@@ -304,6 +304,7 @@ bool IpoptProblem::eval_h(Index n, const Number* x, bool new_x,
         }
       }
     }
+    // cout << "nele : " << nele << ", nele_hess : " << nele_hess << endl;
     assert(nele == nele_hess);
   }
   return true;

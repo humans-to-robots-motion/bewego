@@ -94,7 +94,7 @@ IpoptOptimizer::IpoptOptimizer() {
    */
   set_option("jacobian_approximation", "exact");
   set_option("hessian_approximation", "exact");
-  set_option("max_cpu_time", 40.0);
+
   set_option("tol", 0.001);
   set_option("print_timing_statistics", "no");
   set_option("print_user_options", "yes");
