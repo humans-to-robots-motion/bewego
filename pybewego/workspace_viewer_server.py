@@ -29,14 +29,14 @@ import traceback
 class WorkspaceViewerServer(TrajectoryOptimizationViewer):
     """ Workspace display based on pyglet backend """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace, use_gl=True):
         TrajectoryOptimizationViewer.__init__(
             self,
             None,
             draw=False,
             draw_gradient=True,
             use_3d=False,
-            use_gl=True)
+            use_gl=use_gl)
 
         # Create a TCP/IP socket
         self.address = ('127.0.0.1', 5555)
