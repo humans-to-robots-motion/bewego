@@ -138,6 +138,24 @@ void PlanarOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
   h_constraints_.push_back(network);
 }
 
+void PlanarOptimizer::AddGoalManifoldConstraint(const Eigen::VectorXd& q_goal,
+                                                double radius, double scalar) {
+  assert(function_network_.get() != nullptr);
+  assert(n_ == 2);
+
+  uint32_t dim = function_network_->input_dimension();
+  auto network = std::make_shared<FunctionNetwork>(dim, n_);
+
+  // Create clique constraint function phi
+  auto d_goal = std::make_shared<SphereDistance>(q_goal, .10);
+  // auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
+  auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
+
+  // Scale and register to a new network
+  network->RegisterFunctionForLastClique(scalar * phi);
+  h_constraints_.push_back(network);
+}
+
 void PlanarOptimizer::AddWayPointConstraint(const Eigen::VectorXd& q_waypoint,
                                             uint32_t t, double scalar) {
   uint32_t dim = function_network_->input_dimension();

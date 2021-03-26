@@ -250,6 +250,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("add_smooth_keypoints_surface_constraints",
            &opt::PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints)
       .def("add_goal_constraint", &opt::PlanarOptimizer::AddGoalConstraint)
+      .def("add_goal_manifold_constraint",
+           &opt::PlanarOptimizer::AddGoalManifoldConstraint)
       .def("add_waypoint_constraint",
            &opt::PlanarOptimizer::AddWayPointConstraint)
 

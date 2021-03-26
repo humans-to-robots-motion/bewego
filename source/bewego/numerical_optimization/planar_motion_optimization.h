@@ -55,6 +55,10 @@ class PlanarOptimizer : public MotionObjective {
   /** @brief Adds goal constraint */
   void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
 
+  /** @brief Adds goal on circle constraint */
+  void AddGoalManifoldConstraint(const Eigen::VectorXd& q_goal, double radius,
+                                 double scalar);
+
   /** @brief Adds waypoint constraint */
   void AddWayPointConstraint(const Eigen::VectorXd& q_waypoint, uint32_t t,
                              double scalar);

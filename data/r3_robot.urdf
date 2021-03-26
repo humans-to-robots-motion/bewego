@@ -15,9 +15,9 @@
 <link name="link1">
   <visual>
     <geometry>
-      <box size="1 .2 .1"/>
+      <cylinder length="1." radius="0.12"/>
     </geometry>
-    <origin rpy="0 0 0" xyz=".5 0 0"/>
+    <origin rpy="0 1.57 0" xyz=".5 0 0"/>
     <material name="white">
       <color rgba="1 1 1 1"/>
     </material>
@@ -27,9 +27,9 @@
 <link name="link2">
   <visual>
     <geometry>
-      <box size="1 .2 .1"/>
+      <cylinder length="1." radius="0.12"/>
     </geometry>
-    <origin rpy="0 0 0" xyz=".5 0 0"/>
+    <origin rpy="0 1.57 0" xyz=".5 0 0"/>
     <material name="dark-blue">
       <color rgba="0 0 .4 1"/>
     </material>
@@ -39,9 +39,9 @@
 <link name="link3">
   <visual>
     <geometry>
-      <box size="1 .2 .1"/>
+      <cylinder length="1." radius="0.12"/>
     </geometry>
-    <origin rpy="0 0 0" xyz=".5 0 0"/>
+    <origin rpy="0 1.57 0" xyz=".5 0 0"/>
     <material name="blue">
       <color rgba="0 0 .8 1"/>
     </material>

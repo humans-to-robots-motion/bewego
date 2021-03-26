@@ -27,6 +27,7 @@ except ImportError:
 from pyrieef.motion.trajectory import Trajectory
 from pyrieef.geometry.workspace import *
 from scipy import optimize
+import numpy as np
 
 
 class CostFunctionParameters:
@@ -213,7 +214,8 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             assert len(q_goal) == 2
             assert len(bounds) == 4
             self.bounds = bounds
-            self.with_goal_constraint = True
+            self.with_goal_constraint = False
+            self.with_goal_manifold_constraint = True
             self.with_smooth_obstale_constraint = True
             self.with_waypoint_constraint = True
             self.q_waypoint = q_waypoint
@@ -270,6 +272,15 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
 
+            elif (self.with_goal_manifold_constraint and
+                  scalars.s_terminal_potential > 0):
+                print("-- add goal manifold constraint ({})".format(
+                    scalars.s_terminal_potential))
+                self.q_goal_manifold = (
+                    self.q_goal + .05 * np.random.rand(self.n))
+                self.problem.add_goal_manifold_constraint(
+                    self.q_goal_manifold, .10, scalars.s_terminal_potential)
+
             if (self.with_waypoint_constraint and
                     scalars.s_waypoint_constraint > 0 and
                     self.q_waypoint is not None):
@@ -294,7 +305,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             # Create objective functions
             self.objective = self.problem.objective(self.q_init)
             self.obstacle_potential = self.problem.obstacle_potential()  # TODO
-            self.problem.set_trajectory_publisher(False, 300000)
+            self.problem.set_trajectory_publisher(True, 100000)
 
         def optimize(self,
                      scalars,

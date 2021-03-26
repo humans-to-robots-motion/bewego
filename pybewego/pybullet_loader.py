@@ -48,7 +48,12 @@ class PybulletRobot:
 
     def __init__(self, urdf_file, json_config=None, with_gui=False):
         if with_gui:
-            self._p = bc.BulletClient(connection_mode=pybullet.GUI)
+            # self._p = bc.BulletClient(connection_mode=pybullet.GUI,
+            #                           options="--width=600 --height=400")
+            pybullet.connect(
+                pybullet.GUI,
+                options="--width=600 --height=400")
+            self._p = pybullet
         else:
             self._p = bc.BulletClient(connection_mode=pybullet.DIRECT)
 
