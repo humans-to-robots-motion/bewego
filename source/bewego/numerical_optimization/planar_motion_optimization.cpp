@@ -147,8 +147,7 @@ void PlanarOptimizer::AddGoalManifoldConstraint(const Eigen::VectorXd& q_goal,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   // Create clique constraint function phi
-  auto d_goal = std::make_shared<SphereDistance>(q_goal, .10);
-  // auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
+  auto d_goal = std::make_shared<SphereDistance>(q_goal, radius);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network
@@ -162,6 +161,24 @@ void PlanarOptimizer::AddWayPointConstraint(const Eigen::VectorXd& q_waypoint,
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
   auto d_waypoint = std::make_shared<SoftNorm>(.05, q_waypoint);
+  auto phi = ComposedWith(d_waypoint, network->LeftMostOfCliqueMap());
+
+  // Scale and register to a new network
+  network->RegisterFunctionForClique(t, scalar * phi);
+  h_constraints_.push_back(network);
+}
+
+void PlanarOptimizer::AddWayPointManifoldConstraint(
+    const Eigen::VectorXd& q_waypoint, uint32_t t, double radius,
+    double scalar) {
+  assert(function_network_.get() != nullptr);
+  assert(n_ == 2);
+
+  uint32_t dim = function_network_->input_dimension();
+  auto network = std::make_shared<FunctionNetwork>(dim, n_);
+
+  // Create clique constraint function phi
+  auto d_waypoint = std::make_shared<SphereDistance>(q_waypoint, radius);
   auto phi = ComposedWith(d_waypoint, network->LeftMostOfCliqueMap());
 
   // Scale and register to a new network

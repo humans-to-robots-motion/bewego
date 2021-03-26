@@ -254,6 +254,8 @@ PYBIND11_MODULE(_pybewego, m) {
            &opt::PlanarOptimizer::AddGoalManifoldConstraint)
       .def("add_waypoint_constraint",
            &opt::PlanarOptimizer::AddWayPointConstraint)
+      .def("add_waypoint_manifold_constraint",
+           &opt::PlanarOptimizer::AddWayPointManifoldConstraint)
 
       // Objectives
       .def("add_smoothness_terms", &bewego::MotionObjective::AddSmoothnessTerms)

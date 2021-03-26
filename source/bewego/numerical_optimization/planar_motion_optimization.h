@@ -63,6 +63,10 @@ class PlanarOptimizer : public MotionObjective {
   void AddWayPointConstraint(const Eigen::VectorXd& q_waypoint, uint32_t t,
                              double scalar);
 
+  /** @brief Adds waypoint manifold constraint */
+  void AddWayPointManifoldConstraint(const Eigen::VectorXd& q_waypoint,
+                                     uint32_t t, double radius, double scalar);
+
   /** @brief Optimize a given trajectory */
   OptimizeResult Optimize(
       const Eigen::VectorXd& initial_traj,          // entire trajectory
