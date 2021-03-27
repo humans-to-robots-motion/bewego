@@ -101,7 +101,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                             self.draw(Trajectory(
                                 self, q_init=self.q_init, x=self.active_x))
                             self.viewer.draw_ws_circle(
-                                .10, self.objective.q_goal_manifold,
+                                self.objective.goal_manifold.radius, self.objective.goal_manifold.origin,
                                 color=(1, 0, 0))
                         connection.sendall(echo.encode("ascii"))
 

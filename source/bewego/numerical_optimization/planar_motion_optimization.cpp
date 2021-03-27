@@ -316,6 +316,7 @@ OptimizeResult PlanarOptimizer::Optimize(
     publisher_->Stop();
   }
   OptimizeResult result;
+  result.success = solution.success();
   result.x = solution.x();
   result.fun = Eigen::VectorXd::Constant(1, solution.objective_value());
   result.message =

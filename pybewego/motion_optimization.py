@@ -206,7 +206,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 np.array, [x_min, x_max, y_min, y_max]
         """
 
-        def __init__(self, workspace, trajectory, dt, q_goal,
+        def __init__(self, workspace, trajectory, dt, q_goal, goal_radius=0.1,
                      q_waypoint=None,
                      bounds=[0., 1., 0., 1.]):
             MotionOptimization.__init__(
@@ -219,6 +219,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             self.with_smooth_obstale_constraint = True
             self.with_waypoint_constraint = True
             self.q_waypoint = q_waypoint
+            self.goal_manifold = Circle(origin=q_goal, radius=goal_radius)
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -276,10 +277,8 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                   scalars.s_terminal_potential > 0):
                 print("-- add goal manifold constraint ({})".format(
                     scalars.s_terminal_potential))
-                self.q_goal_manifold = (
-                    self.q_goal + .05 * np.random.rand(self.n))
                 self.problem.add_goal_manifold_constraint(
-                    self.q_goal_manifold, .10, scalars.s_terminal_potential)
+                    self.goal_manifold.origin, self.goal_manifold.radius, scalars.s_terminal_potential)
 
             if (self.with_waypoint_constraint and
                     scalars.s_waypoint_constraint > 0 and
