@@ -210,7 +210,7 @@ ConstrainedSolution IpoptOptimizer::Run(
   auto objective_value =
       problem.Evaluate(x_solution, &g_evaluations, &h_evaluations);
   return ConstrainedSolution(
-      x_solution, objective_value, g_evaluations, h_evaluations,
+      x_solution, objective_value, g_evaluations, h_evaluations, success,
       (success) ? (ConstrainedSolution::NO_WARNING)
                 : (ConstrainedSolution::DID_NOT_CONVERGE));
 }
