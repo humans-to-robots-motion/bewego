@@ -55,8 +55,6 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
 
     def initialize_viewer(self, problem, trajectory):
         self.objective = problem
-        # self.objective.problem.set_trajectory_publisher(True, 100000)
-        self.viewer.set_workspace(problem.workspace)
         self.viewer.background_matrix_eval = False
         self.viewer.save_images = True
         self.viewer.workspace_id += 1
