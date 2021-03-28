@@ -103,10 +103,9 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                                 self.objective.goal_manifold.radius,
                                 self.objective.goal_manifold.origin,
                                 color=(1, 0, 0))
-                            print("dist : ", np.linalg.norm(
-                                self.objective.q_goal -
-                                trajectory.final_configuration()
-                            ))
+                            # print("dist : ", np.linalg.norm(
+                            #     self.objective.q_goal -
+                            #     trajectory.final_configuration()))
                         connection.sendall(echo.encode("ascii"))
 
             except AssertionError:
