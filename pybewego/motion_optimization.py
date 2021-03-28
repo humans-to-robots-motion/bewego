@@ -278,7 +278,9 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 print("-- add goal manifold constraint ({})".format(
                     scalars.s_terminal_potential))
                 self.problem.add_goal_manifold_constraint(
-                    self.goal_manifold.origin, self.goal_manifold.radius, scalars.s_terminal_potential)
+                    self.goal_manifold.origin,
+                    self.goal_manifold.radius,
+                    scalars.s_terminal_potential)
 
             if (self.with_waypoint_constraint and
                     scalars.s_waypoint_constraint > 0 and

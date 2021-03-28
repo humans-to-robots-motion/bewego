@@ -27,6 +27,7 @@ from pybewego.motion_optimization import CostFunctionParameters
 from pybewego.workspace_viewer_server import WorkspaceViewerServer
 
 from pyrieef.rendering.optimization import TrajectoryOptimizationViewer
+from pyrieef.geometry.workspace import *
 from pyrieef.motion.trajectory import *
 from pyrieef.utils.collision_checking import *
 import pyrieef.learning.demonstrations as demonstrations
@@ -63,7 +64,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
         resample(trajectory, TRAJ_LENGTH),
         # trajectory,
         dt=0.3 / float(TRAJ_LENGTH),
-        q_goal=trajectory.final_configuration(),
+        q_goal=trajectory.final_configuration() + .05 * np.random.rand(2),
         q_waypoint=np.array([.5, .5]),
         bounds=workspace.box.box_extent())
     problem.verbose = False
@@ -76,7 +77,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     p.s_obstacle_gamma = 60
     p.s_obstacle_margin = 0
     p.s_obstacle_constraint = 1
-    p.s_terminal_potential = 1e+5
+    p.s_terminal_potential = 1e+8
     p.s_waypoint_constraint = 0
     problem.initialize_objective(p)
 
@@ -89,7 +90,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     # options["acceptable_constr_viol_tol"] = 5e-1
     # options["constr_viol_tol"] = 5e-2
     options["max_iter"] = 200
-    options["bound_relax_factor"] = 0
+    # options["bound_relax_factor"] = 0
     options["obj_scaling_factor"] = 1e+2
 
     p = Process(target=problem.optimize, args=(p, options))

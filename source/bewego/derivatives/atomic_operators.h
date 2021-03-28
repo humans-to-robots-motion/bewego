@@ -88,6 +88,33 @@ class IdentityMap : public DifferentiableMap {
   uint32_t dim_;
 };
 
+/** Simple identity map : f(x) = 1/2 x^2 **/
+class SquareMap : public DifferentiableMap {
+ public:
+  SquareMap() {}
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return 1; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return .5 * x * x;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return x;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return Eigen::MatrixXd::Ones(1, 1);
+  }
+
+ protected:
+  uint32_t dim_;
+};
+
 /** Simple map of the form: f(x) = ax + b */
 class AffineMap : public DifferentiableMap {
  public:

@@ -271,3 +271,10 @@ TEST_F(DifferentialMapTest, combined_output_map) {
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, square_map) {
+  std::srand(SEED);
+  auto phi1 = std::make_shared<SquareMap>();
+  AddRandomTests(phi1, NB_TESTS);
+  RunAllTests();
+}

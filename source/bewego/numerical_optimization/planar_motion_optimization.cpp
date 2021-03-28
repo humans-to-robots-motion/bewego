@@ -146,8 +146,11 @@ void PlanarOptimizer::AddGoalManifoldConstraint(const Eigen::VectorXd& q_goal,
   uint32_t dim = function_network_->input_dimension();
   auto network = std::make_shared<FunctionNetwork>(dim, n_);
 
+  cout << "Create constraint manifold at : " << q_goal.transpose() << endl;
+
   // Create clique constraint function phi
   auto d_goal = std::make_shared<SphereDistance>(q_goal, radius);
+  auto d_sq_goal = Compose(std::make_shared<SquareMap>(), d_goal);
   auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
 
   // Scale and register to a new network

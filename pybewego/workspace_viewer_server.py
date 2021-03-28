@@ -96,11 +96,17 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                         if not np.isnan(self.active_x).any() and (
                                 np.abs(self.active_x).max() < 1e10):
                             # print(self.active_x)
-                            self.draw(Trajectory(
-                                self, q_init=self.q_init, x=self.active_x))
+                            trajectory = Trajectory(
+                                self, q_init=self.q_init, x=self.active_x)
+                            self.draw(trajectory)
                             self.viewer.draw_ws_circle(
-                                self.objective.goal_manifold.radius, self.objective.goal_manifold.origin,
+                                self.objective.goal_manifold.radius,
+                                self.objective.goal_manifold.origin,
                                 color=(1, 0, 0))
+                            print("dist : ", np.linalg.norm(
+                                self.objective.q_goal -
+                                trajectory.final_configuration()
+                            ))
                         connection.sendall(echo.encode("ascii"))
 
             except AssertionError:

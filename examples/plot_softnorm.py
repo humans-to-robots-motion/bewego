@@ -18,13 +18,14 @@
 #                                        Jim Mainprice on Sunday June 13 2018
 
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 
 alpha = 0.05
-x = numpy.linspace(-.5, .5, 100)
-y_s = numpy.sqrt((x ** 2) + (alpha ** 2)) - alpha
-y_e = numpy.sqrt((x ** 2))
-y_2 = (x ** 2)
+radius = 0.2
+x = np.linspace(-.5, .5, 100)
+y_s = np.abs(np.sqrt((x ** 2) + (alpha ** 2)) - alpha - radius)
+y_e = (np.sqrt(x ** 2) - radius) ** 2
+y_2 = np.abs((x ** 2) - radius ** 2)
 plt.figure()
 plt.plot(x, y_s, 'r')
 plt.plot(x, y_e, 'k')
