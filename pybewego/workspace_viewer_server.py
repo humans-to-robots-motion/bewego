@@ -55,8 +55,6 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
 
     def initialize_viewer(self, problem, trajectory):
         self.objective = problem
-        # self.objective.problem.set_trajectory_publisher(True, 100000)
-        self.viewer.set_workspace(problem.workspace)
         self.viewer.background_matrix_eval = False
         self.viewer.save_images = True
         self.viewer.workspace_id += 1
@@ -101,7 +99,7 @@ class WorkspaceViewerServer(TrajectoryOptimizationViewer):
                             self.draw(Trajectory(
                                 self, q_init=self.q_init, x=self.active_x))
                             self.viewer.draw_ws_circle(
-                                .10, self.objective.q_goal_manifold,
+                                self.objective.goal_manifold.radius, self.objective.goal_manifold.origin,
                                 color=(1, 0, 0))
                         connection.sendall(echo.encode("ascii"))
 

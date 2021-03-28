@@ -154,8 +154,9 @@ class ConstrainedSolution {
   ConstrainedSolution(const Eigen::VectorXd& x, double objective_value,
                       const Eigen::VectorXd& inequality_constraint_values,
                       const Eigen::VectorXd& equality_constraint_values,
+                      bool success,
                       WarningCode warning_code = NO_WARNING)
-      : success_(true),
+      : success_(success),
         warning_code_(warning_code),
         x_(x),
         objective_value_(objective_value),
