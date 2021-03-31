@@ -27,6 +27,8 @@
 #include <bewego/derivatives/atomic_operators.h>
 
 using namespace bewego;
+using std::cout;
+using std::endl;
 
 SecondOrderTaylorApproximation::SecondOrderTaylorApproximation(
     const DifferentiableMap& f, const Eigen::VectorXd& x0)
@@ -147,8 +149,38 @@ Eigen::MatrixXd SoftNorm::Hessian(const Eigen::VectorXd& x) const {
   double alpha_norm = sqrt(xd.transpose() * xd + alpha_sq_);
   Eigen::VectorXd x_alpha_normalized = xd / alpha_norm;
   Eigen::MatrixXd I = Eigen::MatrixXd::Identity(n_, n_);
-  auto gamma = 1. / alpha_norm;
+  double gamma = 1. / alpha_norm;
   return gamma * (I - x_alpha_normalized * x_alpha_normalized.transpose());
+}
+
+//------------------------------------------------------------------------------
+// SoftDist implementation
+//------------------------------------------------------------------------------
+
+SoftDist::SoftDist(DifferentiableMapPtr sq_dist, double alpha)
+    : sq_dist_(sq_dist), alpha_(alpha), alpha_sq_(alpha * alpha) {
+  assert(sq_dist_.get() != nullptr);
+  assert(sq_dist_->output_dimension() == 1);
+}
+
+Eigen::VectorXd SoftDist::Forward(const Eigen::VectorXd& x) const {
+  double alpha_norm = sqrt(sq_dist_->ForwardFunc(x) + alpha_sq_);
+  return Eigen::VectorXd::Constant(1, alpha_norm - alpha_);
+}
+
+Eigen::MatrixXd SoftDist::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == n_);
+  double alpha_norm = sqrt(sq_dist_->ForwardFunc(x) + alpha_sq_);
+  return 0.5 * sq_dist_->Jacobian(x) / alpha_norm;
+}
+
+Eigen::MatrixXd SoftDist::Hessian(const Eigen::VectorXd& x) const {
+  uint32_t n = input_dimension();
+  double alpha_norm = sqrt(sq_dist_->ForwardFunc(x) + alpha_sq_);
+  Eigen::VectorXd x_alpha_normalized = 0.5 * sq_dist_->Gradient(x) / alpha_norm;
+  Eigen::MatrixXd H_d = .5 * sq_dist_->Hessian(x);
+  double gamma = 1. / alpha_norm;
+  return gamma * (H_d - x_alpha_normalized * x_alpha_normalized.transpose());
 }
 
 //-----------------------------------------------------------------------------

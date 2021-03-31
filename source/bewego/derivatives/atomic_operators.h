@@ -110,9 +110,6 @@ class SquareMap : public DifferentiableMap {
     assert(input_dimension() == x.size());
     return Eigen::MatrixXd::Ones(1, 1);
   }
-
- protected:
-  uint32_t dim_;
 };
 
 /** Simple map of the form: f(x) = ax + b */
@@ -461,6 +458,14 @@ inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
   return std::make_shared<SumMap>(maps);
 }
 
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  auto maps = std::make_shared<VectorOfMaps>();
+  maps->push_back(f);
+  maps->push_back(-1. * g);
+  return std::make_shared<SumMap>(maps);
+}
+
 /**
  * \brief Represents the sum of a set of maps f_i.
  *
@@ -683,6 +688,35 @@ class SoftNorm : public DifferentiableMap {
   double alpha_;
   double alpha_sq_;
   Eigen::VectorXd x0_;
+};
+
+/** A smooth version of the distance function.
+ *
+ * Details:
+ *
+ *   f(d; \alpha) = sqrt(sq_dist + alpha^2) - alpha
+ *
+ *   since equality constraints are squared, using squared
+ *   norms makes the optimization unstable. The regular norm
+ *   is not smooth. Introduced by Tassa et al 2012 (IROS)
+ *
+ *   Takes as input the squared distance.
+ */
+class SoftDist : public DifferentiableMap {
+ public:
+  SoftDist(DifferentiableMapPtr sq_dist, double alpha = .05);
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return sq_dist_->input_dimension(); }
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  DifferentiableMapPtr sq_dist_;
+  double alpha_;
+  double alpha_sq_;
 };
 
 /*! \brief Creates a combination of the maps

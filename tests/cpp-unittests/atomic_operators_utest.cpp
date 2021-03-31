@@ -278,3 +278,13 @@ TEST_F(DifferentialMapTest, square_map) {
   AddRandomTests(phi1, NB_TESTS);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, soft_dist) {
+  std::srand(SEED);
+  // verbose_ = true;
+  // set_precisions(1e-6, 1e-5);
+  auto dist = std::make_shared<SquaredNorm>(5);
+  auto phi = std::make_shared<SoftDist>(dist);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+}

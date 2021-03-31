@@ -145,3 +145,17 @@ TEST_F(DifferentialMapTest, smooth_collision_constraints) {
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, soft_sphere_distance) {
+  std::srand(SEED);
+  // verbose_ = true;
+  // set_precisions(1e-6, 1e-5);
+
+  double radius = .10;
+  Eigen::VectorXd x0 = Eigen::VectorXd::Zero(3);
+  auto dist_sq = ComposedWith(std::make_shared<SquareMap>(),
+                              std::make_shared<SphereDistance>(x0, radius));
+  auto phi = std::make_shared<SoftDist>(dist_sq);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+}

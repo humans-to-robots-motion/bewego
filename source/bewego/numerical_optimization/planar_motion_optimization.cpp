@@ -151,7 +151,8 @@ void PlanarOptimizer::AddGoalManifoldConstraint(const Eigen::VectorXd& q_goal,
   // Create clique constraint function phi
   auto d_goal = std::make_shared<SphereDistance>(q_goal, radius);
   auto d_sq_goal = ComposedWith(std::make_shared<SquareMap>(), d_goal);
-  auto phi = ComposedWith(d_sq_goal, network->CenterOfCliqueMap());
+  auto soft_dist = std::make_shared<SoftDist>(d_sq_goal);
+  auto phi = ComposedWith(soft_dist, network->CenterOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForLastClique(scalar * phi);
@@ -183,7 +184,8 @@ void PlanarOptimizer::AddWayPointManifoldConstraint(
   // Create clique constraint function phi
   auto d_waypoint = std::make_shared<SphereDistance>(q_waypoint, radius);
   auto d_sq_waypoint = ComposedWith(std::make_shared<SquareMap>(), d_waypoint);
-  auto phi = ComposedWith(d_sq_waypoint, network->LeftMostOfCliqueMap());
+  auto soft_dist = std::make_shared<SoftDist>(d_sq_waypoint);
+  auto phi = ComposedWith(soft_dist, network->LeftMostOfCliqueMap());
 
   // Scale and register to a new network
   network->RegisterFunctionForClique(t, scalar * phi);
