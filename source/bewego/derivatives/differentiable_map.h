@@ -40,6 +40,14 @@ class DifferentiableMap {
   virtual uint32_t output_dimension() const = 0;
   virtual uint32_t input_dimension() const = 0;
 
+  /** prealocates ouput structures on construction */
+  void PreAllocate() {
+    y_ = Eigen::VectorXd::Zero(output_dimension());
+    g_ = Eigen::VectorXd::Zero(input_dimension());
+    J_ = Eigen::MatrixXd::Zero(output_dimension(), input_dimension());
+    H_ = Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+  }
+
   /** Method called when call object */
   Eigen::VectorXd operator()(const Eigen::VectorXd& x) const {
     return Forward(x);
@@ -130,6 +138,10 @@ class DifferentiableMap {
 
  protected:
   bool debug_;
+  mutable Eigen::VectorXd y_;
+  mutable Eigen::VectorXd g_;
+  mutable Eigen::MatrixXd J_;
+  mutable Eigen::MatrixXd H_;
 };
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;

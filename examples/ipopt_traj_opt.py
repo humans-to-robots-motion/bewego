@@ -40,7 +40,7 @@ BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 100       # problems to evaluate
-TRAJ_LENGTH = 40
+TRAJ_LENGTH = 200
 
 viewer = WorkspaceViewerServer(Workspace())
 grid = np.ones((NB_POINTS, NB_POINTS))

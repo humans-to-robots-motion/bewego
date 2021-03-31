@@ -31,7 +31,6 @@ TEST(objective, motion_objective) {
   ASSERT_TRUE(network->CheckHessian(precision));
 }
 
-
 TEST(objective, construct) {
   std::srand(SEED);
   double precision = 1e-6;

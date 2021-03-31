@@ -73,6 +73,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
         clique_dim_(nb_clique_elements_ * clique_element_dim_),
         nb_cliques_(uint32_t(input_size_ / clique_element_dim) - 2),
         nb_terms_(0) {
+    PreAllocate();
     functions_.resize(nb_cliques_);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       functions_[t] = std::make_shared<SumMap>();
@@ -86,15 +87,15 @@ class CliquesFunctionNetwork : public FunctionNetwork {
 
   /** We call over all subfunctions in each clique */
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd value = Eigen::VectorXd::Zero(1);
+    y_.setZero();
     auto cliques = AllCliques(x);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       const Eigen::VectorXd& x_t = cliques[t];
       for (const auto& f : clique_functions(t)) {
-        value += f->Forward(x_t);
+        y_ += f->Forward(x_t);
       }
     }
-    return value;
+    return y_;
   }
 
   /**
@@ -108,18 +109,17 @@ class CliquesFunctionNetwork : public FunctionNetwork {
           each clique function f : R^dim -> R, where dim is the clique size.
   **/
   virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd J(
-        Eigen::MatrixXd::Zero(output_dimension(), input_dimension()));
+    J_.setZero();
     auto cliques = AllCliques(x);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       const Eigen::VectorXd& x_t = cliques[t];
       for (const auto& f : clique_functions(t)) {
         assert(f->output_dimension() == output_dimension());
         uint32_t c_id = t * clique_element_dim_;
-        J.block(0, c_id, 1, clique_dim_) += f->Jacobian(x_t);
+        J_.block(0, c_id, 1, clique_dim_) += f->Jacobian(x_t);
       }
     }
-    return J;
+    return J_;
   }
 
   /**
@@ -128,31 +128,30 @@ class CliquesFunctionNetwork : public FunctionNetwork {
               m (cols) : input size
   **/
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd H(
-        Eigen::MatrixXd::Zero(input_dimension(), input_dimension()));
+    H_.setZero();
     auto cliques = AllCliques(x);
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       const Eigen::VectorXd& x_t = cliques[t];
       for (const auto& f : clique_functions(t)) {
         assert(f->output_dimension() == output_dimension());
         uint32_t c_id = t * clique_element_dim_;
-        H.block(c_id, c_id, clique_dim_, clique_dim_) += f->Hessian(x_t);
+        H_.block(c_id, c_id, clique_dim_, clique_dim_) += f->Hessian(x_t);
       }
     }
-    return H;
+    return H_;
   }
 
   /**
-     return the clique value
+  Return the clique value
      TODO create a test using this function.
   **/
   virtual Eigen::VectorXd CliqueValue(uint32_t t,
                                       const Eigen::VectorXd& x_t) const {
-    Eigen::VectorXd value = Eigen::VectorXd::Zero(1);
+    y_.setZero();
     for (const auto& f : clique_functions(t)) {
-      value += f->Forward(x_t);
+      y_ += f->Forward(x_t);
     }
-    return value;
+    return y_;
   }
 
   /**

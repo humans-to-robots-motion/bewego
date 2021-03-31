@@ -81,27 +81,24 @@ class SphereDistance : public DifferentiableMap {
   // Constructor.
   SphereDistance(const Eigen::VectorXd& origin, double radius,
                  double dist_cutoff = std::numeric_limits<double>::max())
-      : origin_(origin), radius_(radius), dist_(dist_cutoff) {}
+      : origin_(origin), radius_(radius), dist_(dist_cutoff) {
+    PreAllocate();
+  }
   virtual ~SphereDistance() {}
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    return Eigen::VectorXd::Constant(1, Evaluate(x));
+    y_[0] = Evaluate(x);
+    return y_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd J(1, input_dimension());
-    Eigen::VectorXd g(input_dimension());
-    Eigen::MatrixXd H(input_dimension(), input_dimension());
-    Evaluate(x, &g);
-    J.row(0) = g;
-    return J;
+    Evaluate(x, &g_);
+    return g_.transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd g(input_dimension());
-    Eigen::MatrixXd H(input_dimension(), input_dimension());
-    Evaluate(x, &g, &H);
-    return H;
+    Evaluate(x, &g_, &H_);
+    return H_;
   }
 
   virtual double Evaluate(const Eigen::VectorXd& x, Eigen::VectorXd* g,

@@ -117,11 +117,15 @@ class AffineMap : public DifferentiableMap {
  public:
   AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) : a_(a), b_(b) {
     assert(a_.rows() == b.size());
+    PreAllocate();
+    H_.setZero();
   }
   AffineMap(const Eigen::VectorXd& a, double b) {
     a_ = Eigen::MatrixXd(1, a.size());
     a_.row(0) = a;
     b_ = Eigen::VectorXd::Constant(1, b);
+    PreAllocate();
+    H_.setZero();
   }
 
   uint32_t output_dimension() const { return b_.size(); }
@@ -140,7 +144,7 @@ class AffineMap : public DifferentiableMap {
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
-    return Eigen::MatrixXd::Zero(input_dimension(), input_dimension());
+    return H_;
   }
 
   const Eigen::MatrixXd& a() const { return a_; }
@@ -225,17 +229,22 @@ class QuadricMap : public DifferentiableMap {
 /** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
 class SquaredNorm : public DifferentiableMap {
  public:
-  SquaredNorm(uint32_t dim) : x0_(Eigen::VectorXd::Zero(dim)) {}
-  SquaredNorm(const Eigen::VectorXd& x0) : x0_(x0) {}
+  SquaredNorm(uint32_t dim) : x0_(Eigen::VectorXd::Zero(dim)) {
+    PreAllocate();
+    H_.setIdentity();
+  }
+  SquaredNorm(const Eigen::VectorXd& x0) : x0_(x0) {
+    PreAllocate();
+    H_.setIdentity();
+  }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return x0_.size(); }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    Eigen::VectorXd delta_x = x - x0_;
-    double d = 0.5 * delta_x.transpose() * delta_x;
-    return Eigen::VectorXd::Constant(1, d);
+    y_[0] = 0.5 * (x - x0_).squaredNorm();
+    return y_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
@@ -246,7 +255,7 @@ class SquaredNorm : public DifferentiableMap {
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
-    return Eigen::MatrixXd::Identity(input_dimension(), input_dimension());
+    return H_;
   }
 
  protected:
@@ -277,6 +286,7 @@ class RangeSubspaceMap : public DifferentiableMap {
  public:
   RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
       : dim_(n), indices_(indices) {
+    PreAllocate();
     PrealocateJacobian();
     PrealocateHessian();
   }
@@ -285,14 +295,15 @@ class RangeSubspaceMap : public DifferentiableMap {
   uint32_t input_dimension() const { return dim_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd x_sub(indices_.size());
-    for (int i = 0; i < x_sub.size(); i++) {
-      x_sub[i] = x[indices_[i]];
+    for (int i = 0; i < y_.size(); i++) {
+      y_[i] = x[indices_[i]];
     }
-    return x_sub;
+    return y_;
   }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const { return J_; }
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == dim_);
+    return J_;
+  }
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
     return H_;
@@ -315,9 +326,7 @@ class RangeSubspaceMap : public DifferentiableMap {
 
   uint32_t dim_;
   std::vector<uint32_t> indices_;
-  Eigen::MatrixXd J_;
-  Eigen::MatrixXd H_;
-};
+};  // namespace bewego
 
 class Scale : public DifferentiableMap {
  public:
@@ -408,36 +417,8 @@ class SumMap : public DifferentiableMap {
       assert(maps_->at(i)->input_dimension() == input_dimension());
       assert(maps_->at(i)->output_dimension() == output_dimension());
     }
+    PreAllocate();
   }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd y(Eigen::VectorXd::Zero(output_dimension()));
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      y += maps_->at(i)->Forward(x);
-    }
-    return y;
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    Eigen::MatrixXd J(
-        Eigen::MatrixXd::Zero(output_dimension(), input_dimension()));
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      J += maps_->at(i)->Jacobian(x);
-    }
-    return J;
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    Eigen::MatrixXd H(
-        Eigen::MatrixXd::Zero(input_dimension(), input_dimension()));
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      H += maps_->at(i)->Hessian(x);
-    }
-    return H;
-  }
-
-  const VectorOfMaps& terms() const { return (*maps_); }
 
   virtual uint32_t input_dimension() const {
     return maps_->back()->input_dimension();
@@ -445,6 +426,32 @@ class SumMap : public DifferentiableMap {
   virtual uint32_t output_dimension() const {
     return maps_->back()->output_dimension();
   }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    y_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      y_ += maps_->at(i)->Forward(x);
+    }
+    return y_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    J_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      J_ += maps_->at(i)->Jacobian(x);
+    }
+    return J_;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    H_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      H_ += maps_->at(i)->Hessian(x);
+    }
+    return H_;
+  }
+
+  const VectorOfMaps& terms() const { return (*maps_); }
 
  protected:
   std::shared_ptr<const VectorOfMaps> maps_;
@@ -482,10 +489,11 @@ class ProductMap : public DifferentiableMap {
     assert(f2->output_dimension() == 1);
   }
 
+  virtual uint32_t input_dimension() const { return g_->input_dimension(); }
+  virtual uint32_t output_dimension() const { return 1; }
+
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    Eigen::VectorXd v1 = (*g_)(x);
-    Eigen::VectorXd v2 = (*h_)(x);
-    return v1 * v2;
+    return (*g_)(x) * (*h_)(x);
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
@@ -503,9 +511,6 @@ class ProductMap : public DifferentiableMap {
     Eigen::MatrixXd H = v1 * h_->Hessian(x) + v2 * g_->Hessian(x);
     return H + J1.transpose() * J2 + J2.transpose() * J1;
   }
-
-  virtual uint32_t input_dimension() const { return g_->input_dimension(); }
-  virtual uint32_t output_dimension() const { return g_->output_dimension(); }
 
  protected:
   DifferentiableMapPtr g_;
@@ -736,6 +741,7 @@ class CombinedOutputMap : public DifferentiableMap {
       m_ += m->output_dimension();
       assert(n == m->input_dimension());
     }
+    PreAllocate();
   }
 
   uint32_t output_dimension() const { return m_; }
@@ -743,24 +749,22 @@ class CombinedOutputMap : public DifferentiableMap {
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
     uint32_t idx = 0;
-    Eigen::VectorXd phi(m_);
     for (auto m : maps_) {
-      phi.segment(idx, m->output_dimension()) = (*m)(q);
+      y_.segment(idx, m->output_dimension()) = (*m)(q);
       idx += m->output_dimension();
     }
-    return phi;
+    return y_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
     uint32_t idx = 0;
-    Eigen::MatrixXd J_phi = Eigen::MatrixXd::Zero(m_, input_dimension());
     for (auto map : maps_) {
       uint32_t m_map = map->output_dimension();
       uint32_t n_map = map->input_dimension();
-      J_phi.block(idx, 0, m_map, n_map) = map->Jacobian(q);
+      J_.block(idx, 0, m_map, n_map) = map->Jacobian(q);
       idx += m_map;
     }
-    return J_phi;
+    return J_;
   }
 
  protected:
