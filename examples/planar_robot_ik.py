@@ -24,6 +24,16 @@ from pybewego.pybullet_loader import PybulletRobot
 import pybullet
 import pybullet_data
 
+trajectory = []
+sphere_g = None
+
+
+def create_sphere(p, radius):
+    b = world.createMultiBody(baseVisualShapeIndex=sphere_g)
+    world.resetBasePositionAndOrientation(  # position red sphere
+        b, p + [0.], [0., 0., 0, 1])
+    trajectory.append(b)
+
 # load robot
 robot = PybulletRobot("../data/r3_robot.urdf", with_gui=True)
 
@@ -33,10 +43,14 @@ world.setAdditionalSearchPath(pybullet_data.getDataPath())
 world.loadURDF("plane.urdf")
 world.resetDebugVisualizerCamera(3.7, -38, -69, [0, 0, 0])
 
+
 # create red sphere
-sphere = world.createVisualShape(pybullet.GEOM_SPHERE,
-                                 radius=.1, rgbaColor=[1, 0, 0, 1])
-goal = world.createMultiBody(baseVisualShapeIndex=sphere)
+sphere_r = world.createVisualShape(pybullet.GEOM_SPHERE,
+                                   radius=.1, rgbaColor=[1, 0, 0, 1])
+sphere_g = world.createVisualShape(pybullet.GEOM_SPHERE,
+                                   radius=.1, rgbaColor=[0, .8, .8, 1])
+goal = world.createMultiBody(baseVisualShapeIndex=sphere_r)
+
 
 # end-effector idx & arm dofs
 eff_idx = 3
@@ -46,10 +60,11 @@ dofs = [0, 1, 2]
 np.random.seed(0)
 positions = np.random.uniform(low=-3, high=3, size=(100, 2))
 
+eta = .03
 
 for i, y_goal in enumerate(positions):
 
-    i = 8
+    i = 7
     y_goal = positions[i]
     print("i = ", i)
 
@@ -63,19 +78,35 @@ for i, y_goal in enumerate(positions):
     y_0 = robot.get_position(eff_idx)[0:2]
 
     T = 100  # interpolation
-    for t in range(T):
+    dist = 1
+
+    while dist > .10:
 
         # get forward kinematics and jacobian
+        robot.set_and_update(q, dofs)
+
         y = robot.get_position(eff_idx)[0:2]
         J = robot.get_jacobian(eff_idx)[0:2, 6:9]
 
-        y_i = y_0 + (t / float(T)) * (y_goal - y_0)
+        dist = np.linalg.norm(y - y_goal)
 
-        J_inv = np.linalg.pinv(J)
+        # print(J)
+        # J_inv = np.linalg.pinv(J)
+        J_inv = np.linalg.inv(J.T @ J + 1e-1 * np.eye(3)) @ J.T
         # J_inv = J.T @ np.linalg.inv(J @ J.T + 1e-1 * np.eye(2))
+        # J_inv = J.T
 
-        q = q + J_inv @ (y_i - y)
+        # print("J_inv : \n",J_inv)
+        # print("J_inv_2 : \n",J_inv_2)
+
+        q = q - eta * J_inv @ (y - y_goal) / dist
         # q = q + J.T @ (y_i - y)
 
-        robot.set_and_update(q, dofs)
+        # create_sphere(y.tolist(), .05)
         time.sleep(.01)
+
+    for b in trajectory:
+        world.removeBody(b)
+    trajectory = []
+    # print("sleep...")
+    # time.sleep(5)
