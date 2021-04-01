@@ -27,6 +27,7 @@
 #pragma once
 
 #include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/combination_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/util/range.h>
 // #include <iostream>
@@ -75,7 +76,7 @@ class FiniteDifferencesAcceleration : public AffineMap {
 };
 
 /*!\brief Define any norm of derivatives clique = [x_t ; x_{t+1} ; ... ] */
-class SquaredNormDerivative : public DifferentiableMap {
+class SquaredNormDerivative : public CombinationOperator {
  public:
   SquaredNormDerivative(uint32_t dim)
       : sq_norm_(std::make_shared<SquaredNorm>(Eigen::VectorXd::Zero(dim))) {
@@ -95,6 +96,10 @@ class SquaredNormDerivative : public DifferentiableMap {
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& clique) const {
     return derivative_->a().transpose() * derivative_->a();
+  }
+
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({sq_norm_, derivative_});
   }
 
  protected:
@@ -131,7 +136,7 @@ inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
   return std::make_shared<SquaredNormAcceleration>(n, dt);
 }
 
-class ObstaclePotential : public DifferentiableMap {
+class ObstaclePotential : public CombinationOperator {
  public:
   ObstaclePotential() { type_ = "ObstaclePotential"; }
   ObstaclePotential(std::shared_ptr<const DifferentiableMap> sdf, double alpha,
@@ -149,6 +154,10 @@ class ObstaclePotential : public DifferentiableMap {
   // Returns a pointer to the sdf
   std::shared_ptr<const DifferentiableMap> signed_distance_field() const {
     return signed_distance_field_;
+  }
+
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({signed_distance_field_});
   }
 
  private:

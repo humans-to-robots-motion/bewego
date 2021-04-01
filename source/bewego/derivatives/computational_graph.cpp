@@ -27,22 +27,31 @@
 #include <bewego/derivatives/combination_operators.h>
 #include <bewego/derivatives/computational_graph.h>
 
+#include <queue>
+
 using namespace bewego::computational_graph;
+using std::cout;
+using std::endl;
 
 void Graph::BuildFromNetwork(DifferentiableMapPtr network) {
-  /**
-   TODO convert a differntiable function into a
-   computational graph
-   */
   uint id = 0;
   nodes_.clear();
-  nodes_.push_back(std::make_shared<Node>(network, id));
-  if (network->is_atomic()) {
-    return;
-  }
-  auto combination_operator =
-      std::dynamic_pointer_cast<const CombinationOperator>(network);
-  for (auto f : combination_operator->nested_operators()) {
-    nodes_.push_back(std::make_shared<Node>(f, ++id));
+  DifferentiableMapPtr f;
+  std::queue<DifferentiableMapPtr> diff_operators;
+  diff_operators.push(network);
+  while (!diff_operators.empty()) {
+    f = diff_operators.front();
+    auto node_f = std::make_shared<Node>(f, id++);
+    nodes_.push_back(node_f);
+    // cout << "add node : " << f->type() << endl;
+    if (!f->is_atomic()) {
+      auto f_c = std::dynamic_pointer_cast<const CombinationOperator>(f);
+      for (auto g : f_c->nested_operators()) {
+        auto node_g = std::make_shared<Node>(g, id++);
+        edges_.push_back(std::make_pair(node_f->id(), node_g->id()));
+        diff_operators.push(g);
+      }
+    }
+    diff_operators.pop();
   }
 }

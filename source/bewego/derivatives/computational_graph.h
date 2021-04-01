@@ -53,9 +53,16 @@ class Graph {
  public:
   Graph() {}
 
-  /** Transform the Graph using a netowkr */
+  /** Transform the network into a graph */
   void BuildFromNetwork(DifferentiableMapPtr network);
 
+  /** Accessors */
+  const std::vector<std::shared_ptr<Node>>& nodes() const { return nodes_; }
+  const std::vector<std::pair<uint32_t, uint32_t>>& edges() const {
+    return edges_;
+  }
+
+ protected:
   std::vector<std::shared_ptr<Node>> nodes_;
   std::vector<std::pair<uint32_t, uint32_t>> edges_;
 };
