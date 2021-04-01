@@ -39,7 +39,7 @@ namespace bewego {
         It registers functions and evaluates
         f(x_0, x_1, ... ) = \sum_i f_i(x_0, x_1, ...)
  */
-class FunctionNetwork : public DifferentiableMap {
+class FunctionNetwork : public CombinationOperator {
  public:
   FunctionNetwork() { type_ = "FunctionNetwork"; }
   virtual uint32_t output_dimension() const { return 1; }
@@ -56,8 +56,10 @@ class FunctionNetwork : public DifferentiableMap {
 
   void AddFunction(DifferentiableMapPtr f) { functions_.push_back(f); }
 
+  virtual VectorOfMaps nested_operators() const { return functions_; }
+
  protected:
-  std::vector<DifferentiableMapPtr> functions_;
+  VectorOfMaps functions_;
 };
 
 /*!\brief Base class to implement a function network

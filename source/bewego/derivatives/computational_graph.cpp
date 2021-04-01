@@ -23,6 +23,26 @@
  *                                                             Thu 1 Apr 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
+#include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/combination_operators.h>
 #include <bewego/derivatives/computational_graph.h>
 
 using namespace bewego::computational_graph;
+
+void Graph::BuildFromNetwork(DifferentiableMapPtr network) {
+  /**
+   TODO convert a differntiable function into a
+   computational graph
+   */
+  uint id = 0;
+  nodes_.clear();
+  nodes_.push_back(std::make_shared<Node>(network, id));
+  if (network->is_atomic()) {
+    return;
+  }
+  auto combination_operator =
+      std::dynamic_pointer_cast<const CombinationOperator>(network);
+  for (auto f : combination_operator->nested_operators()) {
+    nodes_.push_back(std::make_shared<Node>(f, ++id));
+  }
+}

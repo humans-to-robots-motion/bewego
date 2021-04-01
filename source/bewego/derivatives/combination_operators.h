@@ -42,7 +42,10 @@ namespace bewego {
 class CombinationOperator : public DifferentiableMap {
  public:
   CombinationOperator() { is_atomic_ = false; }
-  virtual VectorOfMaps nested_operators() const = 0;
+  virtual VectorOfMaps nested_operators() const {
+    throw std::runtime_error(
+        "CombinationOperator does not implement nested_operators");
+  }
 };
 
 /** f round g : f(g(q))

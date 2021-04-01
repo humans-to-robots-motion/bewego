@@ -52,6 +52,12 @@ class Node {
 class Graph {
  public:
   Graph() {}
+
+  /** Transform the Graph using a netowkr */
+  void BuildFromNetwork(DifferentiableMapPtr network);
+
+  std::vector<std::shared_ptr<Node>> nodes_;
+  std::vector<std::pair<uint32_t, uint32_t>> edges_;
 };
 
 }  // namespace computational_graph

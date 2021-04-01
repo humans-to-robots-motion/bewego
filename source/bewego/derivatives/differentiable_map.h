@@ -158,7 +158,7 @@ class DifferentiableMap {
 };
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
-using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
+using VectorOfMaps = std::vector<DifferentiableMapPtr>;
 
 /** return true if it is the same operator */
 inline bool operator==(DifferentiableMapPtr f, DifferentiableMapPtr g) {
