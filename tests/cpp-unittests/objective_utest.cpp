@@ -29,6 +29,7 @@ TEST(objective, motion_objective) {
   auto network = objective->function_network();
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
+  ASSERT_TRUE(network->type() == "CliquesFunctionNetwork");
 }
 
 TEST(objective, construct) {
@@ -53,4 +54,5 @@ TEST(objective, construct) {
   auto network = objective->function_network();
   ASSERT_TRUE(network->CheckJacobian(precision));
   ASSERT_TRUE(network->CheckHessian(precision));
+  ASSERT_TRUE(network->type() == "CliquesFunctionNetwork");
 }

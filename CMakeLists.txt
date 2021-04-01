@@ -156,6 +156,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/util/socket.cpp
     ${bewego_SOURCE_DIR}/derivatives/differentiable_map.cpp
     ${bewego_SOURCE_DIR}/derivatives/atomic_operators.cpp
+    ${bewego_SOURCE_DIR}/derivatives/computational_graph.cpp
     ${bewego_SOURCE_DIR}/planning/astar.cpp
     ${bewego_SOURCE_DIR}/planning/planar_grid.cpp
     ${bewego_SOURCE_DIR}/planning/value_iteration.cpp

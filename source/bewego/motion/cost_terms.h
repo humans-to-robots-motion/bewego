@@ -42,6 +42,7 @@ class FiniteDifferencesVelocity : public AffineMap {
       : AffineMap(Eigen::MatrixXd::Zero(dim, 2 * dim),
                   Eigen::VectorXd::Zero(dim)) {
     _InitializeMatrix(dim, dt);
+    type_ = "FiniteDifferencesVelocity";
   }
 
   /*!\brief Velocity = [ x_{t+1} - x_{t} ] / dt */
@@ -60,6 +61,7 @@ class FiniteDifferencesAcceleration : public AffineMap {
       : AffineMap(Eigen::MatrixXd::Zero(dim, 3 * dim),
                   Eigen::VectorXd::Zero(dim)) {
     _InitializeMatrix(dim, dt);
+    type_ = "FiniteDifferencesAcceleration";
   }
 
   /*!\brief Acceleration = [ x_{t+1} + x_{t-1} - 2 * x_{t} ] / dt^2 */
@@ -76,7 +78,9 @@ class FiniteDifferencesAcceleration : public AffineMap {
 class SquaredNormDerivative : public DifferentiableMap {
  public:
   SquaredNormDerivative(uint32_t dim)
-      : sq_norm_(std::make_shared<SquaredNorm>(Eigen::VectorXd::Zero(dim))) {}
+      : sq_norm_(std::make_shared<SquaredNorm>(Eigen::VectorXd::Zero(dim))) {
+    type_ = "SquaredNormDerivative";
+  }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return derivative_->input_dimension(); }
@@ -103,6 +107,7 @@ class SquaredNormVelocity : public SquaredNormDerivative {
  public:
   SquaredNormVelocity(uint32_t dim, double dt) : SquaredNormDerivative(dim) {
     derivative_ = std::make_shared<FiniteDifferencesVelocity>(dim, dt);
+    type_ = "SquaredNormVelocity";
   }
 };
 
@@ -112,6 +117,7 @@ class SquaredNormAcceleration : public SquaredNormDerivative {
   SquaredNormAcceleration(uint32_t dim, double dt)
       : SquaredNormDerivative(dim) {
     derivative_ = std::make_shared<FiniteDifferencesAcceleration>(dim, dt);
+    type_ = "SquaredNormAcceleration";
   }
 };
 
@@ -127,7 +133,7 @@ inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
 
 class ObstaclePotential : public DifferentiableMap {
  public:
-  ObstaclePotential() {}
+  ObstaclePotential() { type_ = "ObstaclePotential"; }
   ObstaclePotential(std::shared_ptr<const DifferentiableMap> sdf, double alpha,
                     double rho_scaling);
   virtual ~ObstaclePotential() {}
@@ -163,6 +169,7 @@ class BoundBarrier : public DifferentiableMap {
 
     // Warning: this does not work with the line search
     inf_ = std::numeric_limits<double>::max();
+    type_ = "BoundBarrier";
   }
 
   uint32_t output_dimension() const { return 1; }

@@ -40,7 +40,7 @@ namespace bewego {
  */
 class FunctionNetwork : public DifferentiableMap {
  public:
-  FunctionNetwork() {}
+  FunctionNetwork() { type_ = "FunctionNetwork"; }
   virtual uint32_t output_dimension() const { return 1; }
   virtual uint32_t input_dimension() const = 0;
 
@@ -78,6 +78,7 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     for (uint32_t t = 0; t < nb_cliques_; t++) {
       functions_[t] = std::make_shared<SumMap>();
     }
+    type_ = "CliquesFunctionNetwork";
   }
   static uint32_t NetworkDim(uint32_t n, uint32_t T) { return (T + 2) * n; }
   virtual uint32_t input_dimension() const { return input_size_; }
@@ -288,6 +289,7 @@ class TrajectoryObjectiveFunction : public DifferentiableMap {
         n_(q_init.size()),
         function_network_(function_network) {
     gradient_sparcity_patern_.InitializeDense(1, input_dimension());
+    type_ = "TrajectoryObjectiveFunction";
   }
 
   Eigen::VectorXd FullVector(const Eigen::VectorXd& x_active) const {

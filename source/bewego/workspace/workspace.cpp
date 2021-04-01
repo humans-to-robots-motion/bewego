@@ -243,7 +243,9 @@ SmoothCollisionConstraints::SmoothCollisionConstraints(
     : signed_distance_functions_(surfaces),
       margin_(margin),
       gamma_(gamma),
-      f_(ConstructSmoothConstraint()) {}
+      f_(ConstructSmoothConstraint()) {
+  type_ = "SmoothCollisionConstraints";
+}
 
 DifferentiableMapPtr SmoothCollisionConstraints::ConstructSmoothConstraint() {
   // Check input dimensions

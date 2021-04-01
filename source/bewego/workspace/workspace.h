@@ -83,6 +83,7 @@ class SphereDistance : public DifferentiableMap {
                  double dist_cutoff = std::numeric_limits<double>::max())
       : origin_(origin), radius_(radius), dist_(dist_cutoff) {
     PreAllocate();
+    type_ = "SphereDistance";
   }
   virtual ~SphereDistance() {}
 
@@ -142,6 +143,7 @@ class RectangleDistance : public DifferentiableMap {
                           Eigen::Rotation2Dd(orientation).toRotationMatrix(),
                           dist_cutoff) {
     // CHECK_EQ(dim_, 2);
+    type_ = "RectangleDistance";
   }
 
   // Creates a distance function to the point x0. The dimensionality of x0
@@ -156,6 +158,7 @@ class RectangleDistance : public DifferentiableMap {
     orientation_ = orientation;
     axis_ = Eigen::MatrixXd::Identity(dim_, dim_);
     dist_cutoff_ = dist_cutoff;
+    type_ = "RectangleDistance";
   }
   virtual ~RectangleDistance();
 

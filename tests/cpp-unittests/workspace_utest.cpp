@@ -51,6 +51,7 @@ TEST_F(SphereDistanceTest, Evaluation) {
   set_precisions(error, 1e-3);
   // set_precisions(error, std::numeric_limits<double>::max());
   RunAllTests();
+  ASSERT_TRUE(function_tests_.front().first->type() == "SphereDistance");
 }
 
 class RectangleDistanceTest : public DifferentialMapTest {
@@ -101,6 +102,7 @@ TEST_F(RectangleDistanceTest, Evaluation) {
   set_precisions(error, 1e-3);
   // set_precisions(error, std::numeric_limits<double>::max());
   RunAllTests();
+  ASSERT_TRUE(function_tests_.front().first->type() == "RectangleDistance");
 }
 
 TEST(RectangleDistance, Main) {
@@ -144,6 +146,7 @@ TEST_F(DifferentialMapTest, smooth_collision_constraints) {
   auto phi = std::make_shared<SmoothCollisionConstraints>(surfaces, 10);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "SmoothCollisionConstraints");
 }
 
 TEST_F(DifferentialMapTest, soft_sphere_distance) {
@@ -158,4 +161,5 @@ TEST_F(DifferentialMapTest, soft_sphere_distance) {
   auto phi = std::make_shared<SoftDist>(dist_sq);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "SoftDist");
 }

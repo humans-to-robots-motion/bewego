@@ -24,6 +24,8 @@ TEST(atomic_operators, zero_map) {
 
   f = std::make_shared<ZeroMap>(1, 5);
   ASSERT_TRUE(f->CheckHessian());
+
+  ASSERT_TRUE(f->type() == "ZeroMap");
 }
 
 TEST(atomic_operators, identity_map) {
@@ -34,6 +36,8 @@ TEST(atomic_operators, identity_map) {
 
   f = std::make_shared<IdentityMap>(1);
   ASSERT_TRUE(f->CheckHessian());
+
+  ASSERT_TRUE(f->type() == "IdentityMap");
 }
 
 TEST(atomic_operators, affine_map) {
@@ -57,6 +61,8 @@ TEST(atomic_operators, affine_map) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "AffineMap");
 }
 
 TEST(atomic_operators, quadric_map) {
@@ -70,6 +76,8 @@ TEST(atomic_operators, quadric_map) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "QuadricMap");
 }
 
 TEST(atomic_operators, squared_norm) {
@@ -81,6 +89,8 @@ TEST(atomic_operators, squared_norm) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "SquaredNorm");
 }
 
 TEST(atomic_operators, range_subspace_map) {
@@ -101,6 +111,8 @@ TEST(atomic_operators, range_subspace_map) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "RangeSubspaceMap");
 }
 
 TEST(atomic_operators, scale) {
@@ -117,6 +129,8 @@ TEST(atomic_operators, scale) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "Scale");
 }
 
 TEST(atomic_operators, offset) {
@@ -133,6 +147,8 @@ TEST(atomic_operators, offset) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "Offset");
 }
 
 TEST(atomic_operators, sum_map) {
@@ -149,6 +165,8 @@ TEST(atomic_operators, sum_map) {
   for (uint32_t i = 0; i < NB_TESTS; i++) {
     ASSERT_TRUE(f->CheckJacobian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "SumMap");
 }
 
 TEST(atomic_operators, product_map) {
@@ -166,6 +184,8 @@ TEST(atomic_operators, product_map) {
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
   }
+
+  ASSERT_TRUE(f->type() == "ProductMap");
 }
 
 TEST(atomic_operators, min) {
@@ -184,6 +204,8 @@ TEST(atomic_operators, min) {
   //   ASSERT_TRUE(f->CheckJacobian(precision));
   //   ASSERT_TRUE(f->CheckHessian(precision));
   // }
+
+  ASSERT_TRUE(min_map->type() == "Min");
 }
 
 TEST(atomic_operators, second_order_tayler_approx) {
@@ -209,6 +231,7 @@ TEST(atomic_operators, second_order_tayler_approx) {
     ASSERT_LT(std::fabs(v1 - v2), 1e-6);
     ASSERT_LT((g1 - g2).cwiseAbs().maxCoeff(), 1e-6);
     ASSERT_LT((H - h).cwiseAbs().maxCoeff(), 1e-6);
+    ASSERT_TRUE(approx->type() == "SecondOrderTaylorApproximation");
   }
 }
 
@@ -223,6 +246,7 @@ TEST_F(DifferentialMapTest, log_barrier) {
   }
   // AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "LogBarrier");
 }
 
 TEST_F(DifferentialMapTest, log_barrier_with_approx) {
@@ -236,6 +260,7 @@ TEST_F(DifferentialMapTest, log_barrier_with_approx) {
   }
   // AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "LogBarrierWithApprox");
 }
 
 TEST_F(DifferentialMapTest, soft_norm) {
@@ -247,6 +272,7 @@ TEST_F(DifferentialMapTest, soft_norm) {
   AddRandomTests(phi1, NB_TESTS);
   AddRandomTests(phi2, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi1->type() == "SoftNorm");
 }
 
 TEST_F(DifferentialMapTest, log_sum_exp) {
@@ -256,6 +282,7 @@ TEST_F(DifferentialMapTest, log_sum_exp) {
   AddRandomTests(phi1, NB_TESTS);
   AddRandomTests(phi2, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi1->type() == "LogSumExp");
 }
 
 TEST_F(DifferentialMapTest, combined_output_map) {
@@ -270,6 +297,7 @@ TEST_F(DifferentialMapTest, combined_output_map) {
   auto phi = std::make_shared<CombinedOutputMap>(*maps);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "CombinedOutputMap");
 }
 
 TEST_F(DifferentialMapTest, square_map) {
@@ -277,6 +305,7 @@ TEST_F(DifferentialMapTest, square_map) {
   auto phi1 = std::make_shared<SquareMap>();
   AddRandomTests(phi1, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi1->type() == "SquareMap");
 }
 
 TEST_F(DifferentialMapTest, soft_dist) {
@@ -287,4 +316,5 @@ TEST_F(DifferentialMapTest, soft_dist) {
   auto phi = std::make_shared<SoftDist>(dist);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+  ASSERT_TRUE(phi->type() == "SoftDist");
 }

@@ -48,6 +48,8 @@ SecondOrderTaylorApproximation::SecondOrderTaylorApproximation(
   x0_ = x0;
   g0_ = g;
   fx0_ = v;
+
+  type_ = "SecondOrderTaylorApproximation";
 }
 
 //------------------------------------------------------------------------------
@@ -161,6 +163,7 @@ SoftDist::SoftDist(DifferentiableMapPtr sq_dist, double alpha)
     : sq_dist_(sq_dist), alpha_(alpha), alpha_sq_(alpha * alpha) {
   assert(sq_dist_.get() != nullptr);
   assert(sq_dist_->output_dimension() == 1);
+  type_ = "SoftDist";
 }
 
 Eigen::VectorXd SoftDist::Forward(const Eigen::VectorXd& x) const {

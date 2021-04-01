@@ -36,6 +36,7 @@ ObstaclePotential::ObstaclePotential(
   ambient_space_dim_ = sdf->input_dimension();
   alpha_ = alpha;
   rho_scaling_ = rho_scaling;
+  type_ = "ObstaclePotential";
 }
 
 Eigen::VectorXd ObstaclePotential::Forward(const Eigen::VectorXd& x) const {

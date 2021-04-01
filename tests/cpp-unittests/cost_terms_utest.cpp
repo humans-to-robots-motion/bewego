@@ -44,6 +44,9 @@ TEST_F(DifferentialMapTest, finite_differences_velocity) {
     cout << "dx2 : " << ((x_2 - x_1) / dt).transpose() << endl;
   }
   ASSERT_TRUE(dx.isApprox((x_2 - x_1) / dt));
+
+  f = std::make_shared<FiniteDifferencesVelocity>(7, .1);
+  ASSERT_TRUE(f->type() == "FiniteDifferencesVelocity");
 }
 
 TEST_F(DifferentialMapTest, finite_differences_acceleration) {
@@ -72,6 +75,9 @@ TEST_F(DifferentialMapTest, finite_differences_acceleration) {
   x_4.tail(N) = x_3;        // x_{t+1}
   Eigen::VectorXd dx = fd(x_4);
   ASSERT_TRUE(dx.isApprox((x_1 + x_3 - 2 * x_2) / (.1 * .1)));
+
+  f = std::make_shared<FiniteDifferencesAcceleration>(7, .1);
+  ASSERT_TRUE(f->type() == "FiniteDifferencesAcceleration");
 }
 
 TEST(cost_terms, squared_norm_velocity) {
@@ -95,6 +101,8 @@ TEST(cost_terms, squared_norm_velocity) {
   double sq_norm_1 = (*f)(x_3)[0] * 2;
   double sq_norm_2 = ((x_2 - x_1) / .1).squaredNorm();
   EXPECT_NEAR(sq_norm_1, sq_norm_2, 1e-3);
+
+  ASSERT_TRUE(f->type() == "SquaredNormVelocity");
 }
 
 TEST(cost_terms, compose) {
@@ -123,6 +131,9 @@ TEST(cost_terms, compose) {
   double sq_norm_1 = (*f1)(x_3)[0];
   double sq_norm_2 = (*f2)(x_3)[0];
   EXPECT_NEAR(sq_norm_1, sq_norm_2, 1e-12);
+
+  ASSERT_TRUE(f1->type() == "SquaredNormVelocity");
+  ASSERT_TRUE(f2->type() == "Compose");
 }
 
 TEST(cost_terms, obstacle_potential) {
@@ -150,6 +161,9 @@ TEST(cost_terms, obstacle_potential) {
     ASSERT_TRUE(phi2->CheckJacobian(1e-7));
     ASSERT_TRUE(phi2->CheckHessian(1e-7));
   }
+
+  ASSERT_TRUE(dist1->type() == "SquaredNorm");
+  ASSERT_TRUE(phi1->type() == "ObstaclePotential");
 }
 
 TEST_F(DifferentialMapTest, bound_barrier) {
@@ -163,4 +177,6 @@ TEST_F(DifferentialMapTest, bound_barrier) {
   auto phi = std::make_shared<BoundBarrier>(v_lower, v_upper);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
+
+  ASSERT_TRUE(phi->type() == "BoundBarrier");
 }

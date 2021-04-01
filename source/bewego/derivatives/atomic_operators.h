@@ -34,7 +34,7 @@ namespace bewego {
 /** Simple zero map : f(x) = 0 **/
 class ZeroMap : public DifferentiableMap {
  public:
-  ZeroMap(uint32_t m, uint32_t n) : m_(m), n_(n) {}
+  ZeroMap(uint32_t m, uint32_t n) : m_(m), n_(n) { type_ = "ZeroMap"; }
 
   uint32_t output_dimension() const { return m_; }
   uint32_t input_dimension() const { return n_; }
@@ -63,7 +63,7 @@ class ZeroMap : public DifferentiableMap {
 /** Simple identity map : f(x) = x **/
 class IdentityMap : public DifferentiableMap {
  public:
-  IdentityMap(uint32_t n) : dim_(n) {}
+  IdentityMap(uint32_t n) : dim_(n) { type_ = "IdentityMap"; }
 
   uint32_t output_dimension() const { return dim_; }
   uint32_t input_dimension() const { return dim_; }
@@ -91,7 +91,7 @@ class IdentityMap : public DifferentiableMap {
 /** Simple identity map : f(x) = 1/2 x^2 **/
 class SquareMap : public DifferentiableMap {
  public:
-  SquareMap() {}
+  SquareMap() { type_ = "SquareMap"; }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return 1; }
@@ -119,6 +119,7 @@ class AffineMap : public DifferentiableMap {
     assert(a_.rows() == b.size());
     PreAllocate();
     H_.setZero();
+    type_ = "AffineMap";
   }
   AffineMap(const Eigen::VectorXd& a, double b) {
     a_ = Eigen::MatrixXd(1, a.size());
@@ -126,6 +127,7 @@ class AffineMap : public DifferentiableMap {
     b_ = Eigen::VectorXd::Constant(1, b);
     PreAllocate();
     H_.setZero();
+    type_ = "AffineMap";
   }
 
   uint32_t output_dimension() const { return b_.size(); }
@@ -159,12 +161,13 @@ class AffineMap : public DifferentiableMap {
         f(x) = 1/2 x^T A x + bx + c */
 class QuadricMap : public DifferentiableMap {
  public:
-  QuadricMap() {}
+  QuadricMap() { type_ = "QuadricMap"; }
   QuadricMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b, double c)
       : a_(a), b_(b), c_(Eigen::VectorXd::Constant(1, c)) {
     assert(a_.rows() == a_.cols());
     assert(a_.rows() == b_.size());
     H_ = .5 * (a_ + a_.transpose());
+    type_ = "QuadricMap";
   }
 
   QuadricMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b,
@@ -174,6 +177,7 @@ class QuadricMap : public DifferentiableMap {
     assert(a_.rows() == a_.cols());
     assert(a_.rows() == b_.size());
     H_ = .5 * (a_ + a_.transpose());
+    type_ = "QuadricMap";
   }
 
   uint32_t output_dimension() const { return 1; }
@@ -232,10 +236,12 @@ class SquaredNorm : public DifferentiableMap {
   SquaredNorm(uint32_t dim) : x0_(Eigen::VectorXd::Zero(dim)) {
     PreAllocate();
     H_.setIdentity();
+    type_ = "SquaredNorm";
   }
   SquaredNorm(const Eigen::VectorXd& x0) : x0_(x0) {
     PreAllocate();
     H_.setIdentity();
+    type_ = "SquaredNorm";
   }
 
   uint32_t output_dimension() const { return 1; }
@@ -265,7 +271,7 @@ class SquaredNorm : public DifferentiableMap {
 /** Test function that can be evaluated on a grid **/
 class ExpTestFunction : public DifferentiableMap {
  public:
-  ExpTestFunction() {}
+  ExpTestFunction() { type_ = "ExpTestFunction"; }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return 2; }
@@ -289,6 +295,7 @@ class RangeSubspaceMap : public DifferentiableMap {
     PreAllocate();
     PrealocateJacobian();
     PrealocateHessian();
+    type_ = "RangeSubspaceMap";
   }
 
   uint32_t output_dimension() const { return indices_.size(); }
@@ -330,7 +337,9 @@ class RangeSubspaceMap : public DifferentiableMap {
 
 class Scale : public DifferentiableMap {
  public:
-  Scale(DifferentiableMapPtr f, double alpha) : f_(f), alpha_(alpha) {}
+  Scale(DifferentiableMapPtr f, double alpha) : f_(f), alpha_(alpha) {
+    type_ = "Scale";
+  }
 
   uint32_t output_dimension() const { return f_->output_dimension(); }
   uint32_t input_dimension() const { return f_->input_dimension(); }
@@ -362,6 +371,7 @@ class Offset : public DifferentiableMap {
   Offset(DifferentiableMapPtr f, const Eigen::VectorXd& offset)
       : f_(f), offset_(offset) {
     assert(offset_.size() == f_->output_dimension());
+    type_ = "Offset";
   }
 
   uint32_t output_dimension() const { return f_->output_dimension(); }
@@ -410,7 +420,10 @@ inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
  */
 class SumMap : public DifferentiableMap {
  public:
-  SumMap() { maps_ = std::make_shared<VectorOfMaps>(); }
+  SumMap() {
+    maps_ = std::make_shared<VectorOfMaps>();
+    type_ = "SumMap";
+  }
   SumMap(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
     assert(maps_->size() > 0);
     for (uint32_t i = 0; i < maps_->size(); i++) {
@@ -418,6 +431,7 @@ class SumMap : public DifferentiableMap {
       assert(maps_->at(i)->output_dimension() == output_dimension());
     }
     PreAllocate();
+    type_ = "SumMap";
   }
 
   virtual uint32_t input_dimension() const {
@@ -487,6 +501,7 @@ class ProductMap : public DifferentiableMap {
     assert(f1->input_dimension() == f2->input_dimension());
     assert(f1->output_dimension() == 1);
     assert(f2->output_dimension() == 1);
+    type_ = "ProductMap";
   }
 
   virtual uint32_t input_dimension() const { return g_->input_dimension(); }
@@ -529,8 +544,13 @@ inline DifferentiableMapPtr operator*(DifferentiableMapPtr f,
 class Min : public DifferentiableMap {
  public:
   // All terms must be of dimension term_dimension.
-  Min(uint32_t term_dimension) : term_dimension_(term_dimension) {}
-  Min(const VectorOfMaps& v) { AddTerms(v); }
+  Min(uint32_t term_dimension) : term_dimension_(term_dimension) {
+    type_ = "Min";
+  }
+  Min(const VectorOfMaps& v) {
+    AddTerms(v);
+    type_ = "Min";
+  }
   virtual ~Min() {}
 
   void AddTerms(const VectorOfMaps& v) {
@@ -617,7 +637,7 @@ class SecondOrderTaylorApproximation : public QuadricMap {
  */
 class LogBarrier : public DifferentiableMap {
  public:
-  LogBarrier(double margin = 0) : margin_(margin) {}
+  LogBarrier(double margin = 0) : margin_(margin) { type_ = "LogBarrier"; }
   virtual ~LogBarrier() {}
 
   uint32_t output_dimension() const { return 1; }
@@ -637,6 +657,7 @@ class LogBarrierWithApprox : public LogBarrier {
   LogBarrierWithApprox(double max_hessian, double scalar = 1.)
       : max_hessian_(max_hessian) {
     SetScalar(scalar);
+    type_ = "LogBarrierWithApprox";
   }
 
   void SetScalar(double scalar) {
@@ -677,9 +698,13 @@ class SoftNorm : public DifferentiableMap {
       : n_(n),
         alpha_(alpha),
         alpha_sq_(alpha * alpha),
-        x0_(Eigen::VectorXd::Zero(n)) {}
+        x0_(Eigen::VectorXd::Zero(n)) {
+    type_ = "SoftNorm";
+  }
   SoftNorm(double alpha, const Eigen::VectorXd& x0)
-      : n_(x0.size()), alpha_(alpha), alpha_sq_(alpha * alpha), x0_(x0) {}
+      : n_(x0.size()), alpha_(alpha), alpha_sq_(alpha * alpha), x0_(x0) {
+    type_ = "SoftNorm";
+  }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return n_; }
@@ -742,6 +767,7 @@ class CombinedOutputMap : public DifferentiableMap {
       assert(n == m->input_dimension());
     }
     PreAllocate();
+    type_ = "CombinedOutputMap";
   }
 
   uint32_t output_dimension() const { return m_; }
@@ -784,7 +810,9 @@ class CombinedOutputMap : public DifferentiableMap {
 class LogSumExp : public DifferentiableMap {
  public:
   LogSumExp(uint32_t n, double alpha = 1.)
-      : n_(n), alpha_(alpha), inv_alpha_(1. / alpha) {}
+      : n_(n), alpha_(alpha), inv_alpha_(1. / alpha) {
+    type_ = "LogSumExp";
+  }
   virtual ~LogSumExp() {}
 
   uint32_t input_dimension() const override { return n_; }
@@ -813,7 +841,9 @@ class LogSumExp : public DifferentiableMap {
  */
 class NegLogSumExp : public LogSumExp {
  public:
-  NegLogSumExp(uint32_t n, double alpha = 1.) : LogSumExp(n, -alpha) {}
+  NegLogSumExp(uint32_t n, double alpha = 1.) : LogSumExp(n, -alpha) {
+    type_ = "NegLogSumExp";
+  }
   virtual ~NegLogSumExp();
 };
 

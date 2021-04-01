@@ -35,7 +35,7 @@ namespace bewego {
 
 class DifferentiableMap {
  public:
-  DifferentiableMap() : debug_(false) {}
+  DifferentiableMap() : debug_(false), type_("Default") {}
 
   virtual uint32_t output_dimension() const = 0;
   virtual uint32_t input_dimension() const = 0;
@@ -136,12 +136,16 @@ class DifferentiableMap {
   /** Print check Jacobian and Hessian info */
   void set_debug(bool v = true) { debug_ = v; }
 
+  /** Returns the type of the differentiable map */
+  std::string type() const { return type_; }
+
  protected:
   bool debug_;
   mutable Eigen::VectorXd y_;
   mutable Eigen::VectorXd g_;
   mutable Eigen::MatrixXd J_;
   mutable Eigen::MatrixXd H_;
+  std::string type_;
 };
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
@@ -161,6 +165,7 @@ class Compose : public DifferentiableMap {
     assert(g->output_dimension() == f->input_dimension());
     f_ = f;
     g_ = g;
+    type_ = "Compose";
   }
 
   uint32_t output_dimension() const { return f_->output_dimension(); }
