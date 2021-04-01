@@ -156,6 +156,17 @@ class Scale : public CombinationOperator {
     return alpha_ * f_->Hessian(x);
   }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const Scale&>(other);
+      if (abs(f.alpha_ - alpha_) > 1e-6) return false;
+      return true;
+    }
+  }
+
  protected:
   DifferentiableMapPtr f_;
   double alpha_;
@@ -188,6 +199,16 @@ class Offset : public CombinationOperator {
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     return f_->Hessian(x);
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const Offset&>(other);
+      return (f.offset_ - offset_).cwiseAbs().maxCoeff() < 1e-6;
+    }
   }
 
  protected:
@@ -269,6 +290,16 @@ class SumMap : public CombinationOperator {
   }
 
   const VectorOfMaps& terms() const { return (*maps_); }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const SumMap&>(other);
+      return f.maps_->size() == maps_->size();
+    }
+  }
 
  protected:
   std::shared_ptr<const VectorOfMaps> maps_;
@@ -409,6 +440,18 @@ class Min : public CombinationOperator {
     return functions_[GetMinFunctionId(x)]->Hessian(x);
   }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const Min&>(other);
+      bool eq_size = f.functions_.size() == functions_.size();
+      bool eq_dim = f.term_dimension_ == term_dimension_;
+      return eq_size && eq_dim;
+    }
+  }
+
  protected:
   VectorOfMaps functions_;
   uint32_t term_dimension_;
@@ -440,6 +483,18 @@ class SoftDist : public CombinationOperator {
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
   virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const SoftDist&>(other);
+      if (abs(f.alpha_ - alpha_) > 1e-6) return false;
+      if (abs(f.alpha_sq_ - alpha_sq_) > 1e-6) return false;
+      return true;
+    }
+  }
 
  protected:
   DifferentiableMapPtr sq_dist_;
@@ -491,6 +546,18 @@ class CombinedOutputMap : public CombinationOperator {
       idx += m_map;
     }
     return J_;
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const CombinedOutputMap&>(other);
+      bool eq_m = f.m_ == m_;
+      bool eq_size = f.maps_.size() == maps_.size();
+      return eq_m && eq_size;
+    }
   }
 
  protected:

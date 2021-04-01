@@ -55,6 +55,16 @@ class ZeroMap : public DifferentiableMap {
     return Eigen::MatrixXd::Zero(n_, n_);
   }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const ZeroMap&>(other);
+      return f.m_ == m_ && f.n_ == n_;
+    }
+  }
+
  protected:
   uint32_t m_;
   uint32_t n_;
@@ -82,6 +92,16 @@ class IdentityMap : public DifferentiableMap {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
     return Eigen::MatrixXd::Zero(dim_, dim_);
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const IdentityMap&>(other);
+      return f.dim_ == dim_;
+    }
   }
 
  protected:
@@ -152,6 +172,18 @@ class AffineMap : public DifferentiableMap {
   const Eigen::MatrixXd& a() const { return a_; }
   const Eigen::VectorXd& b() const { return b_; }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const AffineMap&>(other);
+      bool a_eq = (f.a_ - a_).cwiseAbs().maxCoeff() < 1e-6;
+      bool b_eq = (f.b_ - b_).cwiseAbs().maxCoeff() < 1e-6;
+      return a_eq && b_eq;
+    }
+  }
+
  protected:
   Eigen::MatrixXd a_;
   Eigen::VectorXd b_;
@@ -214,6 +246,20 @@ class QuadricMap : public DifferentiableMap {
   const Eigen::VectorXd& b() const { return b_; }
   double c() const { return c_[0]; }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const QuadricMap&>(other);
+      bool a_eq = (f.a_ - a_).cwiseAbs().maxCoeff() < 1e-6;
+      bool b_eq = (f.b_ - b_).cwiseAbs().maxCoeff() < 1e-6;
+      bool c_eq = (f.c_ - c_).cwiseAbs().maxCoeff() < 1e-6;
+      bool H_eq = (f.H_ - H_).cwiseAbs().maxCoeff() < 1e-6;
+      return a_eq && b_eq && c_eq && H_eq;
+    }
+  }
+
  protected:
   void Initialize(const Eigen::MatrixXd& a, const Eigen::VectorXd& b,
                   double c) {
@@ -236,7 +282,9 @@ class QuadricMap : public DifferentiableMap {
  *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
  *
  *   with g and H are the gradient and Hessian of f, respectively.
- *   TODO: Test.
+ *   TODO:
+            1) Test.
+            2) Compare.
  */
 class SecondOrderTaylorApproximation : public QuadricMap {
  public:
@@ -281,6 +329,16 @@ class SquaredNorm : public DifferentiableMap {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
     return H_;
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const SquaredNorm&>(other);
+      return (f.x0_ - x0_).cwiseAbs().maxCoeff() < 1e-6;
+    }
   }
 
  protected:
@@ -335,6 +393,21 @@ class RangeSubspaceMap : public DifferentiableMap {
     return H_;
   }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const RangeSubspaceMap&>(other);
+      if (f.dim_ != dim_) return false;
+      if (f.indices_.size() != indices_.size()) return false;
+      for (size_t i = 0; i < indices_.size(); i++) {
+        if (f.indices_[i] != indices_[i]) return false;
+      }
+      return true;
+    }
+  }
+
  protected:
   void PrealocateJacobian() {
     Eigen::MatrixXd I(Eigen::MatrixXd::Identity(dim_, dim_));
@@ -376,6 +449,16 @@ class LogBarrier : public DifferentiableMap {
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x_vect) const;
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x_vect) const;
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_)
+      return false;
+    else {
+      auto f = static_cast<const LogBarrier&>(other);
+      return abs(f.margin_ - margin_) < 1e-6;
+    }
+  }
+
  protected:
   double margin_;
 };
@@ -413,6 +496,20 @@ class SoftNorm : public DifferentiableMap {
   virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const SoftNorm&>(other);
+      if (f.n_ != n_) return false;
+      if (abs(f.alpha_ - alpha_) > 1e-6) return false;
+      if (abs(f.alpha_sq_ - alpha_sq_) > 1e-6) return false;
+      if ((f.x0_ - x0_).cwiseAbs().maxCoeff() > 1e-6) return false;
+      return true;
+    }
+  }
+
  protected:
   uint32_t n_;
   double alpha_;
@@ -444,6 +541,19 @@ class LogSumExp : public DifferentiableMap {
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const override;
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const override;
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const override;
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const override {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const LogSumExp&>(other);
+      if (f.n_ != n_) return false;
+      if (abs(f.alpha_ - alpha_) > 1e-6) return false;
+      if (abs(f.inv_alpha_ - inv_alpha_) > 1e-6) return false;
+      return true;
+    }
+  }
 
  protected:
   uint32_t n_;

@@ -32,15 +32,20 @@ namespace computational_graph {
 
 class Node {
  public:
-  Node(DifferentiableMapPtr atomic_operator, uint32_t id)
-      : atomic_operator_(atomic_operator), id_(id) {}
+  Node(DifferentiableMapPtr differentiable_operator, uint32_t id)
+      : differentiable_operator_(differentiable_operator), id_(id) {}
 
   uint32_t id() const { return id_; }
-  std::string type() const { return atomic_operator_->type(); }
-  DifferentiableMapPtr atomic_operator() const { return atomic_operator_; }
+
+  DifferentiableMapPtr differentiable_operator() const {
+    return differentiable_operator_;
+  }
+
+  std::string type() const { return differentiable_operator_->type(); }
+  bool is_atomic() const { return differentiable_operator_->is_atomic(); }
 
  protected:
-  DifferentiableMapPtr atomic_operator_;
+  DifferentiableMapPtr differentiable_operator_;
   uint32_t id_;
 };
 

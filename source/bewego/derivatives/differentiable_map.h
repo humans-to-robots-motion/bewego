@@ -142,6 +142,11 @@ class DifferentiableMap {
   /** return true if it is an atomic an operator */
   bool is_atomic() const { return is_atomic_; }
 
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    return other.type_ == type_;
+  }
+
  protected:
   bool debug_;
   mutable Eigen::VectorXd y_;
@@ -154,6 +159,11 @@ class DifferentiableMap {
 
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
 using VectorOfMaps = std::vector<std::shared_ptr<const DifferentiableMap>>;
+
+/** return true if it is the same operator */
+inline bool operator==(DifferentiableMapPtr f, DifferentiableMapPtr g) {
+  return f->Compare(*g);
+}
 
 /**
  * Fill up the function_tests_ vector with test points
