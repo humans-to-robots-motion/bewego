@@ -230,6 +230,25 @@ class QuadricMap : public DifferentiableMap {
   Eigen::MatrixXd H_;
 };
 
+/**
+ *   Second-order Taylor approximation of a differentiable map.
+ *
+ *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
+ *
+ *   with g and H are the gradient and Hessian of f, respectively.
+ *   TODO: Test.
+ */
+class SecondOrderTaylorApproximation : public QuadricMap {
+ public:
+  SecondOrderTaylorApproximation(const DifferentiableMap& f,
+                                 const Eigen::VectorXd& x0);
+
+ private:
+  Eigen::VectorXd x0_;
+  Eigen::VectorXd g0_;
+  double fx0_;
+};
+
 /** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
 class SquaredNorm : public DifferentiableMap {
  public:
@@ -335,296 +354,6 @@ class RangeSubspaceMap : public DifferentiableMap {
   std::vector<uint32_t> indices_;
 };  // namespace bewego
 
-class Scale : public DifferentiableMap {
- public:
-  Scale(DifferentiableMapPtr f, double alpha) : f_(f), alpha_(alpha) {
-    type_ = "Scale";
-  }
-
-  uint32_t output_dimension() const { return f_->output_dimension(); }
-  uint32_t input_dimension() const { return f_->input_dimension(); }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    return alpha_ * f_->Forward(x);
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    return alpha_ * f_->Jacobian(x);
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    return alpha_ * f_->Hessian(x);
-  }
-
- protected:
-  DifferentiableMapPtr f_;
-  double alpha_;
-};
-
-inline DifferentiableMapPtr operator*(double scalar, DifferentiableMapPtr f) {
-  return std::make_shared<Scale>(f, scalar);
-}
-
-class Offset : public DifferentiableMap {
- public:
-  Offset(DifferentiableMapPtr f, const Eigen::VectorXd& offset)
-      : f_(f), offset_(offset) {
-    assert(offset_.size() == f_->output_dimension());
-    type_ = "Offset";
-  }
-
-  uint32_t output_dimension() const { return f_->output_dimension(); }
-  uint32_t input_dimension() const { return f_->input_dimension(); }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    return f_->Forward(x) + offset_;
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    return f_->Jacobian(x);
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    return f_->Hessian(x);
-  }
-
- protected:
-  DifferentiableMapPtr f_;
-  Eigen::VectorXd offset_;
-};
-
-inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
-                                      const Eigen::VectorXd& offset) {
-  return std::make_shared<Offset>(f, offset);
-}
-inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
-                                      const Eigen::VectorXd& offset) {
-  return std::make_shared<Offset>(f, -offset);
-}
-inline DifferentiableMapPtr operator+(DifferentiableMapPtr f, double offset) {
-  assert(f->output_dimension() == 1);
-  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, offset));
-}
-inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
-  assert(f->output_dimension() == 1);
-  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, -offset));
-}
-
-/**
- * \brief Represents the sum of a set of maps f_i.
- *
- * Details:
- *
- *   y(x) = \sum_{i=1}^N f_i(x)
- */
-class SumMap : public DifferentiableMap {
- public:
-  SumMap() {
-    maps_ = std::make_shared<VectorOfMaps>();
-    type_ = "SumMap";
-  }
-  SumMap(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
-    assert(maps_->size() > 0);
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      assert(maps_->at(i)->input_dimension() == input_dimension());
-      assert(maps_->at(i)->output_dimension() == output_dimension());
-    }
-    PreAllocate();
-    type_ = "SumMap";
-  }
-
-  virtual uint32_t input_dimension() const {
-    return maps_->back()->input_dimension();
-  }
-  virtual uint32_t output_dimension() const {
-    return maps_->back()->output_dimension();
-  }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    y_.setZero();
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      y_ += maps_->at(i)->Forward(x);
-    }
-    return y_;
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    J_.setZero();
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      J_ += maps_->at(i)->Jacobian(x);
-    }
-    return J_;
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    H_.setZero();
-    for (uint32_t i = 0; i < maps_->size(); i++) {
-      H_ += maps_->at(i)->Hessian(x);
-    }
-    return H_;
-  }
-
-  const VectorOfMaps& terms() const { return (*maps_); }
-
- protected:
-  std::shared_ptr<const VectorOfMaps> maps_;
-};
-
-inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
-                                      DifferentiableMapPtr g) {
-  auto maps = std::make_shared<VectorOfMaps>();
-  maps->push_back(f);
-  maps->push_back(g);
-  return std::make_shared<SumMap>(maps);
-}
-
-inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
-                                      DifferentiableMapPtr g) {
-  auto maps = std::make_shared<VectorOfMaps>();
-  maps->push_back(f);
-  maps->push_back(-1. * g);
-  return std::make_shared<SumMap>(maps);
-}
-
-/**
- * \brief Represents the sum of a set of maps f_i.
- *
- * Details:
- *
- *   f(x) = g(x) h(x)
- */
-class ProductMap : public DifferentiableMap {
- public:
-  ProductMap(DifferentiableMapPtr f1, DifferentiableMapPtr f2)
-      : g_(f1), h_(f2) {
-    assert(f1->input_dimension() == f2->input_dimension());
-    assert(f1->output_dimension() == 1);
-    assert(f2->output_dimension() == 1);
-    type_ = "ProductMap";
-  }
-
-  virtual uint32_t input_dimension() const { return g_->input_dimension(); }
-  virtual uint32_t output_dimension() const { return 1; }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    return (*g_)(x) * (*h_)(x);
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    double v1 = (*g_)(x)[0];
-    double v2 = (*h_)(x)[0];
-    return v1 * h_->Jacobian(x) + v2 * g_->Jacobian(x);
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(x.size() == input_dimension());
-    double v1 = (*g_)(x)[0];
-    double v2 = (*h_)(x)[0];
-    Eigen::MatrixXd J1 = g_->Jacobian(x);
-    Eigen::MatrixXd J2 = h_->Jacobian(x);
-    Eigen::MatrixXd H = v1 * h_->Hessian(x) + v2 * g_->Hessian(x);
-    return H + J1.transpose() * J2 + J2.transpose() * J1;
-  }
-
- protected:
-  DifferentiableMapPtr g_;
-  DifferentiableMapPtr h_;
-};
-
-inline DifferentiableMapPtr operator*(DifferentiableMapPtr f,
-                                      DifferentiableMapPtr g) {
-  return std::make_shared<ProductMap>(f, g);
-}
-
-// Represent a function as f(x) = argmin_i g_i(x).
-// All functions g_i must be of the same input dimensionality,
-// as specified during construction.
-// WARNING: This operator may lead to discontunious derivatives
-class Min : public DifferentiableMap {
- public:
-  // All terms must be of dimension term_dimension.
-  Min(uint32_t term_dimension) : term_dimension_(term_dimension) {
-    type_ = "Min";
-  }
-  Min(const VectorOfMaps& v) {
-    AddTerms(v);
-    type_ = "Min";
-  }
-  virtual ~Min() {}
-
-  void AddTerms(const VectorOfMaps& v) {
-    assert(v.empty() != true);
-    term_dimension_ = v.front()->input_dimension();
-    for (auto& f : v) {
-      assert(f->input_dimension() == term_dimension_);
-      assert(f->output_dimension() == 1);
-    }
-    functions_ = v;
-  }
-
-  uint32_t GetMinFunctionId(const Eigen::VectorXd& x) const {
-    double min = std::numeric_limits<double>::max();
-    uint32_t min_id = 0;
-    for (uint32_t i = 0; i < functions_.size(); i++) {
-      double value = (*functions_[i])(x)[0];
-      if (min > value) {
-        min = value;
-        min_id = i;
-      }
-    }
-    return min_id;
-  }
-
-  // Evaluates f(x) = argmin_x (x).
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    double min = std::numeric_limits<double>::max();
-    for (auto& f : functions_) {
-      double value = (*f)(x)[0];
-      if (min > value) {
-        min = value;
-      }
-    }
-    return Eigen::VectorXd::Constant(1, min);
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    return functions_[GetMinFunctionId(x)]->Jacobian(x);
-  }
-
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    return functions_[GetMinFunctionId(x)]->Hessian(x);
-  }
-
-  virtual uint32_t input_dimension() const { return term_dimension_; }
-  virtual uint32_t output_dimension() const { return 1; }
-
-  const VectorOfMaps& maps() const { return functions_; }
-
- protected:
-  VectorOfMaps functions_;
-  uint32_t term_dimension_;
-};
-
-/**
- *   Second-order Taylor approximation of a differentiable map.
- *
- *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
- *
- *   with g and H are the gradient and Hessian of f, respectively.
- *   TODO: Test.
- */
-class SecondOrderTaylorApproximation : public QuadricMap {
- public:
-  SecondOrderTaylorApproximation(const DifferentiableMap& f,
-                                 const Eigen::VectorXd& x0);
-
- private:
-  Eigen::VectorXd x0_;
-  Eigen::VectorXd g0_;
-  double fx0_;
-};
-
 /**
  *   Logarithmic Barrier
  *
@@ -649,35 +378,6 @@ class LogBarrier : public DifferentiableMap {
 
  protected:
   double margin_;
-};
-
-/** The log barrier slice */
-class LogBarrierWithApprox : public LogBarrier {
- public:
-  LogBarrierWithApprox(double max_hessian, double scalar = 1.)
-      : max_hessian_(max_hessian) {
-    SetScalar(scalar);
-    type_ = "LogBarrierWithApprox";
-  }
-
-  void SetScalar(double scalar) {
-    scalar_ = scalar;
-    x_splice_ = sqrt(scalar_ / max_hessian_);
-    approximation_ = MakeTaylorLogBarrier();
-  }
-
-  // Fix the hessian and gradient to constants
-  std::shared_ptr<DifferentiableMap> MakeTaylorLogBarrier() const;
-
-  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
-
- protected:
-  double max_hessian_;
-  double scalar_;
-  double x_splice_;
-  std::shared_ptr<DifferentiableMap> approximation_;
 };
 
 /** A smooth version of the norm function.
@@ -718,84 +418,6 @@ class SoftNorm : public DifferentiableMap {
   double alpha_;
   double alpha_sq_;
   Eigen::VectorXd x0_;
-};
-
-/** A smooth version of the distance function.
- *
- * Details:
- *
- *   f(d; \alpha) = sqrt(sq_dist + alpha^2) - alpha
- *
- *   since equality constraints are squared, using squared
- *   norms makes the optimization unstable. The regular norm
- *   is not smooth. Introduced by Tassa et al 2012 (IROS)
- *
- *   Takes as input the squared distance.
- */
-class SoftDist : public DifferentiableMap {
- public:
-  SoftDist(DifferentiableMapPtr sq_dist, double alpha = .05);
-
-  uint32_t output_dimension() const { return 1; }
-  uint32_t input_dimension() const { return sq_dist_->input_dimension(); }
-
-  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
-  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
-
- protected:
-  DifferentiableMapPtr sq_dist_;
-  double alpha_;
-  double alpha_sq_;
-};
-
-/*! \brief Creates a combination of the maps
- *
- * Details:
- *
- *   phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
- *
- * simply ``stacks" the maps output.
- * The hessian is not defined as this has > 1 output dimension
- */
-class CombinedOutputMap : public DifferentiableMap {
- public:
-  CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
-    uint32_t n = maps_.front()->input_dimension();
-    for (auto m : maps) {
-      m_ += m->output_dimension();
-      assert(n == m->input_dimension());
-    }
-    PreAllocate();
-    type_ = "CombinedOutputMap";
-  }
-
-  uint32_t output_dimension() const { return m_; }
-  uint32_t input_dimension() const { return maps_.front()->input_dimension(); }
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
-    uint32_t idx = 0;
-    for (auto m : maps_) {
-      y_.segment(idx, m->output_dimension()) = (*m)(q);
-      idx += m->output_dimension();
-    }
-    return y_;
-  }
-
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
-    uint32_t idx = 0;
-    for (auto map : maps_) {
-      uint32_t m_map = map->output_dimension();
-      uint32_t n_map = map->input_dimension();
-      J_.block(idx, 0, m_map, n_map) = map->Jacobian(q);
-      idx += m_map;
-    }
-    return J_;
-  }
-
- protected:
-  uint32_t m_;
-  VectorOfMaps maps_;
 };
 
 /*! \brief Implements a softmax between functions g_i.

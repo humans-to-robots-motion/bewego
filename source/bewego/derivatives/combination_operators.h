@@ -1,0 +1,533 @@
+/*
+ * Copyright (c) 2021
+ * All rights reserved.
+ *
+ * Redistribution  and  use  in  source  and binary  forms,  with  or  without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   1. Redistributions of  source  code must retain the  above copyright
+ *      notice and this list of conditions.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice and  this list of  conditions in the  documentation and/or
+ *      other materials provided with the distribution.
+ *
+ * THE SOFTWARE  IS PROVIDED "AS IS"  AND THE AUTHOR  DISCLAIMS ALL WARRANTIES
+ * WITH  REGARD   TO  THIS  SOFTWARE  INCLUDING  ALL   IMPLIED  WARRANTIES  OF
+ * MERCHANTABILITY AND  FITNESS.  IN NO EVENT  SHALL THE AUTHOR  BE LIABLE FOR
+ * ANY  SPECIAL, DIRECT,  INDIRECT, OR  CONSEQUENTIAL DAMAGES  OR  ANY DAMAGES
+ * WHATSOEVER  RESULTING FROM  LOSS OF  USE, DATA  OR PROFITS,  WHETHER  IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR  OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ *
+ *                                                             Thu 1 Apr 2021
+ */
+// author: Jim Mainprice, mainprice@gmail.com
+#pragma once
+
+#include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/differentiable_map.h>
+
+namespace bewego {
+
+/**
+ All DifferentiableMaps that integrate multiple sub-differentiable maps, should
+ be declared as combination operators.
+
+ This is to generate the combutational graph more
+ efficiently Not declaring these maps Combination operators will not change the
+ computational output but will definitly hinder performance when called on an
+ optimization routine.
+    */
+class CombinationOperator : public DifferentiableMap {
+ public:
+  CombinationOperator() { is_atomic_ = false; }
+  virtual VectorOfMaps nested_operators() const = 0;
+};
+
+/** f round g : f(g(q))
+
+    This function should be called pullback if we approxiate
+    higher order (i.e., hessians) derivaties by pullback, here it's
+    computing the true 1st order derivative of the composition.
+*/
+class Compose : public CombinationOperator {
+ public:
+  Compose(DifferentiableMapPtr f, DifferentiableMapPtr g) {
+    // Make sure the composition makes sense
+    assert(g->output_dimension() == f->input_dimension());
+    f_ = f;
+    g_ = g;
+    type_ = "Compose";
+  }
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return g_->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({f_, g_});
+  }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    return (*f_)((*g_)(q));
+  }
+
+  /** d/dq f(g(q)), applies chain rule.
+
+            * J_f(g(q)) J_g
+
+      If J is the jacobian of a function f(x), J_f = d/dx f(x)
+        then the jacobian of the "pullback" of f defined on the
+        range space of a map g, f(g(q)) is
+                d/dq f(g(q)) = J_f(g(q)) J_g
+        This method computes and
+        returns this "pullback gradient" J_f (g(q)) J_g(q).
+
+        WARNING: J_f is assumed to be a jacobian np.matrix object
+    */
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    return Evaluate(q).second;
+  }
+
+  /** d^2/dq^2 f(g(q)), applies chain rule.
+
+            * J_g' H_f J_g + H_g J_f,
+
+    https://en.wikipedia.org/wiki/Chain_rule (Higher derivatives)
+
+    WARNING: If n > 1, where g : R^m -> R^n, we approximate the hessian
+             to the first term. This is equivalent to considering H_g = 0
+             It can be seen as operating a pullback of the curvature
+             tensor of f by g.
+
+    https://en.wikipedia.org/wiki/Pullback_(differential_geometry)
+    */
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& q) {
+    assert(f_->output_dimension() == 1);
+    auto x = (*g_)(q);
+    auto J_g = g_->Jacobian(q);
+    Eigen::MatrixXd H = J_g.transpose() * f_->Hessian(x) * J_g;
+    if (g_->output_dimension() == 1) {
+      H += f_->Jacobian(x) * Eigen::VectorXd::Ones(input_dimension()) *
+           g_->Hessian(q);
+    }
+    return H;
+  }
+
+  // d/dq f(g(q)), applies chain rule.
+  std::pair<Eigen::VectorXd, Eigen::MatrixXd> Evaluate(
+      const Eigen::VectorXd& q) const {
+    auto g = g_->Evaluate(q);
+    auto f_o_g = f_->Evaluate(g.first);
+    return std::make_pair(f_o_g.first, f_o_g.second * g.second);
+  }
+
+ protected:
+  std::shared_ptr<const DifferentiableMap> f_;
+  std::shared_ptr<const DifferentiableMap> g_;
+};
+
+inline DifferentiableMapPtr ComposedWith(DifferentiableMapPtr f,
+                                         DifferentiableMapPtr g) {
+  return std::make_shared<Compose>(f, g);
+}
+
+class Scale : public CombinationOperator {
+ public:
+  Scale(DifferentiableMapPtr f, double alpha) : f_(f), alpha_(alpha) {
+    type_ = "Scale";
+  }
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return f_->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const { return VectorOfMaps({f_}); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return alpha_ * f_->Forward(x);
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return alpha_ * f_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    return alpha_ * f_->Hessian(x);
+  }
+
+ protected:
+  DifferentiableMapPtr f_;
+  double alpha_;
+};
+
+inline DifferentiableMapPtr operator*(double scalar, DifferentiableMapPtr f) {
+  return std::make_shared<Scale>(f, scalar);
+}
+
+class Offset : public CombinationOperator {
+ public:
+  Offset(DifferentiableMapPtr f, const Eigen::VectorXd& offset)
+      : f_(f), offset_(offset) {
+    assert(offset_.size() == f_->output_dimension());
+    type_ = "Offset";
+  }
+
+  uint32_t output_dimension() const { return f_->output_dimension(); }
+  uint32_t input_dimension() const { return f_->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const { return VectorOfMaps({f_}); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return f_->Forward(x) + offset_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return f_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return f_->Hessian(x);
+  }
+
+ protected:
+  DifferentiableMapPtr f_;
+  Eigen::VectorXd offset_;
+};
+
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
+                                      const Eigen::VectorXd& offset) {
+  return std::make_shared<Offset>(f, offset);
+}
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
+                                      const Eigen::VectorXd& offset) {
+  return std::make_shared<Offset>(f, -offset);
+}
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f, double offset) {
+  assert(f->output_dimension() == 1);
+  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, offset));
+}
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f, double offset) {
+  assert(f->output_dimension() == 1);
+  return std::make_shared<Offset>(f, Eigen::VectorXd::Constant(1, -offset));
+}
+
+/**
+ * \brief Represents the sum of a set of maps f_i.
+ *
+ * Details:
+ *
+ *   y(x) = \sum_{i=1}^N f_i(x)
+ */
+class SumMap : public CombinationOperator {
+ public:
+  SumMap() {
+    maps_ = std::make_shared<VectorOfMaps>();
+    type_ = "SumMap";
+  }
+  SumMap(std::shared_ptr<const VectorOfMaps> maps) : maps_(maps) {
+    assert(maps_->size() > 0);
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      assert(maps_->at(i)->input_dimension() == input_dimension());
+      assert(maps_->at(i)->output_dimension() == output_dimension());
+    }
+    PreAllocate();
+    type_ = "SumMap";
+  }
+
+  virtual uint32_t input_dimension() const {
+    return maps_->back()->input_dimension();
+  }
+  virtual uint32_t output_dimension() const {
+    return maps_->back()->output_dimension();
+  }
+
+  virtual VectorOfMaps nested_operators() const { return *maps_; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    y_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      y_ += maps_->at(i)->Forward(x);
+    }
+    return y_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    J_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      J_ += maps_->at(i)->Jacobian(x);
+    }
+    return J_;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    H_.setZero();
+    for (uint32_t i = 0; i < maps_->size(); i++) {
+      H_ += maps_->at(i)->Hessian(x);
+    }
+    return H_;
+  }
+
+  const VectorOfMaps& terms() const { return (*maps_); }
+
+ protected:
+  std::shared_ptr<const VectorOfMaps> maps_;
+};
+
+inline DifferentiableMapPtr operator+(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  auto maps = std::make_shared<VectorOfMaps>();
+  maps->push_back(f);
+  maps->push_back(g);
+  return std::make_shared<SumMap>(maps);
+}
+
+inline DifferentiableMapPtr operator-(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  auto maps = std::make_shared<VectorOfMaps>();
+  maps->push_back(f);
+  maps->push_back(-1. * g);
+  return std::make_shared<SumMap>(maps);
+}
+
+/**
+ * \brief Represents the sum of a set of maps f_i.
+ *
+ * Details:
+ *
+ *   f(x) = g(x) h(x)
+ */
+class ProductMap : public CombinationOperator {
+ public:
+  ProductMap(DifferentiableMapPtr f1, DifferentiableMapPtr f2)
+      : g_(f1), h_(f2) {
+    assert(f1->input_dimension() == f2->input_dimension());
+    assert(f1->output_dimension() == 1);
+    assert(f2->output_dimension() == 1);
+    type_ = "ProductMap";
+  }
+
+  virtual uint32_t input_dimension() const { return g_->input_dimension(); }
+  virtual uint32_t output_dimension() const { return 1; }
+
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({g_, h_});
+  }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    return (*g_)(x) * (*h_)(x);
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    double v1 = (*g_)(x)[0];
+    double v2 = (*h_)(x)[0];
+    return v1 * h_->Jacobian(x) + v2 * g_->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(x.size() == input_dimension());
+    double v1 = (*g_)(x)[0];
+    double v2 = (*h_)(x)[0];
+    Eigen::MatrixXd J1 = g_->Jacobian(x);
+    Eigen::MatrixXd J2 = h_->Jacobian(x);
+    Eigen::MatrixXd H = v1 * h_->Hessian(x) + v2 * g_->Hessian(x);
+    return H + J1.transpose() * J2 + J2.transpose() * J1;
+  }
+
+ protected:
+  DifferentiableMapPtr g_;
+  DifferentiableMapPtr h_;
+};
+
+inline DifferentiableMapPtr operator*(DifferentiableMapPtr f,
+                                      DifferentiableMapPtr g) {
+  return std::make_shared<ProductMap>(f, g);
+}
+
+// Represent a function as f(x) = argmin_i g_i(x).
+// All functions g_i must be of the same input dimensionality,
+// as specified during construction.
+// WARNING: This operator may lead to discontunious derivatives
+class Min : public CombinationOperator {
+ public:
+  // All terms must be of dimension term_dimension.
+  Min(uint32_t term_dimension) : term_dimension_(term_dimension) {
+    type_ = "Min";
+  }
+  Min(const VectorOfMaps& v) {
+    AddTerms(v);
+    type_ = "Min";
+  }
+  virtual ~Min() {}
+
+  virtual uint32_t input_dimension() const { return term_dimension_; }
+  virtual uint32_t output_dimension() const { return 1; }
+
+  virtual VectorOfMaps nested_operators() const { return functions_; }
+  const VectorOfMaps& maps() const { return functions_; }
+
+  void AddTerms(const VectorOfMaps& v) {
+    assert(v.empty() != true);
+    term_dimension_ = v.front()->input_dimension();
+    for (auto& f : v) {
+      assert(f->input_dimension() == term_dimension_);
+      assert(f->output_dimension() == 1);
+    }
+    functions_ = v;
+  }
+
+  uint32_t GetMinFunctionId(const Eigen::VectorXd& x) const {
+    double min = std::numeric_limits<double>::max();
+    uint32_t min_id = 0;
+    for (uint32_t i = 0; i < functions_.size(); i++) {
+      double value = (*functions_[i])(x)[0];
+      if (min > value) {
+        min = value;
+        min_id = i;
+      }
+    }
+    return min_id;
+  }
+
+  // Evaluates f(x) = argmin_x (x).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    double min = std::numeric_limits<double>::max();
+    for (auto& f : functions_) {
+      double value = (*f)(x)[0];
+      if (min > value) {
+        min = value;
+      }
+    }
+    return Eigen::VectorXd::Constant(1, min);
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    return functions_[GetMinFunctionId(x)]->Jacobian(x);
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    return functions_[GetMinFunctionId(x)]->Hessian(x);
+  }
+
+ protected:
+  VectorOfMaps functions_;
+  uint32_t term_dimension_;
+};
+
+/** A smooth version of the distance function.
+ *
+ * Details:
+ *
+ *   f(d; \alpha) = sqrt(sq_dist + alpha^2) - alpha
+ *
+ *   since equality constraints are squared, using squared
+ *   norms makes the optimization unstable. The regular norm
+ *   is not smooth. Introduced by Tassa et al 2012 (IROS)
+ *
+ *   Takes as input the squared distance.
+ */
+class SoftDist : public CombinationOperator {
+ public:
+  SoftDist(DifferentiableMapPtr sq_dist, double alpha = .05);
+
+  uint32_t output_dimension() const { return 1; }
+  uint32_t input_dimension() const { return sq_dist_->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({sq_dist_});
+  }
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  DifferentiableMapPtr sq_dist_;
+  double alpha_;
+  double alpha_sq_;
+};
+
+/*! \brief Creates a combination of the maps
+ *
+ * Details:
+ *
+ *   phi(x) = [phi1(x); phi2(x); ...; phiN(x)]
+ *
+ * simply ``stacks" the maps output.
+ * The hessian is not defined as this has > 1 output dimension
+ */
+class CombinedOutputMap : public CombinationOperator {
+ public:
+  CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
+    uint32_t n = maps_.front()->input_dimension();
+    for (auto m : maps) {
+      m_ += m->output_dimension();
+      assert(n == m->input_dimension());
+    }
+    PreAllocate();
+    type_ = "CombinedOutputMap";
+  }
+
+  uint32_t output_dimension() const { return m_; }
+  uint32_t input_dimension() const { return maps_.front()->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const { return maps_; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    for (auto m : maps_) {
+      y_.segment(idx, m->output_dimension()) = (*m)(q);
+      idx += m->output_dimension();
+    }
+    return y_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    uint32_t idx = 0;
+    for (auto map : maps_) {
+      uint32_t m_map = map->output_dimension();
+      uint32_t n_map = map->input_dimension();
+      J_.block(idx, 0, m_map, n_map) = map->Jacobian(q);
+      idx += m_map;
+    }
+    return J_;
+  }
+
+ protected:
+  uint32_t m_;
+  VectorOfMaps maps_;
+};
+
+/** The log barrier slice
+
+    TODO make a combination operator
+    */
+class LogBarrierWithApprox : public LogBarrier {
+ public:
+  LogBarrierWithApprox(double max_hessian, double scalar = 1.)
+      : max_hessian_(max_hessian) {
+    SetScalar(scalar);
+    type_ = "LogBarrierWithApprox";
+  }
+
+  void SetScalar(double scalar) {
+    scalar_ = scalar;
+    x_splice_ = sqrt(scalar_ / max_hessian_);
+    approximation_ = MakeTaylorLogBarrier();
+  }
+
+  // Fix the hessian and gradient to constants
+  std::shared_ptr<DifferentiableMap> MakeTaylorLogBarrier() const;
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  double max_hessian_;
+  double scalar_;
+  double x_splice_;
+  std::shared_ptr<DifferentiableMap> approximation_;
+};
+
+};  // namespace bewego

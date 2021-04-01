@@ -1,6 +1,7 @@
 // Copyright (c) 2019, Universität Stuttgart.  All rights reserved.
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/derivatives/atomic_operators.h>
+#include <bewego/derivatives/combination_operators.h>
 #include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
