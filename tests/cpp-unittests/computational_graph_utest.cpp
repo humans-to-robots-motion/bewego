@@ -16,7 +16,7 @@ using std::endl;
 std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
-static const uint32_t T = 10;
+static const uint32_t T = 1;
 
 TEST(computational_graph, motion_objective) {
   std::srand(SEED);
@@ -39,8 +39,7 @@ TEST(computational_graph, motion_objective) {
   // T : FiniteDifferencesAcceleration
 
   cout << " -- Nb of cliques : " << network->nb_cliques() << endl;
-  cout << " -- Nb of nodes : " << graph->nodes().size() << endl;
-  cout << " -- Nb of edges : " << graph->edges().size() << endl;
+  graph->Print();
 
   ASSERT_EQ(graph->nodes().size(), 5 * T + 1);
   ASSERT_EQ(graph->edges().size(), 5 * T);

@@ -32,6 +32,8 @@ namespace computational_graph {
 
 class Node {
  public:
+  Node(DifferentiableMapPtr differentiable_operator)
+      : differentiable_operator_(differentiable_operator), id_(0) {}
   Node(DifferentiableMapPtr differentiable_operator, uint32_t id)
       : differentiable_operator_(differentiable_operator), id_(id) {}
 
@@ -49,12 +51,17 @@ class Node {
   uint32_t id_;
 };
 
+using NodePtr = std::shared_ptr<Node>;
+
 class Graph {
  public:
   Graph() {}
 
   /** Transform the network into a graph */
   void BuildFromNetwork(DifferentiableMapPtr network);
+
+  /** Print all edges */
+  void Print() const;
 
   /** Accessors */
   const std::vector<std::shared_ptr<Node>>& nodes() const { return nodes_; }

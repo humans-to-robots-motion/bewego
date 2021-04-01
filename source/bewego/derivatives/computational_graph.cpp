@@ -29,29 +29,48 @@
 
 #include <queue>
 
+using namespace bewego;
 using namespace bewego::computational_graph;
 using std::cout;
 using std::endl;
 
+struct NodeWithParent {
+  NodeWithParent() {}
+  NodeWithParent(DifferentiableMapPtr f, NodePtr n) : function(f), parent(n) {}
+  DifferentiableMapPtr function;
+  NodePtr parent;
+};
+
 void Graph::BuildFromNetwork(DifferentiableMapPtr network) {
-  uint id = 0;
+  int id = 0;
   nodes_.clear();
-  DifferentiableMapPtr f;
-  std::queue<DifferentiableMapPtr> diff_operators;
-  diff_operators.push(network);
+  NodeWithParent f;
+  std::queue<NodeWithParent> diff_operators;
+  diff_operators.push(NodeWithParent(network, NodePtr()));
   while (!diff_operators.empty()) {
     f = diff_operators.front();
-    auto node_f = std::make_shared<Node>(f, id++);
-    nodes_.push_back(node_f);
+    auto f_node = std::make_shared<Node>(f.function, id++);
+    nodes_.push_back(f_node);
+    if (f.parent) {
+      edges_.push_back(std::make_pair(f.parent->id(), f_node->id()));
+    }
     // cout << "add node : " << f->type() << endl;
-    if (!f->is_atomic()) {
-      auto f_c = std::dynamic_pointer_cast<const CombinationOperator>(f);
+    if (!f.function->is_atomic()) {
+      auto f_c =
+          std::dynamic_pointer_cast<const CombinationOperator>(f.function);
       for (auto g : f_c->nested_operators()) {
-        auto node_g = std::make_shared<Node>(g, id++);
-        edges_.push_back(std::make_pair(node_f->id(), node_g->id()));
-        diff_operators.push(g);
+        diff_operators.push(NodeWithParent(g, f_node));
       }
     }
     diff_operators.pop();
+  }
+}
+
+void Graph::Print() const {
+  cout << " -- Nb of nodes : " << nodes_.size() << endl;
+  cout << " -- Nb of edges : " << edges_.size() << endl;
+  for (auto edge : edges_) {
+    cout << "edge : " << nodes_[edge.first]->type() << " - to - "
+         << nodes_[edge.second]->type() << endl;
   }
 }
