@@ -66,11 +66,18 @@ void Graph::BuildFromNetwork(DifferentiableMapPtr network) {
   }
 }
 
+void Graph::RemoveRedundantEdges() {
+  for (auto edge : edges_) {
+    cout << "edge 1" << endl;
+  }
+}
+
 void Graph::Print() const {
   cout << " -- Nb of nodes : " << nodes_.size() << endl;
   cout << " -- Nb of edges : " << edges_.size() << endl;
   for (auto edge : edges_) {
     cout << "edge : " << nodes_[edge.first]->type() << " - to - "
-         << nodes_[edge.second]->type() << endl;
+         << nodes_[edge.second]->type() << " : ( " << edge.first << " , "
+         << edge.second << " )" << endl;
   }
 }

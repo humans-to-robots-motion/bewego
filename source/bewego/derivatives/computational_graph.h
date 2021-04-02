@@ -60,6 +60,9 @@ class Graph {
   /** Transform the network into a graph */
   void BuildFromNetwork(DifferentiableMapPtr network);
 
+  /** Removes the redundant edges */
+  void RemoveRedundantEdges();
+
   /** Print all edges */
   void Print() const;
 

@@ -275,7 +275,7 @@ class Rectangle : public WorkspaceObject {
  to get the surfaces simply use workspace->ExtractSurfaceFunctions
  there is a surface per object in the workspace
  */
-class SmoothCollisionConstraints : public DifferentiableMap {
+class SmoothCollisionConstraints : public CombinationOperator {
  public:
   SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma,
                              double margin = 0);
@@ -285,7 +285,6 @@ class SmoothCollisionConstraints : public DifferentiableMap {
    * @return a vector of signed distance function defined over
    * configuration space. One for each collsion point
    */
-  VectorOfMaps constraints() const { return signed_distance_functions_; }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return f_->input_dimension(); }
@@ -299,6 +298,10 @@ class SmoothCollisionConstraints : public DifferentiableMap {
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     return f_->Hessian(x);
   }
+
+  virtual VectorOfMaps nested_operators() const { return VectorOfMaps({f_}); }
+
+  VectorOfMaps constraints() const { return signed_distance_functions_; }
 
  protected:
   DifferentiableMapPtr ConstructSmoothConstraint();

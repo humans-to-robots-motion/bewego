@@ -44,3 +44,33 @@ TEST(computational_graph, motion_objective) {
   ASSERT_EQ(graph->nodes().size(), 5 * T + 1);
   ASSERT_EQ(graph->edges().size(), 5 * T);
 }
+
+TEST(computational_graph, remove_redundant_edges) {
+  std::srand(SEED);
+  double precision = 1e-6;
+  uint32_t n = 1;
+  double dt = .01;
+  auto objective = std::make_shared<MotionObjective>(T, dt, n);
+  objective->AddSphere(Eigen::Vector2d::Zero(), .1);
+  objective->AddSmoothnessTerms(1, .1);
+  objective->AddObstacleTerms(1, 10, 0);
+  auto network = objective->function_network();
+
+  auto graph = std::make_shared<Graph>();
+  graph->BuildFromNetwork(network);
+
+  // Nodes -----------------------------
+  // 1 : CliquesFunctionNetwork
+  // T : SumMap
+  // T : Scale
+  // T : SquaredNormAcceleration
+  // T : SquaredNorm
+  // T : FiniteDifferencesAcceleration
+
+  cout << "------------------------------" << endl;
+  cout << " -- Nb of cliques : " << network->nb_cliques() << endl;
+  graph->Print();
+
+  // ASSERT_EQ(graph->nodes().size(), 5 * T + 1);
+  // ASSERT_EQ(graph->edges().size(), 5 * T);
+}
