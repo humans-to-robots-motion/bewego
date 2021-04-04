@@ -17,6 +17,19 @@ std::shared_ptr<DifferentiableMap> f;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
 
+TEST(differentiable_map, equality) {
+  std::srand(SEED);
+
+  Eigen::VectorXd v1 = util::Random(3);
+  Eigen::VectorXd v2 = util::Random(3);
+  Eigen::VectorXd v3 = v1;
+  Eigen::VectorXd v4 = v2;
+
+  ASSERT_TRUE(v1 == v3);
+  ASSERT_TRUE(v2 == v4);
+  ASSERT_FALSE(v1 == v2);
+}
+
 TEST(atomic_operators, zero_map) {
   std::srand(SEED);
 

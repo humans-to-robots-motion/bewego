@@ -157,6 +157,74 @@ class DifferentiableMap {
   bool is_atomic_;
 };
 
+/** Constructs a simple cache system that checks of the
+    the function has been called with the same argument
+    and returns the stored value when this is the case */
+class CachedDifferentiableMap : public DifferentiableMap {
+ public:
+  CachedDifferentiableMap() { reset_cache(); }
+
+  virtual uint32_t output_dimension() const = 0;
+  virtual uint32_t input_dimension() const = 0;
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    if (y_is_cached_ && x == x_y_) return y_;
+    x_y_ = x;
+    y_ = Forward_(x);
+    y_is_cached_ = true;
+    return y_;
+  }
+
+  virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
+    if (g_is_cached_ && x == x_g_) return g_;
+    x_g_ = x;
+    g_ = Gradient_(x);
+    g_is_cached_ = true;
+    return g_;
+  }
+
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    if (J_is_cached_ && x == x_J_) return J_;
+    x_J_ = x;
+    J_ = Jacobian_(x);
+    J_is_cached_ = true;
+    return J_;
+  }
+
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    if (H_is_cached_ && x == x_H_) return H_;
+    x_H_ = x;
+    H_ = Hessian_(x);
+    H_is_cached_ = true;
+    return H_;
+  }
+
+  virtual Eigen::VectorXd Forward_(const Eigen::VectorXd& x) const = 0;
+  virtual Eigen::MatrixXd Jacobian_(const Eigen::VectorXd& x) const = 0;
+  virtual Eigen::MatrixXd Hessian_(const Eigen::VectorXd& x) const = 0;
+  virtual Eigen::VectorXd Gradient_(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    return Jacobian_(x).row(0);
+  }
+
+  void reset_cache() const {
+    y_is_cached_ = false;
+    g_is_cached_ = false;
+    J_is_cached_ = false;
+    H_is_cached_ = false;
+  }
+
+ protected:
+  mutable Eigen::VectorXd x_y_;
+  mutable Eigen::VectorXd x_g_;
+  mutable Eigen::VectorXd x_J_;
+  mutable Eigen::VectorXd x_H_;
+  mutable bool y_is_cached_;
+  mutable bool g_is_cached_;
+  mutable bool J_is_cached_;
+  mutable bool H_is_cached_;
+};
+
 using DifferentiableMapPtr = std::shared_ptr<const DifferentiableMap>;
 using VectorOfMaps = std::vector<DifferentiableMapPtr>;
 

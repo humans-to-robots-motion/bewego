@@ -26,11 +26,13 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/combination_operators.h>
 #include <bewego/derivatives/computational_graph.h>
+#include <bewego/util/misc.h>
 
 #include <queue>
 
 using namespace bewego;
 using namespace bewego::computational_graph;
+using namespace bewego::util;
 using std::cout;
 using std::endl;
 
@@ -80,4 +82,18 @@ void Graph::Print() const {
          << nodes_[edge.second]->type() << " : ( " << edge.first << " , "
          << edge.second << " )" << endl;
   }
+}
+
+std::string Graph::WriteToDot() const {
+  std::string dot_str = "";
+  dot_str += "digraph bewego_computational_graph {\n";
+  for (auto edge : edges_) {
+    auto s = nodes_[edge.first];
+    auto t = nodes_[edge.second];
+    std::string source_id = s->type() + "_" + LeftPaddingWithZeros(s->id(), 5);
+    std::string target_id = t->type() + "_" + LeftPaddingWithZeros(t->id(), 5);
+    dot_str += source_id + "->" + target_id + "\n";
+  }
+  dot_str += "}\n";
+  return dot_str;
 }

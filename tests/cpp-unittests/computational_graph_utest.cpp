@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/derivatives/computational_graph.h>
 #include <bewego/motion/objective.h>
+#include <bewego/util/misc.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -70,6 +71,7 @@ TEST(computational_graph, remove_redundant_edges) {
   cout << "------------------------------" << endl;
   cout << " -- Nb of cliques : " << network->nb_cliques() << endl;
   graph->Print();
+  util::SaveStringOnDisk("computational_graph.dot", graph->WriteToDot());
 
   // ASSERT_EQ(graph->nodes().size(), 5 * T + 1);
   // ASSERT_EQ(graph->edges().size(), 5 * T);

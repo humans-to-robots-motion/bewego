@@ -27,6 +27,8 @@
 
 #include <bewego/derivatives/differentiable_map.h>
 
+#include <string>
+
 namespace bewego {
 namespace computational_graph {
 
@@ -65,6 +67,9 @@ class Graph {
 
   /** Print all edges */
   void Print() const;
+
+  /** Write to Dot format */
+  std::string WriteToDot() const;
 
   /** Accessors */
   const std::vector<std::shared_ptr<Node>>& nodes() const { return nodes_; }
