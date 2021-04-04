@@ -46,6 +46,8 @@ class CombinationOperator : public DifferentiableMap {
     throw std::runtime_error(
         "CombinationOperator does not implement nested_operators");
   }
+  virtual VectorOfMaps ouput_operators() const { return VectorOfMaps(); }
+  virtual VectorOfMaps input_operators() const { return nested_operators(); }
 };
 
 /** f round g : f(g(q))
@@ -70,6 +72,8 @@ class Compose : public CombinationOperator {
   virtual VectorOfMaps nested_operators() const {
     return VectorOfMaps({f_, g_});
   }
+  virtual VectorOfMaps ouput_operators() const { return VectorOfMaps({f_}); }
+  virtual VectorOfMaps input_operators() const { return VectorOfMaps({g_}); }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
     return (*f_)((*g_)(q));

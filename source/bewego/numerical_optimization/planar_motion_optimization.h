@@ -45,8 +45,7 @@ class PlanarOptimizer : public MotionObjective {
   void AddKeyPointsSurfaceConstraints(double margin, double scalar);
 
   /** @brief Adds collision constraints with the environment */
-  void AddSmoothKeyPointsSurfaceConstraints(double margin, double gamma,
-                                            double scalar);
+  void AddSmoothKeyPointsSurfaceConstraints(double scalar);
 
   /** @brief Adds goal constraint */
   void AddInequalityConstraintToEachActiveClique(DifferentiableMapPtr phi,

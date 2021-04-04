@@ -86,6 +86,16 @@ class SquaredNormDerivative : public CombinationOperator {
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return derivative_->input_dimension(); }
 
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({sq_norm_, derivative_});
+  }
+  virtual VectorOfMaps ouput_operators() const {
+    return VectorOfMaps({sq_norm_});
+  }
+  virtual VectorOfMaps input_operators() const {
+    return VectorOfMaps({derivative_});
+  }
+
   Eigen::VectorXd Forward(const Eigen::VectorXd& clique) const {
     return (*sq_norm_)((*derivative_)(clique));
   }
@@ -96,10 +106,6 @@ class SquaredNormDerivative : public CombinationOperator {
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& clique) const {
     return derivative_->a().transpose() * derivative_->a();
-  }
-
-  virtual VectorOfMaps nested_operators() const {
-    return VectorOfMaps({sq_norm_, derivative_});
   }
 
  protected:
@@ -136,6 +142,7 @@ inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
   return std::make_shared<SquaredNormAcceleration>(n, dt);
 }
 
+/**  f(x) = rho_scaling * exp(-alpha * SDF(x))  */
 class ObstaclePotential : public CombinationOperator {
  public:
   ObstaclePotential() { type_ = "ObstaclePotential"; }
@@ -151,13 +158,13 @@ class ObstaclePotential : public CombinationOperator {
   virtual uint32_t input_dimension() const { return ambient_space_dim_; }
   virtual uint32_t output_dimension() const { return 1; }
 
+  virtual VectorOfMaps nested_operators() const {
+    return VectorOfMaps({signed_distance_field_});
+  }
+
   // Returns a pointer to the sdf
   std::shared_ptr<const DifferentiableMap> signed_distance_field() const {
     return signed_distance_field_;
-  }
-
-  virtual VectorOfMaps nested_operators() const {
-    return VectorOfMaps({signed_distance_field_});
   }
 
  private:

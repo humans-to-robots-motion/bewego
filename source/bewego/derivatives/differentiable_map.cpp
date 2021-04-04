@@ -105,6 +105,62 @@ bool DifferentiableMap::CheckHessian(double precision) const {
   return H.isApprox(H_diff, precision);
 }
 
+//-----------------------------------------------------------------------------
+// CachedDifferentiableMap implementation.
+//-----------------------------------------------------------------------------
+
+Eigen::VectorXd CachedDifferentiableMap::Forward(
+    const Eigen::VectorXd& x) const {
+  if (y_is_cached_ && x == x_y_) {
+    // std::cout << "Use Cached Forward!" << std::endl;
+    return y_;
+  }
+  x_y_ = x;
+  y_ = Forward_(x);
+  y_is_cached_ = true;
+  return y_;
+}
+
+Eigen::VectorXd CachedDifferentiableMap::Gradient(
+    const Eigen::VectorXd& x) const {
+  if (g_is_cached_ && x == x_g_) {
+    // std::cout << "Use Cached Gradient!" << std::endl;
+    return g_;
+  }
+  x_g_ = x;
+  g_ = Gradient_(x);
+  g_is_cached_ = true;
+  return g_;
+}
+
+Eigen::MatrixXd CachedDifferentiableMap::Jacobian(
+    const Eigen::VectorXd& x) const {
+  if (J_is_cached_ && x == x_J_) {
+    // std::cout << "Use Cached Jacobian!" << std::endl;
+    return J_;
+  }
+  x_J_ = x;
+  J_ = Jacobian_(x);
+  J_is_cached_ = true;
+  return J_;
+}
+
+Eigen::MatrixXd CachedDifferentiableMap::Hessian(
+    const Eigen::VectorXd& x) const {
+  if (H_is_cached_ && x == x_H_) {
+    std::cout << "Use Cached hessian!" << std::endl;
+    return H_;
+  }
+  x_H_ = x;
+  H_ = Hessian_(x);
+  H_is_cached_ = true;
+  return H_;
+}
+
+//-----------------------------------------------------------------------------
+// DifferentialMapTest implementation.
+//-----------------------------------------------------------------------------
+
 void DifferentialMapTest::FiniteDifferenceTest(
     std::shared_ptr<const DifferentiableMap> f,
     const Eigen::VectorXd& x) const {

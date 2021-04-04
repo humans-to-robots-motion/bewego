@@ -48,9 +48,27 @@ class Node {
   std::string type() const { return differentiable_operator_->type(); }
   bool is_atomic() const { return differentiable_operator_->is_atomic(); }
 
+  void add_parent(std::shared_ptr<const Node> n) { parents_.push_back(n); }
+  void add_child(std::shared_ptr<const Node> n) { children_.push_back(n); }
+  void add_input(std::shared_ptr<const Node> n) { input_nodes_.push_back(n); }
+
+  /** Accessors */
+  const std::vector<std::shared_ptr<const Node>>& parents() const {
+    return parents_;
+  }
+  const std::vector<std::shared_ptr<const Node>>& children() const {
+    return children_;
+  }
+  const std::vector<std::shared_ptr<const Node>>& input_nodes() const {
+    return input_nodes_;
+  }
+
  protected:
   DifferentiableMapPtr differentiable_operator_;
   uint32_t id_;
+  std::vector<std::shared_ptr<const Node>> parents_;
+  std::vector<std::shared_ptr<const Node>> children_;
+  std::vector<std::shared_ptr<const Node>> input_nodes_;
 };
 
 using NodePtr = std::shared_ptr<Node>;
@@ -58,12 +76,30 @@ using NodePtr = std::shared_ptr<Node>;
 class Graph {
  public:
   Graph() {}
+  Graph(DifferentiableMapPtr network) { BuildFromNetwork(network); }
 
   /** Transform the network into a graph */
   void BuildFromNetwork(DifferentiableMapPtr network);
 
+  /** Nagivate the graph and build the input edge structure */
+  void BuildInputEdges();
+
   /** Removes the redundant edges */
   void RemoveRedundantEdges();
+
+  /** Return true if edge in graph */
+  bool DoesEdgeExist(
+      const std::pair<uint32_t, uint32_t>& edge,
+      const std::vector<std::pair<uint32_t, uint32_t>>& edges) const;
+
+  DifferentiableMapPtr ExtractSubGraph(
+      std::shared_ptr<const Node> root_graph,
+      std::shared_ptr<const Graph> sub_graph) const;
+  bool IsSubGraph(std::shared_ptr<const Node> root_graph,
+                  std::shared_ptr<const Graph> sub_graph) const;
+
+  /** Removes the redundant edges */
+  DifferentiableMapPtr FindSubGraph(DifferentiableMapPtr f) const;
 
   /** Print all edges */
   void Print() const;
@@ -80,6 +116,8 @@ class Graph {
  protected:
   std::vector<std::shared_ptr<Node>> nodes_;
   std::vector<std::pair<uint32_t, uint32_t>> edges_;
+  std::vector<std::pair<uint32_t, uint32_t>> input_edges_;
+  std::vector<std::pair<uint32_t, uint32_t>> output_edges_;
 };
 
 }  // namespace computational_graph

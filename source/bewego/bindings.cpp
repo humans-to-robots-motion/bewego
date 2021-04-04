@@ -208,9 +208,13 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("add_terminal_potential_terms",
            &bewego::MotionObjective::AddTerminalPotentialTerms)
       .def("add_waypoint_terms", &bewego::MotionObjective::AddWayPointTerms)
+
       .def("add_sphere", &bewego::MotionObjective::AddSphere)
       .def("add_box", &bewego::MotionObjective::AddBox)
       .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
+      .def("set_sdf_gamma", &bewego::MotionObjective::SetSDFGamma)
+      .def("set_sdf_margin", &bewego::MotionObjective::SetSDFMargin)
+
       .def("objective", &bewego::MotionObjective::objective)
       .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
 
@@ -258,16 +262,18 @@ PYBIND11_MODULE(_pybewego, m) {
            &opt::PlanarOptimizer::AddWayPointManifoldConstraint)
 
       // Objectives
-      .def("add_smoothness_terms", &bewego::MotionObjective::AddSmoothnessTerms)
+      .def("add_smoothness_terms", &opt::PlanarOptimizer::AddSmoothnessTerms)
       .def("add_obstacle_terms", &opt::PlanarOptimizer::AddObstacleTerms)
       .def("add_terminal_potential_terms",
-           &bewego::MotionObjective::AddTerminalPotentialTerms)
+           &opt::PlanarOptimizer::AddTerminalPotentialTerms)
       .def("add_waypoint_terms", &opt::PlanarOptimizer::AddWayPointTerms)
 
       // Workspace
       .def("add_sphere", &opt::PlanarOptimizer::AddSphere)
       .def("add_box", &opt::PlanarOptimizer::AddBox)
       .def("clear_workspace", &opt::PlanarOptimizer::ClearWorkspace)
+      .def("set_sdf_gamma", &opt::PlanarOptimizer::SetSDFGamma)
+      .def("set_sdf_margin", &opt::PlanarOptimizer::SetSDFMargin)
 
       // Functions
       .def("set_trajectory_publisher",

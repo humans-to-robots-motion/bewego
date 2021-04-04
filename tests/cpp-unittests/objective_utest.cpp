@@ -47,7 +47,7 @@ TEST(objective, construct) {
   // Objectives
   objective->AddSmoothnessTerms(1, .1);
   objective->AddSmoothnessTerms(2, .2);
-  objective->AddObstacleTerms(1.2, 10, 0);
+  objective->AddObstacleTerms(1.2, 10);
   objective->AddWayPointTerms(Eigen::Vector2d(0, 0), 5, .7);
   objective->AddTerminalPotentialTerms(Eigen::Vector2d(-1, 1), .6);
 

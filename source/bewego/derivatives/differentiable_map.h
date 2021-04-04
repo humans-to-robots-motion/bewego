@@ -167,38 +167,13 @@ class CachedDifferentiableMap : public DifferentiableMap {
   virtual uint32_t output_dimension() const = 0;
   virtual uint32_t input_dimension() const = 0;
 
-  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    if (y_is_cached_ && x == x_y_) return y_;
-    x_y_ = x;
-    y_ = Forward_(x);
-    y_is_cached_ = true;
-    return y_;
-  }
+  // Using cache.
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
 
-  virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
-    if (g_is_cached_ && x == x_g_) return g_;
-    x_g_ = x;
-    g_ = Gradient_(x);
-    g_is_cached_ = true;
-    return g_;
-  }
-
-  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    if (J_is_cached_ && x == x_J_) return J_;
-    x_J_ = x;
-    J_ = Jacobian_(x);
-    J_is_cached_ = true;
-    return J_;
-  }
-
-  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    if (H_is_cached_ && x == x_H_) return H_;
-    x_H_ = x;
-    H_ = Hessian_(x);
-    H_is_cached_ = true;
-    return H_;
-  }
-
+  // Implementation
   virtual Eigen::VectorXd Forward_(const Eigen::VectorXd& x) const = 0;
   virtual Eigen::MatrixXd Jacobian_(const Eigen::VectorXd& x) const = 0;
   virtual Eigen::MatrixXd Hessian_(const Eigen::VectorXd& x) const = 0;
@@ -231,6 +206,11 @@ using VectorOfMaps = std::vector<DifferentiableMapPtr>;
 /** return true if it is the same operator */
 inline bool operator==(DifferentiableMapPtr f, DifferentiableMapPtr g) {
   return f->Compare(*g);
+}
+
+/** return true if it is the same operator */
+inline bool operator!=(DifferentiableMapPtr f, DifferentiableMapPtr g) {
+  return !f->Compare(*g);
 }
 
 /**

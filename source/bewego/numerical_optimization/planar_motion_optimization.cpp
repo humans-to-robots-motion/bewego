@@ -204,9 +204,7 @@ void PlanarOptimizer::AddInequalityConstraintToEachActiveClique(
   }
 }
 
-void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
-                                                           double gamma,
-                                                           double scalar) {
+void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double scalar) {
   if (workspace_objects_.empty()) {
     cerr << "WARNING: no obstacles are in the workspace" << endl;
     return;
@@ -214,15 +212,15 @@ void PlanarOptimizer::AddSmoothKeyPointsSurfaceConstraints(double margin,
   assert(function_network_.get() != nullptr);
   assert(n_ == 2);
 
-  // Create clique constraint function phi
-  auto surfaces = workspace_->ExtractSurfaceFunctions();
-  auto sdf =
-      std::make_shared<SmoothCollisionConstraints>(surfaces, gamma, margin);
-  auto phi = ComposedWith(sdf, function_network_->CenterOfCliqueMap());
-
-  AddInequalityConstraintToEachActiveClique(phi, scalar);
-  // auto phi = TrajectoryConstraintNetwork(T_, n_, sdf, gamma);
-  // g_constraints_unstructured_.push_back(scalar * phi);
+  // we use a vector of smooth distance to efficiently use cache
+  uint32_t dim = function_network_->input_dimension();
+  for (uint32_t t = 0; t < T_; t++) {
+    auto network = std::make_shared<FunctionNetwork>(dim, n_);
+    auto center_clique = function_network_->CenterOfCliqueMap();
+    auto phi = ComposedWith(smooth_sdf_[t], center_clique);
+    network->RegisterFunctionForClique(t, dt_ * scalar * phi);
+    g_constraints_.push_back(network);
+  }
 }
 
 void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,

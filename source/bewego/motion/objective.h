@@ -55,11 +55,11 @@ class MotionObjective {
         The resulting Riemanian metric is isometric. TODO see paper.
         Introduced in CHOMP, Ratliff et al. 2009.
   **/
-  void AddIsometricPotentialToAllCliques(DifferentiableMapPtr potential,
-                                         double scalar);
+  void AddIsometricPotentialToClique(DifferentiableMapPtr potential, uint32_t t,
+                                     double scalar);
 
   /** Takes a matrix and adds an isometric potential term to all clique */
-  void AddObstacleTerms(double scalar, double alpha, double margin);
+  void AddObstacleTerms(double scalar, double alpha);
 
   /** Add terminal potential
 
@@ -80,8 +80,23 @@ class MotionObjective {
   /** Add Box to Workspace (2D for now) */
   void AddBox(const Eigen::VectorXd& center, const Eigen::VectorXd& dimension);
 
+  /** Reconstruct Workspace and Obstacle fields **/
+  void ReconstructWorkspace();
+
   /** Removes the objects from the workspace */
   void ClearWorkspace();
+
+  /** Set the distance field smoothness */
+  void SetSDFGamma(double v) {
+    gamma_ = v;
+    ReconstructWorkspace();
+  }
+
+  /** Set the distance field margin */
+  void SetSDFMargin(double v) {
+    obstacle_margin_ = v;
+    ReconstructWorkspace();
+  }
 
   std::shared_ptr<const CliquesFunctionNetwork> function_network() const {
     return function_network_;
@@ -101,13 +116,16 @@ class MotionObjective {
 
  protected:
   bool verbose_;
-  double T_;   // Number of active cliques
-  double dt_;  // time interval between cliques
-  double n_;   // Dimensionality of the configuration space
+  double T_;                // Number of active cliques
+  double dt_;               // time interval between cliques
+  double n_;                // Dimensionality of the configuration space
+  double gamma_;            // Smoothing parameter of the SDF
+  double obstacle_margin_;  // Margin parameter of the SDF
   std::shared_ptr<CliquesFunctionNetwork> function_network_;
   std::shared_ptr<Workspace> workspace_;
   std::vector<std::shared_ptr<const WorkspaceObject>> workspace_objects_;
   std::shared_ptr<ObstaclePotential> obstacle_potential_;
+  std::vector<DifferentiableMapPtr> smooth_sdf_;
 };
 
 }  // namespace bewego

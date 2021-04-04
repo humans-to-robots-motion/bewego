@@ -275,7 +275,7 @@ class Rectangle : public WorkspaceObject {
  to get the surfaces simply use workspace->ExtractSurfaceFunctions
  there is a surface per object in the workspace
  */
-class SmoothCollisionConstraints : public CombinationOperator {
+class SmoothCollisionConstraints : public CachedDifferentiableMap {
  public:
   SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma,
                              double margin = 0);
@@ -289,13 +289,13 @@ class SmoothCollisionConstraints : public CombinationOperator {
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return f_->input_dimension(); }
 
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+  Eigen::VectorXd Forward_(const Eigen::VectorXd& x) const {
     return f_->Forward(x);
   }
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+  Eigen::MatrixXd Jacobian_(const Eigen::VectorXd& x) const {
     return f_->Jacobian(x);
   }
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+  Eigen::MatrixXd Hessian_(const Eigen::VectorXd& x) const {
     return f_->Hessian(x);
   }
 

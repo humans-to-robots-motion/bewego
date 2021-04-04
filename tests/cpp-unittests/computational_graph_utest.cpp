@@ -54,7 +54,7 @@ TEST(computational_graph, remove_redundant_edges) {
   auto objective = std::make_shared<MotionObjective>(T, dt, n);
   objective->AddSphere(Eigen::Vector2d::Zero(), .1);
   objective->AddSmoothnessTerms(1, .1);
-  objective->AddObstacleTerms(1, 10, 0);
+  objective->AddObstacleTerms(1, 10);
   auto network = objective->function_network();
 
   auto graph = std::make_shared<Graph>();

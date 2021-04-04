@@ -138,10 +138,11 @@ class MotionOptimization:
                 2, scalars.s_acceleration_norm)
 
         if scalars.s_obstacles > 0:
+            self.problem.set_sdf_gamma(scalars.s_obstacle_gamma)
+            self.problem.set_sdf_margin(scalars.s_obstacle_margin)
             self.problem.add_obstacle_terms(
                 scalars.s_obstacles,
-                scalars.s_obstacle_alpha,
-                scalars.s_obstacle_margin)
+                scalars.s_obstacle_alpha)
 
         if scalars.s_terminal_potential > 0:
             self.problem.add_terminal_potential_terms(
@@ -254,10 +255,11 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             if scalars.s_obstacles > 0:
                 print("-- add obstaces term ({})".format(
                     scalars.s_obstacles))
+                self.problem.set_sdf_gamma(scalars.s_obstacle_gamma)
+                self.problem.set_sdf_margin(scalars.s_obstacle_margin)
                 self.problem.add_obstacle_terms(
                     scalars.s_obstacles,
-                    scalars.s_obstacle_alpha,
-                    scalars.s_obstacle_margin)
+                    scalars.s_obstacle_alpha)
 
             if ((not self.with_goal_constraint) and
                     (scalars.s_terminal_potential > 0)):
@@ -295,8 +297,6 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                     scalars.s_obstacle_constraint))
                 if self.with_smooth_obstale_constraint:
                     self.problem.add_smooth_keypoints_surface_constraints(
-                        scalars.s_obstacle_margin,
-                        scalars.s_obstacle_gamma,
                         scalars.s_obstacle_constraint)
                 else:
                     self.problem.add_keypoints_surface_constraints(

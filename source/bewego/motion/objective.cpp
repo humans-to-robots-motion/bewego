@@ -43,6 +43,8 @@ MotionObjective::MotionObjective(uint32_t T, double dt,
       std::make_shared<CliquesFunctionNetwork>((T_ + 2) * n_, n_);
   workspace_objects_.clear();
   workspace_ = std::make_shared<Workspace>(workspace_objects_);
+  gamma_ = 40;
+  obstacle_margin_ = 0;
   ClearWorkspace();
 }
 
@@ -60,27 +62,27 @@ void MotionObjective::AddSmoothnessTerms(uint32_t deriv_order, double scalar) {
   function_network_->RegisterFunctionForAllCliques(dt_ * scalar * derivative);
 }
 
-void MotionObjective::AddIsometricPotentialToAllCliques(
-    DifferentiableMapPtr potential, double scalar) {
+void MotionObjective::AddIsometricPotentialToClique(
+    DifferentiableMapPtr potential, uint32_t t, double scalar) {
   auto center_clique = function_network_->CenterOfCliqueMap();
   auto right_clique = function_network_->RightOfCliqueMap();
-  auto phi = ComposedWith(potential, center_clique);
   auto sq_norm_vel = ComposedWith(SquaredVelocityNorm(n_, dt_), right_clique);
-  auto cost = dt_ * scalar * (phi * sq_norm_vel);
-  function_network_->RegisterFunctionForAllCliques(cost);
+  auto phi = ComposedWith(potential, center_clique);
+  function_network_->RegisterFunctionForClique(
+      t, dt_ * scalar * (phi * sq_norm_vel));
 }
 
-void MotionObjective::AddObstacleTerms(double scalar, double alpha,
-                                       double margin) {
+void MotionObjective::AddObstacleTerms(double scalar, double alpha) {
   if (workspace_objects_.empty()) {
     cerr << "WARNING: no obstacles are in the workspace" << endl;
     return;
   }
-  // auto sdf = workspace_->SignedDistanceField();
-  auto surfaces = workspace_->ExtractSurfaceFunctions();
-  auto sdf = std::make_shared<SmoothCollisionConstraints>(surfaces, 100, 0);
-  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, alpha, 1);
-  AddIsometricPotentialToAllCliques(obstacle_potential_, scalar);
+  // we use a vector of smooth distance to efficiently use cache
+  for (uint32_t t = 0; t < function_network_->nb_cliques(); t++) {
+    auto obstacle_potential =
+        std::make_shared<ObstaclePotential>(smooth_sdf_[t], alpha, 1);
+    AddIsometricPotentialToClique(obstacle_potential, t, scalar);
+  }
 }
 
 void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
@@ -100,18 +102,26 @@ void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
 
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {
   workspace_objects_.push_back(std::make_shared<Circle>(center, radius));
-  workspace_ = std::make_shared<Workspace>(workspace_objects_);
-  auto sdf = workspace_->SignedDistanceField();
-  obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, 10, 1);
+  ReconstructWorkspace();
 }
 
 void MotionObjective::AddBox(const Eigen::VectorXd& center,
                              const Eigen::VectorXd& dimension) {
   workspace_objects_.push_back(
       std::make_shared<Rectangle>(center, dimension, 0));
+  ReconstructWorkspace();
+}
+
+void MotionObjective::ReconstructWorkspace() {
   workspace_ = std::make_shared<Workspace>(workspace_objects_);
   auto sdf = workspace_->SignedDistanceField();
   obstacle_potential_ = std::make_shared<ObstaclePotential>(sdf, 10, 1);
+  auto surfaces = workspace_->ExtractSurfaceFunctions();
+  smooth_sdf_.clear();
+  for (uint32_t t = 0; t < function_network_->nb_cliques(); t++) {
+    smooth_sdf_.push_back(std::make_shared<SmoothCollisionConstraints>(
+        surfaces, gamma_, obstacle_margin_));
+  }
 }
 
 void MotionObjective::ClearWorkspace() {
