@@ -163,6 +163,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/planning/value_iteration.cpp
     ${bewego_SOURCE_DIR}/motion/differentiable_kinematics.cpp
     ${bewego_SOURCE_DIR}/motion/forward_kinematics.cpp
+    ${bewego_SOURCE_DIR}/motion/freeflyers.cpp
     ${bewego_SOURCE_DIR}/motion/trajectory.cpp
     ${bewego_SOURCE_DIR}/motion/cost_terms.cpp
     ${bewego_SOURCE_DIR}/motion/objective.cpp
