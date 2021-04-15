@@ -23,12 +23,16 @@
  *                                                             Thu 11 Feb 2021
  */
 // author: Jim Mainprice, mainprice@gmail.com
-#include <bewego/motion/kinematics.h>
+#include <bewego/motion/forward_kinematics.h>
 
 using std::cout;
 using std::endl;
 
 namespace bewego {
+
+//-----------------------------------------------------------------------------
+// RigidBody function implementation.
+//-----------------------------------------------------------------------------
 
 RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
                      uint32_t joint_type_id, double dof_lower_limit,
@@ -54,6 +58,10 @@ RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
          << endl;
   }
 }
+
+//-----------------------------------------------------------------------------
+// Robot function implementation.
+//-----------------------------------------------------------------------------
 
 Eigen::MatrixXd Robot::JacobianPosition(int link_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, kinematic_chain_.size());

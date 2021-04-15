@@ -25,7 +25,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
-#include <bewego/motion/kinematics.h>
+#include <bewego/motion/forward_kinematics.h>
 #include <bewego/motion/objective.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/planning/planar_grid.h>
