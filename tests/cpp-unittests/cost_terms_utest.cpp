@@ -137,36 +137,6 @@ TEST(cost_terms, compose) {
   ASSERT_TRUE(f2->type() == "Compose");
 }
 
-TEST(cost_terms, obstacle_potential) {
-  std::srand(SEED);
-  uint32_t dim = 3;
-  double dt = .01;
-  double alpha = 10 * util::Rand();
-  double scale = 10 * util::Rand();
-
-  auto dist1 = std::make_shared<SquaredNorm>(dim);
-  auto phi1 = std::make_shared<ObstaclePotential>(dist1, alpha, scale);
-  for (uint32_t i = 0; i < NB_TESTS; i++) {
-    ASSERT_TRUE(phi1->CheckJacobian(1e-7));
-    ASSERT_TRUE(phi1->CheckHessian(1e-7));
-  }
-
-  alpha = 10 * util::Rand();
-  scale = 10 * util::Rand();
-  Eigen::MatrixXd a = Eigen::MatrixXd::Random(dim, dim);
-  Eigen::VectorXd b = Eigen::VectorXd::Random(dim);
-  Eigen::VectorXd c = Eigen::VectorXd::Zero(1);
-  auto dist2 = std::make_shared<QuadricMap>(a, b, c);
-  auto phi2 = std::make_shared<ObstaclePotential>(dist2, alpha, scale);
-  for (uint32_t i = 0; i < NB_TESTS; i++) {
-    ASSERT_TRUE(phi2->CheckJacobian(1e-7));
-    ASSERT_TRUE(phi2->CheckHessian(1e-7));
-  }
-
-  ASSERT_TRUE(dist1->type() == "SquaredNorm");
-  ASSERT_TRUE(phi1->type() == "ObstaclePotential");
-}
-
 TEST_F(DifferentialMapTest, bound_barrier) {
   std::srand(SEED);
   verbose_ = false;

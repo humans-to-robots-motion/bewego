@@ -168,7 +168,9 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/motion/cost_terms.cpp
     ${bewego_SOURCE_DIR}/motion/objective.cpp
     ${bewego_SOURCE_DIR}/motion/publisher.cpp
+    ${bewego_SOURCE_DIR}/workspace/geometry.cpp
     ${bewego_SOURCE_DIR}/workspace/workspace.cpp
+    ${bewego_SOURCE_DIR}/workspace/softmax_primitive_workspace.cpp
     ${bewego_SOURCE_DIR}/workspace/pixelmap.cpp
 )
 add_library(${bewego_LIBRARY} 

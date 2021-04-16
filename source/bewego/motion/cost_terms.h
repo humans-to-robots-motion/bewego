@@ -142,38 +142,6 @@ inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
   return std::make_shared<SquaredNormAcceleration>(n, dt);
 }
 
-/**  f(x) = rho_scaling * exp(-alpha * SDF(x))  */
-class ObstaclePotential : public CombinationOperator {
- public:
-  ObstaclePotential() { type_ = "ObstaclePotential"; }
-  ObstaclePotential(std::shared_ptr<const DifferentiableMap> sdf, double alpha,
-                    double rho_scaling);
-  virtual ~ObstaclePotential() {}
-
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
-
-  // Returns the dimension of the domain (input) space.
-  virtual uint32_t input_dimension() const { return ambient_space_dim_; }
-  virtual uint32_t output_dimension() const { return 1; }
-
-  virtual VectorOfMaps nested_operators() const {
-    return VectorOfMaps({signed_distance_field_});
-  }
-
-  // Returns a pointer to the sdf
-  std::shared_ptr<const DifferentiableMap> signed_distance_field() const {
-    return signed_distance_field_;
-  }
-
- private:
-  uint32_t ambient_space_dim_;
-  std::shared_ptr<const DifferentiableMap> signed_distance_field_;
-  double alpha_;
-  double rho_scaling_;
-};
-
 /** Barrier between values v_lower and v_upper */
 class BoundBarrier : public DifferentiableMap {
  public:

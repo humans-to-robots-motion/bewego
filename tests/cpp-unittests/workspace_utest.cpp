@@ -3,6 +3,7 @@
 
 #include <bewego/util/misc.h>
 #include <bewego/workspace/pixelmap.h>
+#include <bewego/workspace/softmax_primitive_workspace.h>
 #include <bewego/workspace/workspace.h>
 #include <gtest/gtest.h>
 
@@ -15,120 +16,6 @@ const double nb_test_points = 10;
 const double resolution = 0.01;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
-
-class SphereDistanceTest : public DifferentialMapTest {
- public:
-  virtual void SetUp() {
-    std::srand(1);
-    function_tests_.clear();
-    Add2DPoints();
-    Add3DPoints();
-  }
-
-  void Add2DPoints() {
-    uint32_t dim = 2;
-    Eigen::Vector2d center(.5, .5);
-    double radius(.1);
-    auto sphere = std::make_shared<SphereDistance>(center, radius);
-    for (uint32_t i = 0; i < 5; ++i) {
-      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
-    }
-  }
-
-  void Add3DPoints() {
-    uint32_t dim = 3;
-    Eigen::Vector3d center(.5, .5, .5);
-    double radius(.1);
-    auto sphere = std::make_shared<SphereDistance>(center, radius);
-    for (uint32_t i = 0; i < 5; ++i) {
-      function_tests_.push_back(std::make_pair(sphere, util::Random(dim)));
-    }
-  }
-};
-
-TEST_F(SphereDistanceTest, Evaluation) {
-  set_verbose(false);
-  set_precisions(error, 1e-3);
-  // set_precisions(error, std::numeric_limits<double>::max());
-  RunAllTests();
-  ASSERT_TRUE(function_tests_.front().first->type() == "SphereDistance");
-}
-
-class RectangleDistanceTest : public DifferentialMapTest {
- public:
-  virtual void SetUp() {
-    std::srand(1);
-    function_tests_.clear();
-    Add2DPoints();
-    Add3DPoints();
-  }
-
-  void Add2DPoints() {
-    uint32_t dim = 2;
-    Eigen::Vector2d center(.5, .5);
-    Eigen::Vector2d dimension(.1, .1);
-    for (double theta = 0; theta < 3.14; theta += .1) {
-      auto rectangle =
-          std::make_shared<RectangleDistance>(center, dimension, theta);
-      for (uint32_t i = 0; i < 5; ++i) {
-        Eigen::VectorXd p = bewego::util::Random(dim);
-        auto test = std::make_pair(rectangle, p);
-        function_tests_.push_back(test);
-      }
-    }
-  }
-
-  void Add3DPoints() {
-    uint32_t dim = 3;
-    Eigen::Vector3d center(.5, .5, .5);
-    Eigen::Vector3d dimension(.1, .1, .1);
-    for (double theta = 0; theta < 3.14; theta += .1) {
-      Eigen::Quaterniond quaterion =
-          Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ()) *
-          Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY()) *
-          Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX());
-      auto rectangle = std::make_shared<RectangleDistance>(
-          center, dimension, quaterion.toRotationMatrix());
-      for (uint32_t i = 0; i < 5; ++i) {
-        auto test = std::make_pair(rectangle, util::Random(dim));
-        function_tests_.push_back(test);
-      }
-    }
-  }
-};
-
-TEST_F(RectangleDistanceTest, Evaluation) {
-  set_verbose(false);
-  set_precisions(error, 1e-3);
-  // set_precisions(error, std::numeric_limits<double>::max());
-  RunAllTests();
-  ASSERT_TRUE(function_tests_.front().first->type() == "RectangleDistance");
-}
-
-TEST(RectangleDistance, Main) {
-  Eigen::Vector2d center(0, 0);
-  Eigen::Vector2d dimension(.1, .1);  // half dim
-  double d = std::sqrt(2. * .1 * .1);
-
-  std::vector<std::pair<Eigen::Vector2d, double>> points_dist;
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, 0.), .1));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.0, .2), .1));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(0., .05), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.05, 0.01), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(0.01, .05), -.05));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(.2, .2), d));
-  points_dist.push_back(std::make_pair(Eigen::Vector2d(-.2, -.2), d));
-
-  for (uint32_t i = 0; i < 20; i++) {
-    for (const auto& query : points_dist) {
-      double theta = 2 * M_PI * util::Rand();
-      auto r = std::make_shared<RectangleDistance>(center, dimension, theta);
-      auto p = Eigen::Rotation2Dd(theta) * query.first;
-      EXPECT_NEAR(r->Evaluate(p), query.second, 1e-12);
-    }
-  }
-}
 
 std::shared_ptr<Workspace> CreateTestWorkspace() {
   std::vector<WorkspaceObjectPtr> objects;
@@ -162,4 +49,34 @@ TEST_F(DifferentialMapTest, soft_sphere_distance) {
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
   ASSERT_TRUE(phi->type() == "SoftDist");
+}
+
+TEST(cost_terms, obstacle_potential) {
+  std::srand(SEED);
+  uint32_t dim = 3;
+  double dt = .01;
+  double alpha = 10 * util::Rand();
+  double scale = 10 * util::Rand();
+
+  auto dist1 = std::make_shared<SquaredNorm>(dim);
+  auto phi1 = std::make_shared<ObstaclePotential>(dist1, alpha, scale);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(phi1->CheckJacobian(1e-7));
+    ASSERT_TRUE(phi1->CheckHessian(1e-7));
+  }
+
+  alpha = 10 * util::Rand();
+  scale = 10 * util::Rand();
+  Eigen::MatrixXd a = Eigen::MatrixXd::Random(dim, dim);
+  Eigen::VectorXd b = Eigen::VectorXd::Random(dim);
+  Eigen::VectorXd c = Eigen::VectorXd::Zero(1);
+  auto dist2 = std::make_shared<QuadricMap>(a, b, c);
+  auto phi2 = std::make_shared<ObstaclePotential>(dist2, alpha, scale);
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    ASSERT_TRUE(phi2->CheckJacobian(1e-7));
+    ASSERT_TRUE(phi2->CheckHessian(1e-7));
+  }
+
+  ASSERT_TRUE(dist1->type() == "SquaredNorm");
+  ASSERT_TRUE(phi1->type() == "ObstaclePotential");
 }

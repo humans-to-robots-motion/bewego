@@ -170,7 +170,8 @@ class Freeflyer3D : public Freeflyer {
 class FreeFlyerCollisionConstraints {
  public:
   FreeFlyerCollisionConstraints(std::shared_ptr<const Freeflyer> freeflyer,
-                                const VectorOfMaps& surfaces, double gamma);
+                                const VectorOfMaps& surfaces,
+                                double gamma = 100.);
   virtual ~FreeFlyerCollisionConstraints();
 
   /**

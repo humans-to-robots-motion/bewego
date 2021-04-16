@@ -122,11 +122,11 @@ PYBIND11_MODULE(_pybewego, m) {
         Some other explanation about the subtract function.
     )pbdoc");
 
-  m.def("quaternion_to_matrix", &QuaternionToMatrix, R"pbdoc(
+  m.def("quaternion_to_matrix", &bewego::QuaternionToMatrix, R"pbdoc(
         Returns the rotation matrix corresponding to a Quaternion
     )pbdoc");
 
-  m.def("euler_to_quaternion", &EulerToQuaternion, R"pbdoc(
+  m.def("euler_to_quaternion", &bewego::EulerToQuaternion, R"pbdoc(
         Returns the quaternion corresponding to euler
     )pbdoc");
 

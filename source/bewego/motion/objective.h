@@ -28,6 +28,7 @@
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/motion/cost_terms.h>
 #include <bewego/motion/trajectory.h>
+#include <bewego/workspace/softmax_primitive_workspace.h>
 #include <bewego/workspace/workspace.h>
 
 #include <iostream>
