@@ -44,10 +44,12 @@ inline Eigen::Matrix3d QuaternionToMatrix(const Eigen::VectorXd& q) {
   return quaternion.toRotationMatrix();
 }
 
+/**
+ *   This is supposed to be the URDF convention
+ *   tested against pybullet. If it's correct there it
+ *   it should be ok.
+ */
 inline Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
-  // This is supposed to be the URDF convention
-  // tested against pybullet. If it's correct there it
-  // it should be ok.
   assert(rpy.size() == 3);
   Eigen::Quaterniond q;
   q = Eigen::AngleAxisd(rpy[2], Eigen::Vector3d::UnitZ()) *
@@ -61,12 +63,14 @@ inline Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
   return quaternion;
 }
 
-// Evaluates the distance to an N-sphere
-// WARNING: This function has been tested only for 2D and 3D cases.
-// the hessian is still implemented with finite differences.
-//
-//        f(x) = | x - x_o | - r
-//
+/**
+ *    Evaluates the distance to an N-sphere
+ *
+ *        f(x) = | x - x_o | - r
+ *
+ * WARNING: This function has been tested only for 2D and 3D cases.
+ * the hessian is still implemented with finite differences.
+ */
 class SphereDistance : public DifferentiableMap {
  public:
   // Constructor.
@@ -116,12 +120,13 @@ class SphereDistance : public DifferentiableMap {
 };
 
 /**
- * \brief Signed Distance Function (SDF) to a rectangular box
- * with orientation this implementation can give the true hessian
- * However when the closest point is a vertex of the box
- * the hessian can become infinite hence the dist_cutoff
- * which keeps the hessian bounded, when dist_cutoff is different
- * from double::max.
+ *  Signed Distance Function (SDF) to a box (or rectangle in 2D)
+ *  with orientation this implementation can give the true hessian
+ *
+ *  However when the closest point is a vertex of the box
+ *  the hessian can become infinite hence the dist_cutoff
+ *  which keeps the hessian bounded, when dist_cutoff is different
+ *  from double::max.
  */
 class BoxDistance : public DifferentiableMap {
  public:

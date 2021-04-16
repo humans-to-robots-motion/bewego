@@ -31,10 +31,24 @@
 
 namespace bewego {
 
-/** Simple zero map : f(x) = 0 **/
+/*! \brief Zero map
+ *
+ * Details:
+ *
+ *     f(x) = 0
+ *
+ * Note that the Jacobian and Hessian are constant and can be preallocated.
+ */
 class ZeroMap : public DifferentiableMap {
  public:
-  ZeroMap(uint32_t m, uint32_t n) : m_(m), n_(n) { type_ = "ZeroMap"; }
+  ZeroMap(uint32_t m, uint32_t n) : m_(m), n_(n) {
+    type_ = "ZeroMap";
+    J_ = Eigen::MatrixXd::Zero(m_, n_);
+    if (m_ == 1) {
+      g_ = Eigen::VectorXd::Zero(n_);
+      H_ = Eigen::MatrixXd::Zero(n_, n_);
+    }
+  }
 
   uint32_t output_dimension() const { return m_; }
   uint32_t input_dimension() const { return n_; }
@@ -46,16 +60,22 @@ class ZeroMap : public DifferentiableMap {
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(x.size() == n_);
-    return Eigen::MatrixXd::Zero(m_, n_);
+    return J_;
+  }
+
+  Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    assert(input_dimension() == x.size());
+    return g_;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(m_ == 1);
     assert(n_ == x.size());
-    return Eigen::MatrixXd::Zero(n_, n_);
+    return H_;
   }
 
-  /** return true if it is the same operator */
+  // return true if it is the same operator
   virtual bool Compare(const DifferentiableMap& other) const {
     if (other.type() != type_) {
       return false;
@@ -70,10 +90,24 @@ class ZeroMap : public DifferentiableMap {
   uint32_t n_;
 };
 
-/** Simple identity map : f(x) = x **/
+/*! \brief Identity Map
+ *
+ * Details:
+ *
+ *     f(x) = x
+ *
+ * Note that the Jacobian and Hessian are constant and can be preallocated.
+ */
 class IdentityMap : public DifferentiableMap {
  public:
-  IdentityMap(uint32_t n) : dim_(n) { type_ = "IdentityMap"; }
+  IdentityMap(uint32_t n) : dim_(n) {
+    type_ = "IdentityMap";
+    J_ = Eigen::MatrixXd::Identity(dim_, dim_);
+    if (dim_ == 1) {
+      g_ = Eigen::VectorXd::Constant(dim_, 1);
+      H_ = Eigen::MatrixXd::Zero(dim_, dim_);
+    }
+  }
 
   uint32_t output_dimension() const { return dim_; }
   uint32_t input_dimension() const { return dim_; }
@@ -85,13 +119,19 @@ class IdentityMap : public DifferentiableMap {
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    return Eigen::MatrixXd::Identity(dim_, dim_);
+    return J_;
+  }
+
+  Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    assert(input_dimension() == x.size());
+    return g_;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
-    return Eigen::MatrixXd::Zero(dim_, dim_);
+    return H_;
   }
 
   /** return true if it is the same operator */
@@ -108,10 +148,18 @@ class IdentityMap : public DifferentiableMap {
   uint32_t dim_;
 };
 
-/** Simple identity map : f(x) = 1/2 x^2 **/
+/*! \brief Half of the square map
+ *
+ * Details:
+ *
+ *     f(x) = 1/2 x^2
+ */
 class SquareMap : public DifferentiableMap {
  public:
-  SquareMap() { type_ = "SquareMap"; }
+  SquareMap() {
+    type_ = "SquareMap";
+    H_ = Eigen::MatrixXd::Ones(1, 1);
+  }
 
   uint32_t output_dimension() const { return 1; }
   uint32_t input_dimension() const { return 1; }
@@ -128,11 +176,16 @@ class SquareMap : public DifferentiableMap {
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
-    return Eigen::MatrixXd::Ones(1, 1);
+    return H_;
   }
 };
 
-/** Simple map of the form: f(x) = ax + b */
+/*! \brief Affine mapping
+ *
+ * Details:
+ *
+ *     f(x) = ax + b
+ */
 class AffineMap : public DifferentiableMap {
  public:
   AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) : a_(a), b_(b) {
@@ -189,8 +242,12 @@ class AffineMap : public DifferentiableMap {
   Eigen::VectorXd b_;
 };
 
-/** Here we implement a quadric funciton of the form:
-        f(x) = 1/2 x^T A x + bx + c */
+/*! \brief A quadric funciton
+ *
+ * Details:
+ *
+ *      f(x) = 1/2 x^T A x + bx + c
+ */
 class QuadricMap : public DifferentiableMap {
  public:
   QuadricMap() { type_ = "QuadricMap"; }
@@ -276,15 +333,16 @@ class QuadricMap : public DifferentiableMap {
   Eigen::MatrixXd H_;
 };
 
-/**
- *   Second-order Taylor approximation of a differentiable map.
+/*! \brief Second-order Taylor approximation of a differentiable map.
  *
- *          f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
+ * Details:
+ *
+ *     f(x) \approx f(x0) + g'(x-x0) + 1/2 (x-x0)'H(x-x0),
  *
  *   with g and H are the gradient and Hessian of f, respectively.
  *   TODO:
-            1) Test.
-            2) Compare.
+ *          1) Test.
+ *          2) Compare.
  */
 class SecondOrderTaylorApproximation : public QuadricMap {
  public:
@@ -361,10 +419,15 @@ class ExpTestFunction : public DifferentiableMap {
   }
 };
 
-/** Takes only some outputs
-     - n : input dimension
-     - indices.size() : output dimension
-**/
+/*! \brief Takes only some outputs
+ *
+ * Details:
+ *
+ *   f(x) = x_{ i \in I }, where x \in \R^n
+ *
+ *   - n                        : input dimension
+ *   - |I| = indices.size()     : output dimension
+ */
 class RangeSubspaceMap : public DifferentiableMap {
  public:
   RangeSubspaceMap(uint32_t n, const std::vector<uint32_t>& indices)
@@ -427,8 +490,7 @@ class RangeSubspaceMap : public DifferentiableMap {
   std::vector<uint32_t> indices_;
 };  // namespace bewego
 
-/**
- *   Logarithmic Barrier
+/*! \brief Logarithmic Barrier
  *
  * Details:
  *
@@ -463,7 +525,7 @@ class LogBarrier : public DifferentiableMap {
   double margin_;
 };
 
-/** A smooth version of the norm function.
+/*! \brief A smooth version of the norm function.
  *
  * Details:
  *
