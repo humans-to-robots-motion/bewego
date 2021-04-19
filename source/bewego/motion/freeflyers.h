@@ -161,6 +161,10 @@ class Freeflyer3D : public Freeflyer {
   }
 };
 
+// Initializes freeflyers for testing
+std::shared_ptr<Freeflyer2D> MakeFreeflyer2D();
+std::shared_ptr<Freeflyer3D> MakeFreeflyer3D();
+
 // Collision constraint function that averages all collision points.
 // Also provides an interface for dissociating each constraint
 // The vector of collision points contains a pointer to each

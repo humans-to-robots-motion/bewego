@@ -11,6 +11,8 @@ using std::cout;
 using std::endl;
 
 const double alpha = 20;
+static const uint32_t NB_TESTS = 10;
+static const unsigned int SEED = 0;
 
 std::shared_ptr<const Workspace> CreateTestCircleWorkspace() {
   std::vector<std::shared_ptr<const WorkspaceObject>> circles = {
@@ -26,34 +28,54 @@ std::shared_ptr<const Workspace> CreateTestSphereWorkspace() {
   return std::make_shared<WorkspacePotentalPrimitive>(spheres, alpha);
 }
 
+TEST_F(DifferentialMapTest, freeflyer_task_map) {
+  std::srand(SEED);
+  set_verbose(false);
+  // Here the hessian is approximated by pullback
+  // so we don't expect a tight precision.
+  set_precisions(1e-6, 1e-3);
+  RunAllTests();
+  auto freeflyer = MakeFreeflyer2D();
+  auto phi1 = freeflyer->keypoint_map(0);
+  auto phi2 = freeflyer->keypoint_map(1);
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  RunAllTests();
+  EXPECT_TRUE(phi1->type() == "HomogeneousTransform2d");
+  EXPECT_TRUE(phi2->type() == "HomogeneousTransform2d");
+  cout << phi1->type() << endl;
+}
+
 class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
  public:
   virtual void SetUp() {
     // 2D workspace
     workspace_ = CreateTestCircleWorkspace();
-    // description_file_ =
-    //     ros::package::getPath("rieef_utils") + "/config/freeflyer_2d.json";
-    // freeflyer_ = LoadFreeFlyerFromJsonFile(description_file_);
+    freeflyer_ = MakeFreeflyer2D();
     collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
         freeflyer_, workspace_->ExtractSurfaceFunctions());
     constraint_ = collision_checker_->smooth_constraint();
-    for (uint32_t i = 0; i < 10; ++i) {
-      Eigen::VectorXd x = util::Random(constraint_->input_dimension());
-      function_tests_.push_back(std::make_pair(constraint_, x));
+
+    for (uint32_t i = 0; i < freeflyer_->keypoints().size(); ++i) {
+      auto phi = freeflyer_->keypoint_map(i);
+      Eigen::VectorXd x = util::Random(phi->input_dimension());
+      function_tests_.push_back(std::make_pair(phi, x));
     }
+    // for (uint32_t i = 0; i < 10; ++i) {
+    //   Eigen::VectorXd x = util::Random(constraint_->input_dimension());
+    //   function_tests_.push_back(std::make_pair(constraint_, x));
+    // }
 
     // 3D workspace
-    workspace_ = CreateTestSphereWorkspace();
-    // description_file_ =
-    //     ros::package::getPath("rieef_utils") + "/config/freeflyer_3d.json";
-    // freeflyer_ = LoadFreeFlyerFromJsonFile(description_file_);
-    collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
-        freeflyer_, workspace_->ExtractSurfaceFunctions());
-    constraint_ = collision_checker_->smooth_constraint();
-    for (uint32_t i = 0; i < 10; ++i) {
-      Eigen::VectorXd x = util::Random(constraint_->input_dimension());
-      function_tests_.push_back(std::make_pair(constraint_, x));
-    }
+    // workspace_ = CreateTestSphereWorkspace();
+    // freeflyer_ = MakeFreeflyer3D();
+    // collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
+    //     freeflyer_, workspace_->ExtractSurfaceFunctions());
+    // constraint_ = collision_checker_->smooth_constraint();
+    // for (uint32_t i = 0; i < 10; ++i) {
+    //   Eigen::VectorXd x = util::Random(constraint_->input_dimension());
+    //   function_tests_.push_back(std::make_pair(constraint_, x));
+    // }
   }
 
   std::shared_ptr<const Workspace> workspace_;
@@ -63,7 +85,7 @@ class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
   std::shared_ptr<const DifferentiableMap> constraint_;
 };
 
-/** TODO test freeflyer constraint !!!
+/** TODO */
 TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
   set_verbose(false);
   // Here the hessian is approximated by pullback
@@ -71,4 +93,3 @@ TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
   set_precisions(1e-6, 1e3);
   RunAllTests();
 }
-*/

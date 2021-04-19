@@ -35,6 +35,70 @@ using std::endl;
 namespace bewego {
 
 //-----------------------------------------------------------------------------
+// Freeflyer test
+//-----------------------------------------------------------------------------
+
+std::shared_ptr<Freeflyer2D> MakeFreeflyer2D() {
+  // L shaped planar freeflyer, hard-coded for testing
+  // "s0" : [ 5.5, 0.5, 0.5, 0.5 ]
+  // "s1" : [ 0.5, 0.5, 0.5, 5.5 ]
+  std::vector<Segment> segments(2);
+  segments[0].x1 = Eigen::Vector2d(5.5, 0.5);
+  segments[0].x2 = Eigen::Vector2d(0.5, 0.5);
+  segments[1].x1 = Eigen::Vector2d(0.5, 0.5);
+  segments[1].x2 = Eigen::Vector2d(0.5, 5.5);
+  uint32_t nb_keypoints = 10;
+  double radii = 0.7;
+  double scale = 0.03;
+
+  return std::make_shared<Freeflyer2D>(
+      "freeflyer_2", GetKeyPoints(nb_keypoints, segments),
+      std::vector<double>(nb_keypoints, scale * radii));
+}
+
+std::shared_ptr<Freeflyer3D> MakeFreeflyer3D() {
+  // L shaped planar freeflyer, hard-coded for testing
+  // "s0": [5.5, 0.5, 0, 0.5, 0.5, 0]
+  // "s1": [0.5, 0.5, 0, 0.5, 5.5, 0]
+  std::vector<Segment> segments(2);
+  segments[0].x1 = Eigen::Vector3d(5.5, 0.5, 0);
+  segments[0].x2 = Eigen::Vector3d(0.5, 0.5, 0);
+  segments[1].x1 = Eigen::Vector3d(0.5, 0.5, 0);
+  segments[1].x2 = Eigen::Vector3d(0.5, 5.5, 0);
+  uint32_t nb_keypoints = 10;
+  double radii = 0.7;
+  double scale = 0.03;
+
+  return std::make_shared<Freeflyer3D>(
+      "freeflyer_3", GetKeyPoints(nb_keypoints, segments),
+      std::vector<double>(nb_keypoints, scale * radii));
+}
+
+//-----------------------------------------------------------------------------
+// GetKeyPoints function implementation.
+//-----------------------------------------------------------------------------
+
+std::vector<Eigen::VectorXd> GetKeyPoints(
+    double nb_keypoints, const std::vector<Segment>& segments) {
+  double length = 0.;
+  for (auto s : segments) {
+    length += s.length();
+  }
+  std::vector<Eigen::VectorXd> keypoints;
+  double dl = length / nb_keypoints;
+  for (auto s : segments) {
+    double k = std::floor(s.length() / dl);
+    double d_alpha = (1. / k);
+    double d = 0.;
+    for (uint32_t i = 0; i < k; i++) {
+      keypoints.push_back(s.interpolate(d));
+      d += d_alpha;
+    }
+  }
+  return keypoints;
+}
+
+//-----------------------------------------------------------------------------
 // Freeflyer function implementation.
 //-----------------------------------------------------------------------------
 
@@ -132,25 +196,5 @@ FreeFlyerCollisionConstraints::FreeFlyerCollisionConstraints(
 
 // Destructor.
 FreeFlyerCollisionConstraints::~FreeFlyerCollisionConstraints() {}
-
-std::vector<Eigen::VectorXd> GetKeyPoints(
-    double nb_keypoints, const std::vector<Segment>& segments) {
-  double length = 0.;
-  for (auto s : segments) {
-    length += s.length();
-  }
-  std::vector<Eigen::VectorXd> keypoints;
-  double dl = length / nb_keypoints;
-  for (auto s : segments) {
-    double k = std::floor(s.length() / dl);
-    double d_alpha = (1. / k);
-    double d = 0.;
-    for (uint32_t i = 0; i < k; i++) {
-      keypoints.push_back(s.interpolate(d));
-      d += d_alpha;
-    }
-  }
-  return keypoints;
-}
 
 }  // namespace bewego

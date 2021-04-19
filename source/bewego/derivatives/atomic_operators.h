@@ -488,7 +488,7 @@ class RangeSubspaceMap : public DifferentiableMap {
 
   uint32_t dim_;
   std::vector<uint32_t> indices_;
-};  // namespace bewego
+};
 
 /*! \brief Logarithmic Barrier
  *

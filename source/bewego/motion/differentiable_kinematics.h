@@ -119,6 +119,7 @@ class HomogeneousTransform2d : public DifferentiableMap {
  public:
   HomogeneousTransform2d(const Eigen::Vector2d& p) : p0_(p) {
     J_ = Eigen::MatrixXd::Zero(output_dimension(), input_dimension());
+    type_ = "HomogeneousTransform2d";
   }
   virtual ~HomogeneousTransform2d() {}
 
