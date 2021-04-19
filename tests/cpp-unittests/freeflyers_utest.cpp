@@ -78,7 +78,6 @@ class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
   std::shared_ptr<const DifferentiableMap> constraint_;
 };
 
-/** TODO */
 TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
   set_verbose(false);
   // Here the hessian is approximated by pullback

@@ -49,6 +49,7 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
         graph, workspace, nb_points)
     if trajectory is None:
         continue
+    trajectory = resample(trajectory, 150)
 
     problem = MotionOptimization(
         workspace,
@@ -59,7 +60,7 @@ for k, workspace in enumerate(tqdm([sampling(5) for i in range(100)])):
     p = CostFunctionParameters()
     p.s_velocity_norm = 1
     p.s_acceleration_norm = 5
-    p.s_obstacles = 100
+    p.s_obstacles = 200
     p.s_obstacle_alpha = 10
     p.s_obstacle_scaling = 1
     p.s_terminal_potential = 1e+6
