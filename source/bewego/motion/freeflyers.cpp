@@ -138,7 +138,6 @@ void Freeflyer2D::CreateTaskMaps(
     const std::vector<Eigen::VectorXd>& keypoints) {
   task_maps_.resize(keypoints.size());
   for (uint32_t i = 0; i < keypoints.size(); i++) {
-    cout << " - keypoint[" << i << "] : " << keypoints[i].transpose() << endl;
     task_maps_[i] = std::make_shared<HomogeneousTransform2d>(keypoints[i]);
   }
 }
@@ -152,7 +151,6 @@ void Freeflyer3D::CreateTaskMaps(
     const std::vector<Eigen::VectorXd>& keypoints) {
   task_maps_.resize(keypoints.size());
   for (uint32_t i = 0; i < keypoints.size(); i++) {
-    cout << " - keypoint[" << i << "] : " << keypoints[i].transpose() << endl;
     task_maps_[i] = std::make_shared<HomogeneousTransform3d>(keypoints[i]);
   }
 }
@@ -184,14 +182,14 @@ FreeFlyerCollisionConstraints::FreeFlyerCollisionConstraints(
   for (auto& surface : surfaces_) {
     for (auto& sphere : collision_points_) {
       auto task_space =
-          ComposedWith(sphere.task_map, surface - (sphere.radius + margin_));
+          ComposedWith(surface - (sphere.radius + margin_), sphere.task_map);
       signed_distance_functions_.push_back(task_space);
       maps.push_back(task_space);
     }
   }
   auto smooth_min = std::make_shared<NegLogSumExp>(maps.size(), gamma_);
   auto stack = std::make_shared<CombinedOutputMap>(maps);
-  f_ = ComposedWith(stack, smooth_min);
+  f_ = ComposedWith(smooth_min, stack);
 }
 
 // Destructor.

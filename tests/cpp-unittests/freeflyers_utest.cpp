@@ -43,7 +43,6 @@ TEST_F(DifferentialMapTest, freeflyer_task_map) {
   RunAllTests();
   EXPECT_TRUE(phi1->type() == "HomogeneousTransform2d");
   EXPECT_TRUE(phi2->type() == "HomogeneousTransform2d");
-  cout << phi1->type() << endl;
 }
 
 class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
@@ -55,27 +54,21 @@ class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
     collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
         freeflyer_, workspace_->ExtractSurfaceFunctions());
     constraint_ = collision_checker_->smooth_constraint();
-
-    for (uint32_t i = 0; i < freeflyer_->keypoints().size(); ++i) {
-      auto phi = freeflyer_->keypoint_map(i);
-      Eigen::VectorXd x = util::Random(phi->input_dimension());
-      function_tests_.push_back(std::make_pair(phi, x));
+    for (uint32_t i = 0; i < 10; ++i) {
+      Eigen::VectorXd x = util::Random(constraint_->input_dimension());
+      function_tests_.push_back(std::make_pair(constraint_, x));
     }
-    // for (uint32_t i = 0; i < 10; ++i) {
-    //   Eigen::VectorXd x = util::Random(constraint_->input_dimension());
-    //   function_tests_.push_back(std::make_pair(constraint_, x));
-    // }
 
     // 3D workspace
-    // workspace_ = CreateTestSphereWorkspace();
-    // freeflyer_ = MakeFreeflyer3D();
-    // collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
-    //     freeflyer_, workspace_->ExtractSurfaceFunctions());
-    // constraint_ = collision_checker_->smooth_constraint();
-    // for (uint32_t i = 0; i < 10; ++i) {
-    //   Eigen::VectorXd x = util::Random(constraint_->input_dimension());
-    //   function_tests_.push_back(std::make_pair(constraint_, x));
-    // }
+    workspace_ = CreateTestSphereWorkspace();
+    freeflyer_ = MakeFreeflyer3D();
+    collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
+        freeflyer_, workspace_->ExtractSurfaceFunctions());
+    constraint_ = collision_checker_->smooth_constraint();
+    for (uint32_t i = 0; i < 10; ++i) {
+      Eigen::VectorXd x = util::Random(constraint_->input_dimension());
+      function_tests_.push_back(std::make_pair(constraint_, x));
+    }
   }
 
   std::shared_ptr<const Workspace> workspace_;
@@ -90,6 +83,6 @@ TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
   set_verbose(false);
   // Here the hessian is approximated by pullback
   // so we don't expect a tight precision.
-  set_precisions(1e-6, 1e3);
+  set_precisions(1e-6, 1e-3);
   RunAllTests();
 }
