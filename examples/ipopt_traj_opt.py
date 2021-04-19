@@ -36,7 +36,7 @@ from pyrieef.graph.shortest_path import *
 import time
 
 VERBOSE = False
-BOXES = True
+BOXES = False
 DRAW_MODE = "pyglet2d"  # None, pyglet2d, pyglet3d or matplotlib
 NB_POINTS = 40          # points for the grid on which to perform graph search.
 NB_PROBLEMS = 100       # problems to evaluate
