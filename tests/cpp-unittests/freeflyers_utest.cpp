@@ -85,3 +85,14 @@ TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
   set_precisions(1e-6, 1e-3);
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, freeflyer_translation) {
+  std::srand(SEED);
+  auto phi1 = std::make_shared<FreeFlyerTranslation>(3);
+  auto phi2 = std::make_shared<FreeFlyerTranslation>(2);
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi1->type() == "FreeFlyerTranslation");
+  ASSERT_TRUE(phi2->type() == "FreeFlyerTranslation");
+}

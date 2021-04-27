@@ -28,8 +28,8 @@
 #include <bewego/freeflyers.h>
 #include <bewego/motion/motion_optimization.h>
 #include <bewego/motion/trajectory_function_network.h>
-#include <bewego/numerical_optimization/constrained_optimization_problem.h>
-#include <bewego/numerical_optimization/optimization.h>
+#include <bewego/numerical_optimization/optimizer.h>
+#include <bewego/numerical_optimization/trajectory_optimization.h>
 #include <bewego/stats_monitor.h>
 #include <bewego/trajectory_optimization_freeflyer.h>
 #include <bewego/workspace/analytical_workspace.h>
@@ -47,7 +47,7 @@ struct Box {
       double z_max)
       : data(std::vector<double>{x_min, x_max, y_min, y_max, z_min, z_max}) {}
   double extent(uint32_t i, Type b) const {
-    CHECK_LE(i, 3);
+    assert(i <= 3);
     return data[b == Min ? 2 * i : 2 * i + 1];
   }
   friend ostream& operator<<(ostream& os, const Box& b);
@@ -59,7 +59,7 @@ ostream& operator<<(ostream& os, const Box& b) {
   return os;
 }
 
-class FreeflyerOptimzer {
+class FreeflyerOptimzer : public MotionObjective {
  public:
   FreeflyerOptimzer(uint32_t n,  // size of the configuration space
                     uint32_t T,  // number of cliques
@@ -93,24 +93,28 @@ class FreeflyerOptimzer {
   /** @brief return bounds for dofs along the trajectory */
   std::vector<Bounds> GetDofBounds() const;
 
-  /** @brief Optimize */
-  std::shared_ptr<Trajectory> Optimize(const Trajectory& initial_traj,
-                                       const Eigen::VectorXd& x_goal) const;
+  void AddGeodesicFlowTerm() const;
+  void AddGeodesicTerm() const;
+  void AddInternalAddKeyPointBarriers() const;
+  void AddKeyPointsSurfaceConstraints() const;
+  void AddJointLimitConstraints() const;
+  void AddGoalConstraint(const Eigen::VectorXd& x_goal) const;
+  void AddPosturalTerms() const;
+
+  /** @brief Optimize a given trajectory */
+  OptimizeResult Optimize(
+      const Eigen::VectorXd& initial_traj,          // entire trajectory
+      const Eigen::VectorXd& x_goal,                // goal configuration
+      const std::map<std::string, double>& options  // optimizer options
+  ) const;
 
  protected:
-  typedef std::shared_ptr<FunctionNetwork> FunctionNetwork;
+  typedef CliquesFunctionNetwork FunctionNetwork;
+  typedef std::shared_ptr<const FunctionNetwork> FunctionNetworkPtr;
   typedef std::shared_ptr<const DifferentiableMap> ElementaryFunction;
-
-  // ---------------------------------------------------------------------------
-  /// Optimizers
-  std::shared_ptr<const ConstrainedOptimizer> SetupLulaOptimizer(
-      std::shared_ptr<const ConstrainedOptimizationProblem> problem,
-      const Eigen::VectorXd& q_init) const;
 
   std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
       const Eigen::VectorXd& q_init) const;
-
-  // ---------------------------------------------------------------------------
 
   FunctionNetwork ObjectiveNetwork(const Eigen::VectorXd& x_goal) const;
   FunctionNetwork InequalityConstraints() const;
@@ -118,16 +122,6 @@ class FreeflyerOptimzer {
 
   // Get ditance to obstacle
   ElementaryFunction GetDistanceActivation() const;
-
-  void AddDerivativeNormTerms(FunctionNetwork network) const;
-  void AddGeodesicFlowTerm(FunctionNetwork network) const;
-  void AddGeodesicTerm(FunctionNetwork network) const;
-  void AddInternalAddKeyPointBarriers(FunctionNetwork network) const;
-  void AddKeyPointsSurfaceConstraints(FunctionNetwork network) const;
-  void AddJointLimitConstraints(FunctionNetwork network) const;
-  void AddGoalConstraint(FunctionNetwork network,
-                         const Eigen::VectorXd& x_goal) const;
-  void AddPosturalTerms(FunctionNetwork network) const;
 
   // ipopt constraints
   FunctionNetwork GetEmptyFunctionNetwork() const;
@@ -174,8 +168,8 @@ class FreeflyerOptimzer {
   // Logging
   bool visualize_inner_loop_;
   bool monitor_inner_statistics_;
-  mutable std::shared_ptr<FreeflyerOptimizationVisualizer> visualizer_;
-  mutable std::shared_ptr<StatsMonitor> stats_monitor_;
+  // mutable std::shared_ptr<FreeflyerOptimizationVisualizer> visualizer_;
+  // mutable std::shared_ptr<StatsMonitor> stats_monitor_;
 };
 
 }  // namespace bewego

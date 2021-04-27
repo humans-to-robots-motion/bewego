@@ -201,4 +201,33 @@ class FreeFlyerCollisionConstraints {
   uint32_t n_;
 };
 
+/*
+ * Gets the position from state
+ */
+class FreeFlyerTranslation : public DifferentiableMap {
+ public:
+  FreeFlyerTranslation(uint32_t n) : n_(n) {
+    J_ = Eigen::MatrixXd::Zero(output_dimension(), input_dimension());
+    J_.block(0, 0, n_, n_) = Eigen::MatrixXd::Identity(n_, n_);
+    type_ = "FreeFlyerTranslation";
+  }
+  ~FreeFlyerTranslation() {}
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    assert(q.size() == input_dimension());
+    return q.segment(0, n_);
+  }
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    assert(q.size() == input_dimension());
+    return J_;
+  }
+  // The input dimension is either 3 or 6 depending
+  // on the dimension of the workspace
+  virtual uint32_t input_dimension() const { return n_ + (n_ == 2 ? 1 : 3); }
+  virtual uint32_t output_dimension() const { return n_; }
+
+ protected:
+  uint32_t n_;
+};
+
 }  // namespace bewego

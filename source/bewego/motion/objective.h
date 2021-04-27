@@ -60,7 +60,7 @@ class MotionObjective {
                                      double scalar);
 
   /** Takes a matrix and adds an isometric potential term to all clique */
-  void AddObstacleTerms(double scalar, double alpha);
+  virtual void AddObstacleTerms(double scalar, double alpha);
 
   /** Add terminal potential
 
