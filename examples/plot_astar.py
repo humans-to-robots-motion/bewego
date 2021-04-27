@@ -27,7 +27,7 @@ from numpy.testing import assert_allclose
 from pyrieef.graph.shortest_path import *
 from pyrieef.geometry.workspace import *
 from pyrieef.motion.cost_terms import *
-import pyrieef.rendering.workspace_renderer as render
+import pyrieef.rendering.workspace_planar as render
 from utils import timer
 import time
 from pybewego import AStarGrid

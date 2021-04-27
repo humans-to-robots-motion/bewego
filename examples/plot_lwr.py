@@ -22,7 +22,7 @@ import numpy as np
 from pyrieef.geometry.workspace import *
 from pyrieef.geometry import interpolation
 from pybewego import LWR
-from pyrieef.rendering.workspace_renderer import WorkspaceDrawer
+from pyrieef.rendering.workspace_planar import WorkspaceDrawer
 import matplotlib.pyplot as plt
 import itertools
 import time
