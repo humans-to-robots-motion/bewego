@@ -6,9 +6,15 @@ algorithms based on gradient descent
 
 # install and test
 
-In an python environment. The software works for ubuntu 18.04.
+The software works for ubuntu 18.04.
 
-Download with pybind11
+Install dependencies
+
+    sudo apt-get install \
+        libeigen3-dev \
+        coinor-libipopt-dev
+
+In an python environment. Download with pybind11
 
     git clone --recursive git@github.com:humans-to-robots-motion/bewego.git
     git clone git@github.com:humans-to-robots-motion/pyrieef.git
