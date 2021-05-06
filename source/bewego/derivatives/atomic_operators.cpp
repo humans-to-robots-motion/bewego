@@ -141,3 +141,40 @@ Eigen::MatrixXd LogSumExp::Hessian(const Eigen::VectorXd& x) const {
 //-----------------------------------------------------------------------------
 
 NegLogSumExp::~NegLogSumExp() {}
+
+//-----------------------------------------------------------------------------
+// Logistic implementation.
+//-----------------------------------------------------------------------------
+
+double Sigmoid(double x) {
+  if (x > 0) {
+    return 1. / (1. + exp(-x));
+  } else {
+    double expx = exp(x);
+    return expx / (1. + expx);
+  }
+}
+
+double LogisticF(double x, double k, double x0, double L) {
+  return L * Sigmoid(k * (x - x0));
+}
+
+Eigen::VectorXd Logistic::Forward(const Eigen::VectorXd& x) const {
+  y_[0] = LogisticF(x[0], k_, x0_, L_);
+  return y_;
+}
+
+Eigen::MatrixXd Logistic::Jacobian(const Eigen::VectorXd& x) const {
+  double p = Sigmoid(k_ * (x[0] - x0_));
+  double v = L_ * p;
+  J_(0, 0) = v * (1 - p) * k_;
+  return J_;
+}
+
+Eigen::MatrixXd Logistic::Hessian(const Eigen::VectorXd& x) const {
+  double p = Sigmoid(k_ * (x[0] - x0_));
+  double v = L_ * p;
+  J_(0, 0) = v * (1 - p) * k_;
+  H_(0, 0) = J_(0, 0) * (1 - 2 * p) * k_;
+  return H_;
+}

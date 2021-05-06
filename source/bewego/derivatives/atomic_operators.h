@@ -188,16 +188,23 @@ class SquareMap : public DifferentiableMap {
  */
 class AffineMap : public DifferentiableMap {
  public:
-  AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) : a_(a), b_(b) {
-    assert(a_.rows() == b.size());
-    PreAllocate();
-    H_.setZero();
-    type_ = "AffineMap";
+  AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) {
+    Initialize(a, b);
   }
+
   AffineMap(const Eigen::VectorXd& a, double b) {
-    a_ = Eigen::MatrixXd(1, a.size());
-    a_.row(0) = a;
-    b_ = Eigen::VectorXd::Constant(1, b);
+    Initialize(a, Eigen::VectorXd::Constant(1, b));
+  }
+
+  AffineMap(double a, double b) {
+    Initialize(Eigen::MatrixXd::Constant(1, 1, a),
+               Eigen::VectorXd::Constant(1, b));
+  }
+
+  void Initialize(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) {
+    assert(a.rows() == b.size());
+    a_ = a;
+    b_ = b;
     PreAllocate();
     H_.setZero();
     type_ = "AffineMap";
@@ -639,6 +646,36 @@ class NegLogSumExp : public LogSumExp {
     type_ = "NegLogSumExp";
   }
   virtual ~NegLogSumExp();
+};
+
+/**
+ * \brief Parametrizable sigmoid function (i.e., logistic function)
+ *
+ * Details:
+ *
+ *   s(x) = L /( 1 + exp(-k(x - x_0) ).
+ *
+ * Implements all of the variants of Evaluate() explicitly for efficiency.
+ * https://en.wikipedia.org/wiki/Logistic_function
+ */
+class Logistic : public DifferentiableMap {
+ public:
+  Logistic(double k, double x0, double L) : k_(k), x0_(x0), L_(L) {
+    type_ = "Logistic";
+    PreAllocate();
+  }
+
+  uint32_t input_dimension() const { return 1; }
+  uint32_t output_dimension() const { return 1; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+ protected:
+  double k_;
+  double x0_;
+  double L_;
 };
 
 }  // namespace bewego

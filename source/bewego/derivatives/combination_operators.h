@@ -604,4 +604,9 @@ class LogBarrierWithApprox : public LogBarrier {
   std::shared_ptr<DifferentiableMap> approximation_;
 };
 
+inline DifferentiableMapPtr LogisticActivation(DifferentiableMapPtr f,
+                                               double temp = 1) {
+  return ComposedWith(std::make_shared<Logistic>(temp, 0., 1.), f);
+}
+
 };  // namespace bewego

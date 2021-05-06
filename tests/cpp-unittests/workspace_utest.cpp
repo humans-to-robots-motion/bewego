@@ -80,3 +80,28 @@ TEST(cost_terms, obstacle_potential) {
   ASSERT_TRUE(dist1->type() == "SquaredNorm");
   ASSERT_TRUE(phi1->type() == "ObstaclePotential");
 }
+
+class LogisticActivationTest : public DifferentialMapTest {
+ public:
+  virtual void SetUp() {
+    function_tests_.clear();
+    uint32_t dim = 3;
+    uint32_t nb_tests = 10;
+
+    Eigen::VectorXd p0 = .5 * Eigen::VectorXd::Ones(dim);
+    auto phi = std::make_shared<SphereDistance>(p0, .5);
+    auto f1 = LogisticActivation(phi, 10);
+    // auto f2 = Shift(Negate(LogisticActivation(phi, 10)), 1);
+    for (uint32_t i = 0; i < nb_tests; ++i) {
+      Eigen::VectorXd x = util::Random(dim);
+      function_tests_.push_back(std::make_pair(f1, x));
+      // function_tests_.push_back(std::make_pair(f2, x));
+    }
+  }
+};
+
+TEST_F(LogisticActivationTest, Evaluation) {
+  set_verbose(false);
+  set_precisions(1e-6, 1e-5);
+  RunAllTests();
+}

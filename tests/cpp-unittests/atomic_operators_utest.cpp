@@ -332,3 +332,13 @@ TEST_F(DifferentialMapTest, soft_dist) {
   RunAllTests();
   ASSERT_TRUE(phi->type() == "SoftDist");
 }
+
+TEST_F(DifferentialMapTest, logistic) {
+  std::srand(SEED);
+  // verbose_ = true;
+  // set_precisions(1e-6, 1e-5);
+  auto phi = std::make_shared<Logistic>(.23, .67, 3.32);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi->type() == "Logistic");
+}
