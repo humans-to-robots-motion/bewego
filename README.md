@@ -4,17 +4,27 @@ Library and python bindings to implement fast optimization
 algorithms based on gradient descent
 
 
-Download with pybind11
+# install and test
+
+The software works for ubuntu 18.04.
+
+Install dependencies
+
+    sudo apt-get install \
+        libeigen3-dev \
+        coinor-libipopt-dev
+
+In an python environment. Download with pybind11
 
     git clone --recursive git@github.com:humans-to-robots-motion/bewego.git
+    git clone git@github.com:humans-to-robots-motion/pyrieef.git
+    cd pyrieef pip install -r requirements.txt
+    cd ../bewego
 
+Compile and execute tests (in bewego)
 
-Compile and execute tests
-
-    
     mkdir -p build && cd build
     cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-             -DPYBIND11_PYTHON_VERSION=3.5 \
              -DWITH_IPOPT=true
     make
     make test
