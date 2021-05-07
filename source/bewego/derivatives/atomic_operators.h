@@ -193,7 +193,9 @@ class AffineMap : public DifferentiableMap {
   }
 
   AffineMap(const Eigen::VectorXd& a, double b) {
-    Initialize(a, Eigen::VectorXd::Constant(1, b));
+    Eigen::MatrixXd a_T(1, a.size());
+    a_T.row(0) = a;
+    Initialize(a_T, Eigen::VectorXd::Constant(1, b));
   }
 
   AffineMap(double a, double b) {

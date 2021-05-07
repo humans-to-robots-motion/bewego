@@ -74,6 +74,12 @@ TEST(atomic_operators, affine_map) {
     f = std::make_shared<AffineMap>(a_1, b_1);
     ASSERT_TRUE(f->CheckJacobian(precision));
     ASSERT_TRUE(f->CheckHessian(precision));
+
+    double a_2 = util::Rand() + .5;
+    double b_2 = util::Rand() + .5;
+    f = std::make_shared<AffineMap>(a_2, b_2);
+    ASSERT_TRUE(f->CheckJacobian(precision));
+    ASSERT_TRUE(f->CheckHessian(precision));
   }
 
   ASSERT_TRUE(f->type() == "AffineMap");
