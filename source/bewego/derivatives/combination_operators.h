@@ -609,4 +609,30 @@ inline DifferentiableMapPtr LogisticActivation(DifferentiableMapPtr f,
   return ComposedWith(std::make_shared<Logistic>(temp, 0., 1.), f);
 }
 
+/**
+ * Computes the dot product between two maps
+ *
+ *        f(q) = g_1(q)^T g_2(q)
+ *
+ * TODO: Write test.
+ */
+class DotProduct : public CombinationOperator {
+ public:
+  DotProduct(DifferentiableMapPtr map1, DifferentiableMapPtr map2);
+  virtual ~DotProduct() {}
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+  uint32_t input_dimension() const { return n_; }
+
+  VectorOfMaps nested_operators() const { return VectorOfMaps({map1_, map2_}); }
+
+ protected:
+  DifferentiableMapPtr map1_;
+  DifferentiableMapPtr map2_;
+  uint32_t n_;
+};
+
 };  // namespace bewego

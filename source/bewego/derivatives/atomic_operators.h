@@ -687,7 +687,8 @@ class Logistic : public DifferentiableMap {
  *
  *   f(x) =  arcos(x)
  *
- * inverse function of cosine.
+ * inverse function of cosine defined over [-1; 1]
+ * Has ill condition derivative close to -1 and 1
  */
 class Arccos : public DifferentiableMap {
  public:

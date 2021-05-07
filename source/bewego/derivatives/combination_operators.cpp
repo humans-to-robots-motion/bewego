@@ -112,3 +112,36 @@ std::shared_ptr<DifferentiableMap> LogBarrierWithApprox::MakeTaylorLogBarrier()
   return std::make_shared<SecondOrderTaylorApproximation>(
       *scaled_log_barrier, Eigen::VectorXd::Constant(1, x_splice_));
 }
+
+//-----------------------------------------------------------------------------
+// DotProduct implementation.
+//-----------------------------------------------------------------------------
+
+DotProduct::DotProduct(DifferentiableMapPtr map1, DifferentiableMapPtr map2)
+    : map1_(map1), map2_(map2), n_(map1->input_dimension()) {
+  assert(map1->input_dimension() == map2->input_dimension());
+  assert(map1->output_dimension() == map2->output_dimension());
+}
+
+Eigen::VectorXd DotProduct::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == input_dimension());
+  Eigen::VectorXd x1 = (*map1_)(x);
+  Eigen::VectorXd x2 = (*map2_)(x);
+  return Eigen::VectorXd::Constant(1, x1.transpose() * x2);
+}
+
+Eigen::MatrixXd DotProduct::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == input_dimension());
+  Eigen::VectorXd x1 = (*map1_)(x);
+  Eigen::VectorXd x2 = (*map2_)(x);
+  Eigen::MatrixXd J1 = map1_->Jacobian(x);
+  Eigen::MatrixXd J2 = map2_->Jacobian(x);
+  return J1 * x2 + J2 * x1;
+}
+
+Eigen::MatrixXd DotProduct::Hessian(const Eigen::VectorXd& x) const {
+  assert(x.size() == input_dimension());
+  Eigen::MatrixXd J1 = map1_->Jacobian(x);
+  Eigen::MatrixXd J2 = map2_->Jacobian(x);
+  return J1 * J2.transpose() + J2 * J1.transpose();
+}
