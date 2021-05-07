@@ -650,8 +650,7 @@ class NegLogSumExp : public LogSumExp {
   virtual ~NegLogSumExp();
 };
 
-/**
- * \brief Parametrizable sigmoid function (i.e., logistic function)
+/*!\brief Parametrizable sigmoid function (i.e., logistic function)
  *
  * Details:
  *
@@ -666,10 +665,12 @@ class Logistic : public DifferentiableMap {
     type_ = "Logistic";
     PreAllocate();
   }
+  virtual ~Logistic();
 
   uint32_t input_dimension() const { return 1; }
   uint32_t output_dimension() const { return 1; }
 
+  // Evaluates f(x), f'(x), f''(x).
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
@@ -678,6 +679,31 @@ class Logistic : public DifferentiableMap {
   double k_;
   double x0_;
   double L_;
+};
+
+/*! \brief Implements a normalize function
+ *
+ * Details:
+ *
+ *   f(x) =  arcos(x)
+ *
+ * inverse function of cosine.
+ */
+class Arccos : public DifferentiableMap {
+ public:
+  Arccos() {
+    type_ = "Arccos";
+    PreAllocate();
+  }
+  virtual ~Arccos();
+
+  uint32_t input_dimension() const { return 1; }
+  uint32_t output_dimension() const { return 1; }
+
+  // Evaluates f(x), f'(x), f''(x).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
 };
 
 }  // namespace bewego

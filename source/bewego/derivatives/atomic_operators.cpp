@@ -159,12 +159,16 @@ double LogisticF(double x, double k, double x0, double L) {
   return L * Sigmoid(k * (x - x0));
 }
 
+Logistic::~Logistic() {}
+
 Eigen::VectorXd Logistic::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
   y_[0] = LogisticF(x[0], k_, x0_, L_);
   return y_;
 }
 
 Eigen::MatrixXd Logistic::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
   double p = Sigmoid(k_ * (x[0] - x0_));
   double v = L_ * p;
   J_(0, 0) = v * (1 - p) * k_;
@@ -172,9 +176,40 @@ Eigen::MatrixXd Logistic::Jacobian(const Eigen::VectorXd& x) const {
 }
 
 Eigen::MatrixXd Logistic::Hessian(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
   double p = Sigmoid(k_ * (x[0] - x0_));
   double v = L_ * p;
   J_(0, 0) = v * (1 - p) * k_;
   H_(0, 0) = J_(0, 0) * (1 - 2 * p) * k_;
+  return H_;
+}
+
+//-----------------------------------------------------------------------------
+// Arccos implementation.
+//-----------------------------------------------------------------------------
+
+Arccos::~Arccos() {}
+
+// double a = 1. - x * x;
+// *first_derivative = -1. / std::sqrt(a);
+// *second_derivative = -x / std::pow(a, 1.5);
+
+Eigen::VectorXd Arccos::Forward(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
+  y_[0] = std::acos(x[0]);
+  return y_;
+}
+
+Eigen::MatrixXd Arccos::Jacobian(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
+  double a = 1. - x[0] * x[0];
+  J_(0, 0) = -1. / std::sqrt(a);
+  return J_;
+}
+
+Eigen::MatrixXd Arccos::Hessian(const Eigen::VectorXd& x) const {
+  assert(x.size() == 1);
+  double a = 1. - x[0] * x[0];
+  H_(0, 0) = -x[0] / std::pow(a, 1.5);
   return H_;
 }

@@ -348,3 +348,17 @@ TEST_F(DifferentialMapTest, logistic) {
   RunAllTests();
   ASSERT_TRUE(phi->type() == "Logistic");
 }
+
+TEST_F(DifferentialMapTest, arccos) {
+  std::srand(SEED);
+  auto phi = std::make_shared<Arccos>();
+  // set_verbose(true);
+  set_precisions(1e-5, 1e-4);
+  Eigen::VectorXd x(1);
+  for (uint32_t i = 0; i < 100; i++) {
+    x[0] = util::RandUniform(-.95, .95);
+    function_tests_.push_back(std::make_pair(phi, x));
+  }
+  RunAllTests();
+  ASSERT_TRUE(phi->type() == "Arccos");
+}

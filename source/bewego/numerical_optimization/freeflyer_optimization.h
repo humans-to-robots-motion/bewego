@@ -165,6 +165,10 @@ class FreeflyerOptimzer : public MotionObjective {
   double scalar_posture_;
   std::string attractor_type_;
 
+  // Parameters
+  double freeflyer_gamma_;
+  double freeflyer_k_;
+
   // Logging
   bool visualize_inner_loop_;
   bool monitor_inner_statistics_;
