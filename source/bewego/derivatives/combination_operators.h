@@ -626,6 +626,7 @@ class DotProduct : public CombinationOperator {
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
 
   uint32_t input_dimension() const { return n_; }
+  uint32_t output_dimension() const { return 1; }
 
   VectorOfMaps nested_operators() const { return VectorOfMaps({map1_, map2_}); }
 

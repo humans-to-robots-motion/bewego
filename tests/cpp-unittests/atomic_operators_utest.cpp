@@ -85,6 +85,23 @@ TEST(atomic_operators, affine_map) {
   ASSERT_TRUE(f->type() == "AffineMap");
 }
 
+TEST_F(DifferentialMapTest, linear_map) {
+  std::srand(SEED);
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(3, 2);
+  Eigen::VectorXd a_1 = Eigen::VectorXd::Random(3);
+  double a_2 = util::Rand();
+  auto phi1 = std::make_shared<LinearMap>(A);
+  auto phi2 = std::make_shared<LinearMap>(a_1);
+  auto phi3 = std::make_shared<LinearMap>(a_2);
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  AddRandomTests(phi3, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi1->type() == "LinearMap");
+  ASSERT_TRUE(phi2->type() == "LinearMap");
+  ASSERT_TRUE(phi3->type() == "LinearMap");
+}
+
 TEST(atomic_operators, quadric_map) {
   std::srand(SEED);
   const double precision = 1e-10;
@@ -361,4 +378,26 @@ TEST_F(DifferentialMapTest, arccos) {
   }
   RunAllTests();
   ASSERT_TRUE(phi->type() == "Arccos");
+}
+
+TEST_F(DifferentialMapTest, dotproduct) {
+  std::srand(SEED);
+  // set_verbose(true);
+  set_precisions(1e-5, -1);  // TODO check hessian
+  uint32_t n = 10;
+  Eigen::VectorXd x(1);
+  for (uint32_t i = 0; i < 100; i++) {
+    Eigen::MatrixXd A1 = Eigen::MatrixXd::Random(n, n);
+    Eigen::MatrixXd A2 = Eigen::MatrixXd::Random(n, n);
+    // Make sure H is symetric (and positive definite)
+    A1 = A1 * A1.transpose();
+    A2 = A2 * A2.transpose();
+    auto phi1 = std::make_shared<LinearMap>(A1);
+    auto phi2 = std::make_shared<LinearMap>(A2);
+    auto dot = std::make_shared<DotProduct>(phi1, phi2);
+    Eigen::VectorXd x = util::Random(n);
+    function_tests_.push_back(std::make_pair(dot, x));
+    ASSERT_TRUE(dot->type() == "DotProduct");
+  }
+  RunAllTests();
 }

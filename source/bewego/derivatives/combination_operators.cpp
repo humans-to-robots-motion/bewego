@@ -121,6 +121,7 @@ DotProduct::DotProduct(DifferentiableMapPtr map1, DifferentiableMapPtr map2)
     : map1_(map1), map2_(map2), n_(map1->input_dimension()) {
   assert(map1->input_dimension() == map2->input_dimension());
   assert(map1->output_dimension() == map2->output_dimension());
+  type_ = "DotProduct";
 }
 
 Eigen::VectorXd DotProduct::Forward(const Eigen::VectorXd& x) const {

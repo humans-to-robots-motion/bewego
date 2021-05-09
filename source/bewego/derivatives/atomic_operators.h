@@ -215,17 +215,17 @@ class AffineMap : public DifferentiableMap {
   uint32_t output_dimension() const { return b_.size(); }
   uint32_t input_dimension() const { return a_.cols(); }
 
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     return a_ * x + b_;
   }
 
-  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
     assert(input_dimension() == x.size());
     return a_;
   }
 
-  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
     assert(input_dimension() == x.size());
     return H_;
@@ -251,7 +251,28 @@ class AffineMap : public DifferentiableMap {
   Eigen::VectorXd b_;
 };
 
-/*! \brief A quadric funciton
+/*! \brief  A linear map
+ *
+ * Details:
+ *
+ *      f(x) = Ax
+ */
+class LinearMap : public AffineMap {
+ public:
+  LinearMap(const Eigen::MatrixXd& A)
+      : AffineMap(A, Eigen::VectorXd::Zero(A.rows())) {
+    type_ = "LinearMap";
+  }
+  LinearMap(const Eigen::VectorXd& a) : AffineMap(a, 0) { type_ = "LinearMap"; }
+  LinearMap(double a) : AffineMap(a, 0) { type_ = "LinearMap"; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return a_ * x;
+  }
+};
+
+/*! \brief A quadric map
  *
  * Details:
  *

@@ -183,12 +183,16 @@ void DifferentialMapTest::FiniteDifferenceTest(
 
   if (use_relative_eq_) {
     EXPECT_TRUE(util::AlmostEqualRelative(J, J_diff, gradient_precision_));
-    EXPECT_TRUE(util::AlmostEqualRelative(H, H_diff, hessian_precision_));
+    if (hessian_precision_ > 0) {
+      EXPECT_TRUE(util::AlmostEqualRelative(H, H_diff, hessian_precision_));
+    }
   } else {
     double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
     double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
     EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
-    EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+    if (hessian_precision_ > 0) {
+      EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
+    }
   }
 }
 
