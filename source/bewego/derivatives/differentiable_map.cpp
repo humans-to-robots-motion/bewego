@@ -90,6 +90,9 @@ bool DifferentiableMap::CheckJacobian(double precision) const {
     cout << "J : " << endl << J << endl;
     cout << "J_diff : " << endl << J_diff << endl;
   }
+  if (J.rows() != J_diff.rows() || J.cols() != J_diff.cols()) {
+    return false;
+  }
   return J.isApprox(J_diff, precision);
 }
 
@@ -101,6 +104,9 @@ bool DifferentiableMap::CheckHessian(double precision) const {
   if (debug_) {
     cout << "H : " << endl << H << endl;
     cout << "H_diff : " << endl << H_diff << endl;
+  }
+  if (H.rows() != H_diff.rows() || H.cols() != H_diff.cols()) {
+    return false;
   }
   return H.isApprox(H_diff, precision);
 }

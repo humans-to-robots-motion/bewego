@@ -385,7 +385,12 @@ class SecondOrderTaylorApproximation : public QuadricMap {
   double fx0_;
 };
 
-/** Simple squared norm: f(x)= 0.5 | x - x_0 | ^2 */
+/*! \brief Simple squared norm
+ *
+ * Details:
+ *
+ *      f(x)= 0.5 | x - x_0 | ^2
+ */
 class SquaredNorm : public DifferentiableMap {
  public:
   SquaredNorm(uint32_t dim) : x0_(Eigen::VectorXd::Zero(dim)) {

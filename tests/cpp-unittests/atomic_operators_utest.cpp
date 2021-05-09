@@ -382,11 +382,11 @@ TEST_F(DifferentialMapTest, arccos) {
 
 TEST_F(DifferentialMapTest, dotproduct) {
   std::srand(SEED);
-  // set_verbose(true);
-  set_precisions(1e-5, -1);  // TODO check hessian
+  set_verbose(false);
+  set_precisions(1e-5, 1e-5);  // TODO check hessian
   uint32_t n = 10;
   Eigen::VectorXd x(1);
-  for (uint32_t i = 0; i < 100; i++) {
+  for (uint32_t i = 0; i < 10; i++) {
     Eigen::MatrixXd A1 = Eigen::MatrixXd::Random(n, n);
     Eigen::MatrixXd A2 = Eigen::MatrixXd::Random(n, n);
     // Make sure H is symetric (and positive definite)

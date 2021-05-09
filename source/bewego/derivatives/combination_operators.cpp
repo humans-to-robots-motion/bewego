@@ -137,11 +137,15 @@ Eigen::MatrixXd DotProduct::Jacobian(const Eigen::VectorXd& x) const {
   Eigen::VectorXd x2 = (*map2_)(x);
   Eigen::MatrixXd J1 = map1_->Jacobian(x);
   Eigen::MatrixXd J2 = map2_->Jacobian(x);
-  return J1 * x2 + J2 * x1;
+  return x1.transpose() * J2.transpose() + x2.transpose() * J1.transpose();
 }
 
 Eigen::MatrixXd DotProduct::Hessian(const Eigen::VectorXd& x) const {
   assert(x.size() == input_dimension());
+  // Hessian.
+  // *H = x1 * H2 + x2 * H1 + J1 * J2^T + J2 * J1^T
+  // Approximation (this is only correct when maps are linear)!!!
+  //                   H1 = 0 & H2 = 0
   Eigen::MatrixXd J1 = map1_->Jacobian(x);
   Eigen::MatrixXd J2 = map2_->Jacobian(x);
   return J1 * J2.transpose() + J2 * J1.transpose();
