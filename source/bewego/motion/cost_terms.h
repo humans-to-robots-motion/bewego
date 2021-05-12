@@ -36,42 +36,75 @@
 
 namespace bewego {
 
-/*!\brief Define velocities where clique = [ x_t ; x_{t+1} ] */
-class FiniteDifferencesVelocity : public AffineMap {
+/*! \brief Velocities
+ *
+ * Details:
+ *
+ *      f([x_t ; x_{t+1}]) = ( x_{t+1} - x_{t} ) / dt
+ */
+class FiniteDifferencesVelocity : public LinearMap {
  public:
   FiniteDifferencesVelocity(uint32_t dim, double dt)
-      : AffineMap(Eigen::MatrixXd::Zero(dim, 2 * dim),
-                  Eigen::VectorXd::Zero(dim)) {
+      : LinearMap(Eigen::MatrixXd::Zero(dim, 2 * dim)) {
     _InitializeMatrix(dim, dt);
     type_ = "FiniteDifferencesVelocity";
   }
 
-  /*!\brief Velocity = [ x_{t+1} - x_{t} ] / dt */
   void _InitializeMatrix(uint32_t dim, double dt) {
     auto identity = Eigen::MatrixXd::Identity(dim, dim);
+    // Ax = [-I , I][x_t ; x_{t+1}] / dt
     a_.block(0, 0, dim, dim) = -identity;
     a_.block(0, dim, dim, dim) = identity;
     a_ /= dt;
   }
 };
 
-/*!\brief Define accelerations where clique = [ x_{t-1} ; x_{t} ; x_{t+1} ] */
-class FiniteDifferencesAcceleration : public AffineMap {
+/*! \brief Accelerations
+ *
+ * Details:
+ *
+ *      f([x_{t-1} ; x_t ; x_{t+1}]) = ( x_{t+1} + x_{t-1} - 2 * x_{t} ) / dt^2
+ */
+class FiniteDifferencesAcceleration : public LinearMap {
  public:
   FiniteDifferencesAcceleration(uint32_t dim, double dt)
-      : AffineMap(Eigen::MatrixXd::Zero(dim, 3 * dim),
-                  Eigen::VectorXd::Zero(dim)) {
+      : LinearMap(Eigen::MatrixXd::Zero(dim, 3 * dim)) {
     _InitializeMatrix(dim, dt);
     type_ = "FiniteDifferencesAcceleration";
   }
 
-  /*!\brief Acceleration = [ x_{t+1} + x_{t-1} - 2 * x_{t} ] / dt^2 */
   void _InitializeMatrix(uint32_t dim, double dt) {
     auto identity = Eigen::MatrixXd::Identity(dim, dim);
     a_.block(0, 0, dim, dim) = identity;
     a_.block(0, dim, dim, dim) = -2 * identity;
     a_.block(0, 2 * dim, dim, dim) = identity;
     a_ /= (dt * dt);
+  }
+};
+
+/*! \brief Position and Velocity
+ *
+ * Details:
+ *
+ *      f([x_t ; x_{t+1}]) = [x_t ; \dot x_t]
+ * TODO
+ */
+class FiniteDifferencesPosVel : public LinearMap {
+ public:
+  FiniteDifferencesPosVel(uint32_t dim, double dt)
+      : LinearMap(Eigen::MatrixXd::Zero(2 * dim, 2 * dim)) {
+    _InitializeMatrix(dim, dt);
+    type_ = "FiniteDifferencesPosVel";
+  }
+
+  void _InitializeMatrix(uint32_t dim, double dt) {
+    auto identity = Eigen::MatrixXd::Identity(dim, dim);
+
+    // Ax =  [I,   0]
+    //       [-I/dt , I/dt][x_t ; x_{t+1}]
+    a_.block(0, 0, dim, dim) = identity;
+    a_.block(dim, 0, dim, dim) = -identity / dt;
+    a_.block(dim, dim, dim, dim) = identity / dt;
   }
 };
 

@@ -50,6 +50,40 @@ TEST_F(DifferentialMapTest, finite_differences_velocity) {
   ASSERT_TRUE(f->type() == "FiniteDifferencesVelocity");
 }
 
+TEST_F(DifferentialMapTest, finite_differences_posvel) {
+  std::srand(SEED);
+
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+  hessian_precision_ = 1e-6;
+  use_relative_eq_ = true;
+  uint32_t n = 10;
+
+  AddRandomTests(std::make_shared<FiniteDifferencesPosVel>(1, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesPosVel>(2, .01), n);
+  AddRandomTests(std::make_shared<FiniteDifferencesPosVel>(7, .1), n);
+  RunAllTests();
+
+  uint32_t N = 7;
+  double dt = 0.1;
+  FiniteDifferencesPosVel fd(N, dt);
+  Eigen::VectorXd x_1 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_2 = Eigen::VectorXd::Random(N);
+  Eigen::VectorXd x_3(2 * N);
+  x_3.head(N) = x_1;  // x_{t}
+  x_3.tail(N) = x_2;  // x_{t+1}
+  Eigen::VectorXd dx = fd(x_3);
+  if (verbose_) {
+    cout << "dx1 : " << dx.transpose() << endl;
+    cout << "dx2 : " << ((x_2 - x_1) / dt).transpose() << endl;
+  }
+  ASSERT_TRUE(dx.head(N).isApprox(x_1));
+  ASSERT_TRUE(dx.tail(N).isApprox((x_2 - x_1) / dt));
+
+  f = std::make_shared<FiniteDifferencesPosVel>(7, .1);
+  ASSERT_TRUE(f->type() == "FiniteDifferencesPosVel");
+}
+
 TEST_F(DifferentialMapTest, finite_differences_acceleration) {
   std::srand(SEED);
 

@@ -91,7 +91,7 @@ TEST_F(DifferentialMapTest, linear_map) {
   Eigen::VectorXd a_1 = Eigen::VectorXd::Random(3);
   double a_2 = util::Rand();
   auto phi1 = std::make_shared<LinearMap>(A);
-  auto phi2 = std::make_shared<LinearMap>(a_1);
+  auto phi2 = std::make_shared<LinearMap>(a_1.transpose());
   auto phi3 = std::make_shared<LinearMap>(a_2);
   AddRandomTests(phi1, NB_TESTS);
   AddRandomTests(phi2, NB_TESTS);

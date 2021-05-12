@@ -263,7 +263,6 @@ class LinearMap : public AffineMap {
       : AffineMap(A, Eigen::VectorXd::Zero(A.rows())) {
     type_ = "LinearMap";
   }
-  LinearMap(const Eigen::VectorXd& a) : AffineMap(a, 0) { type_ = "LinearMap"; }
   LinearMap(double a) : AffineMap(a, 0) { type_ = "LinearMap"; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
