@@ -40,7 +40,8 @@ namespace bewego {
  *
  * Details:
  *
- *      f([x_t ; x_{t+1}]) = ( x_{t+1} - x_{t} ) / dt
+ *      f([x_t ; x_{t+1}]) = d/dt x_t
+                           = ( x_{t+1} - x_{t} ) / dt
  */
 class FiniteDifferencesVelocity : public LinearMap {
  public:
@@ -63,7 +64,8 @@ class FiniteDifferencesVelocity : public LinearMap {
  *
  * Details:
  *
- *      f([x_{t-1} ; x_t ; x_{t+1}]) = ( x_{t+1} + x_{t-1} - 2 * x_{t} ) / dt^2
+ *      f([x_{t-1} ; x_t ; x_{t+1}]) = d^2/dt^2 x_t
+ *                                   = ( x_{t+1} + x_{t-1} - 2 * x_{t} ) / dt^2
  */
 class FiniteDifferencesAcceleration : public LinearMap {
  public:
@@ -86,8 +88,7 @@ class FiniteDifferencesAcceleration : public LinearMap {
  *
  * Details:
  *
- *      f([x_t ; x_{t+1}]) = [x_t ; \dot x_t]
- * TODO
+ *      f([x_t ; x_{t+1}]) = [x_t ; d/dt x_t]
  */
 class FiniteDifferencesPosVel : public LinearMap {
  public:
@@ -108,7 +109,14 @@ class FiniteDifferencesPosVel : public LinearMap {
   }
 };
 
-/*!\brief Define any norm of derivatives clique = [x_t ; x_{t+1} ; ... ] */
+/*!\brief Define sq norm of derivatives
+ *
+ * Details:
+ *
+ *   f(x_t) = 1/2 | d^(n)/dt x_t |^2
+ *
+ * clique = [x_t ; x_{t+1} ; ... ]
+ */
 class SquaredNormDerivative : public CombinationOperator {
  public:
   SquaredNormDerivative(uint32_t dim)
