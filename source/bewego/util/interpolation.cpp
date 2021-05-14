@@ -34,6 +34,20 @@ using std::endl;
 
 namespace bewego {
 
+Eigen::VectorXd CalculateLinearRegression(const Eigen::MatrixXd& X,
+                                          const Eigen::VectorXd& Y,
+                                          const Eigen::VectorXd& w_t,
+                                          double lambda_1, double lambda_2) {
+  assert(w_t.size() == X.cols());
+  assert(X.rows() == Y.size());
+
+  double lambda_ridge = lambda_1 + lambda_2;
+  Eigen::MatrixXd diag =
+      (lambda_ridge * Eigen::VectorXd::Ones(X.cols())).asDiagonal();
+  Eigen::VectorXd beta = (X.transpose() * Y + lambda_2 * w_t);
+  return (X.transpose() * X + diag).inverse() * beta;
+}
+
 double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
                                           const Eigen::VectorXd& x_query_aug,
                                           const Eigen::MatrixXd& X,
@@ -51,7 +65,7 @@ double CalculateLocallyWeightedRegression(const Eigen::VectorXd& x_query,
   }
 
   // Fit plane to the weighted data
-  // Calculate Pinv = X'WX + lambda I. P = inv(Pinv) is then
+  // Calculate Pinv = X'WX + lambda I. P = inv(Pinav) is then
   // P = inv(X'WX + lambda I).
   Eigen::MatrixXd Pinv = WX.transpose() * Xaug;
   if (ridge_lambda > 0) {

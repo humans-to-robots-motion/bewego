@@ -169,6 +169,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/motion/objective.cpp
     ${bewego_SOURCE_DIR}/motion/publisher.cpp
     ${bewego_SOURCE_DIR}/workspace/geometry.cpp
+    ${bewego_SOURCE_DIR}/workspace/analytical_grid.cpp
     ${bewego_SOURCE_DIR}/workspace/workspace.cpp
     ${bewego_SOURCE_DIR}/workspace/softmax_primitive_workspace.cpp
     ${bewego_SOURCE_DIR}/workspace/pixelmap.cpp

@@ -23,7 +23,7 @@
  *                                                             Thu 11 Feb 2021
  */
 
-// author: Jim Mainprice, mainprice@gmail.com
+// author: Jim Mainprice
 #pragma once
 
 #include <bewego/derivatives/differentiable_map.h>
@@ -46,16 +46,7 @@ namespace bewego {
 Eigen::VectorXd CalculateLinearRegression(const Eigen::MatrixXd& X,
                                           const Eigen::VectorXd& Y,
                                           const Eigen::VectorXd& w_t,
-                                          double lambda_1, double lambda_2) {
-  assert(w_t.size() == X.cols());
-  assert(X.rows() == Y.size());
-
-  double lambda_ridge = lambda_1 + lambda_2;
-  Eigen::MatrixXd diag =
-      (lambda_ridge * Eigen::VectorXd::Ones(X.cols())).asDiagonal();
-  Eigen::VectorXd beta = (X.transpose() * Y + lambda_2 * w_t);
-  return (X.transpose() * X + diag).inverse() * beta;
-}
+                                          double lambda_1, double lambda_2);
 
 class LinearRegressor {
  public:

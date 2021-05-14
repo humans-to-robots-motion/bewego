@@ -24,6 +24,7 @@
  */
 
 #include <bewego/workspace/geometry.h>
+#include <bewego/workspace/voxel_grid.h>
 
 using namespace bewego;
 
