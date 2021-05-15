@@ -76,7 +76,6 @@ TEST(MahalanobisToolsTest, TestRescaleMahalanobisMetric) {
   }
 }
 
-/**
 class FriendlyAnalyticalGrid : public AnalyticalGrid {
  public:
   FriendlyAnalyticalGrid() {}
@@ -91,8 +90,6 @@ class FriendlyAnalyticalGrid : public AnalyticalGrid {
 
   FRIEND_TEST(AnalyticalGridTest, ComputeNeighbors);
 };
-
-*/
 
 class AnalyticalGridTest : public ::testing::Test {
  public:

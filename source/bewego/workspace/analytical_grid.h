@@ -142,8 +142,8 @@ class RegressedVoxelGrid : public DifferentiableMap {
   /* \brief The input dimension will always be 3 because the underlying voxel
    * grid is in 3-space.
    */
-  uint32_t input_dimension() const { return 3; }
-  uint32_t output_dimension() const { return 1; }
+  virtual uint32_t input_dimension() const { return 3; }
+  virtual uint32_t output_dimension() const { return 1; }
 
   void set_analytical_grid(std::shared_ptr<const AnalyticalGrid> v) {
     analytical_grid_ = v;
