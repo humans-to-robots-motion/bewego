@@ -9,9 +9,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
 
 find_package(IPOPT 3.11.9 REQUIRED)
-string(REPLACE /coin
+if(CMAKE_MACOSX_RPATH)
+string(REPLACE /coin-or # Warning here this depends on the version
        "" IPOPT_INCLUDE_DIRS_STRIP
        ${IPOPT_INCLUDE_DIRS})
+else()
+string(REPLACE /coin # TODO
+     "" IPOPT_INCLUDE_DIRS_STRIP
+     ${IPOPT_INCLUDE_DIRS})
+endif()
+
 message("IOPT include_dirs: ${IPOPT_INCLUDE_DIRS}")
 message("IPOPT_INCLUDE_DIRS_STRIP: ${IPOPT_INCLUDE_DIRS_STRIP}")
 message("IOPT version: ${IPOPT_VERSION}") 
