@@ -148,6 +148,66 @@ class IdentityMap : public DifferentiableMap {
   uint32_t dim_;
 };
 
+/*! \brief Constant Map
+ *
+ * Details:
+ *
+ *     f(x) = a
+ *
+ * Note that the Jacobian and Hessian are zero and can be preallocated.
+ */
+class ConstantMap : public DifferentiableMap {
+ public:
+  ConstantMap(uint32_t n, const Eigen::VectorXd& a) : a_(a), dim_(n) {
+    type_ = "ConstantMap";
+    J_ = Eigen::MatrixXd::Zero(a_.size(), dim_);
+    if (a.size() == 1) {
+      g_ = Eigen::VectorXd::Zero(dim_, 1);
+      H_ = Eigen::MatrixXd::Zero(dim_, dim_);
+    }
+  }
+
+  uint32_t output_dimension() const { return a_.size(); }
+  uint32_t input_dimension() const { return dim_; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return a_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    assert(input_dimension() == x.size());
+    return J_;
+  }
+
+  Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    assert(input_dimension() == x.size());
+    return g_;
+  }
+
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    assert(output_dimension() == 1);
+    assert(input_dimension() == x.size());
+    return H_;
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const ConstantMap&>(other);
+      bool a_eq = (f.a_ - a_).cwiseAbs().maxCoeff() < 1e-6;
+      return (f.dim_ == dim_) && a_eq;
+    }
+  }
+
+ protected:
+  uint32_t dim_;
+  Eigen::VectorXd a_;
+};
+
 /*! \brief Half of the square map
  *
  * Details:

@@ -31,7 +31,7 @@
 #include <string>
 
 /*
- Initializes an interpolator using the specified datacube of length n1* n2* n3
+ Initializes an interpolator using the specified datacube of length n1 x n2 x n3
  where data is ordered first along the n1 axis [0,0,0], [1,0,0], ...,
  [n1-1,0,0], [0,1,0], ... If n2 and n3 are both omitted, then n1=n2=n3
  is assumed. Data is assumed to be equally spaced and periodic along

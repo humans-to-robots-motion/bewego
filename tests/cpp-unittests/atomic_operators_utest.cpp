@@ -54,6 +54,20 @@ TEST(atomic_operators, identity_map) {
   ASSERT_TRUE(f->type() == "IdentityMap");
 }
 
+TEST(atomic_operators, constant_map) {
+  std::srand(SEED);
+
+  Eigen::VectorXd a_1 = Eigen::VectorXd::Random(3);
+  f = std::make_shared<ConstantMap>(5, a_1);
+  ASSERT_TRUE(f->CheckJacobian());
+
+  Eigen::VectorXd a_2 = Eigen::VectorXd::Random(1);
+  f = std::make_shared<ConstantMap>(3, a_2);
+  ASSERT_TRUE(f->CheckHessian());
+
+  ASSERT_TRUE(f->type() == "ConstantMap");
+}
+
 TEST(atomic_operators, affine_map) {
   std::srand(SEED);
   const double precision = 1e-10;
