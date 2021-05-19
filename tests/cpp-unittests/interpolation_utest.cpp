@@ -207,7 +207,7 @@ TEST_F(TriCubicTest, Constant) {
 }
 
 TEST_F(TriCubicTest, Linear) {
-  verbose_ = true;
+  verbose_ = false;
   InitializeGrid(linear_function_);
   ValidateGrid();
 }

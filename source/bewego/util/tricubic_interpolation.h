@@ -28,20 +28,45 @@
 #include <Eigen/Dense>
 #include <vector>
 
-// This code is adapted from https://github.com/deepzot/likely
-// Performs tri-cubic interpolation within a 3D periodic grid.
-// Based on http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
+/* Tri-Cubic Interpolation
+
+ This code is adapted from https://github.com/deepzot/likely
+ Performs tri-cubic interpolation within a 3D periodic grid.
+
+ Based on:
+
+    Lekien, F., & Marsden, J. (2005).
+    Tricubic interpolation in three dimensions.
+    International Journal for Numerical Methods in Engineering, 63(3), 455-471.
+    http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
+ */
 class TriCubicGridInterpolator {
  public:
   typedef double fptype;
 
+  /* Initializes an interpolator using a
+     specified datacube of length n1 x n2 x n3,
+
+     where data is ordered first along the n1 axis
+     [0,0,0], [1,0,0], ..., [n1-1,0,0], [0,1,0], ... If n2 and n3 are both
+     omitted, then n1=n2=n3 is assumed. Data is assumed to be equally spaced and
+     periodic along each axis, with the coordinate origin (0,0,0)
+     at grid index [0,0,0].
+   */
   TriCubicGridInterpolator(const std::vector<fptype>& data, fptype spacing,
                            int n1, int n2, int n3);
   ~TriCubicGridInterpolator();
 
   fptype Evaluate(const Eigen::Matrix<fptype, 3, 1>& point);
 
- private:
+ protected:
+  /* Initialize the Data for voxel xi, yi, zi */
+  Eigen::Matrix<fptype, 64, 1> FiniteDifferenceDataAtCorners(int xi, int yi,
+                                                             int zi) const;
+
+  /* Initialize the C matrix (Called on construction) */
+  void InitializeCMatrix();
+
   std::vector<fptype> data_;
   fptype _spacing;
   int _n1, _n2, _n3;

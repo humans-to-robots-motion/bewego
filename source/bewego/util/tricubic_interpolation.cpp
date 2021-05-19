@@ -27,16 +27,10 @@
 
 #include <bewego/util/tricubic_interpolation.h>
 
+#include <array>
 #include <stdexcept>
 #include <string>
 
-/*
- Initializes an interpolator using the specified datacube of length n1 x n2 x n3
- where data is ordered first along the n1 axis [0,0,0], [1,0,0], ...,
- [n1-1,0,0], [0,1,0], ... If n2 and n3 are both omitted, then n1=n2=n3
- is assumed. Data is assumed to be equally spaced and periodic along
- each axis, with the coordinate origin (0,0,0) at grid index [0,0,0].
- */
 TriCubicGridInterpolator::TriCubicGridInterpolator(
     const std::vector<fptype>& data, fptype spacing, int n1, int n2, int n3) {
   _initialized = false;
@@ -56,6 +50,270 @@ TriCubicGridInterpolator::TriCubicGridInterpolator(
     throw std::runtime_error("Bad datacube grid spacing.");
   }
 
+  InitializeCMatrix();
+}
+
+TriCubicGridInterpolator::~TriCubicGridInterpolator() {}
+
+TriCubicGridInterpolator::fptype TriCubicGridInterpolator::Evaluate(
+    const Eigen::Matrix<fptype, 3, 1>& point) {
+  fptype x = point.x();
+  fptype y = point.y();
+  fptype z = point.z();
+
+  fptype dx = fmod(x / _spacing, _n1);
+  fptype dy = fmod(y / _spacing, _n2);
+  fptype dz = fmod(z / _spacing, _n3);
+  // determine the relative position in the
+  // box enclosed by nearest data points
+
+  if (dx < 0) dx += _n1;  // periodicity is built in
+  if (dy < 0) dy += _n2;
+  if (dz < 0) dz += _n3;
+
+  int xi = (int)floor(dx);  // calculate lower-bound grid indices
+  int yi = (int)floor(dy);
+  int zi = (int)floor(dz);
+
+  // Check if we can re-use coefficients from the last interpolation.
+  if (!_initialized || xi != _i1 || yi != _i2 || zi != _i3) {
+    // Extract the local vocal values and calculate partial derivatives.
+    auto x = FiniteDifferenceDataAtCorners(xi, yi, zi);
+    // Convert voxel values and partial derivatives
+    // to interpolation coefficients
+    _coefs = _C * x;
+    // Remember this voxel for next time.
+    _i1 = xi;
+    _i2 = yi;
+    _i3 = zi;
+    _initialized = true;
+  }
+  // Evaluate the interpolation within this grid voxel.
+  dx -= xi;
+  dy -= yi;
+  dz -= zi;
+  int ijkn(0);
+  fptype dzpow(1);
+  fptype result(0);
+  for (int k = 0; k < 4; ++k) {
+    fptype dypow(1);
+    for (int j = 0; j < 4; ++j) {
+      result += dypow * dzpow *
+                (_coefs[ijkn] +
+                 dx * (_coefs[ijkn + 1] +
+                       dx * (_coefs[ijkn + 2] + dx * _coefs[ijkn + 3])));
+      ijkn += 4;
+      dypow *= dy;
+    }
+    dzpow *= dz;
+  }
+  return result;
+}
+
+Eigen::Matrix<TriCubicGridInterpolator::fptype, 64, 1>
+TriCubicGridInterpolator::FiniteDifferenceDataAtCorners(int xi, int yi,
+                                                        int zi) const {
+  Eigen::Matrix<fptype, 64, 1> x;
+  x <<
+      // values of f(x,y,z) at each corner.
+      data_[_index(xi, yi, zi)],
+      data_[_index(xi + 1, yi, zi)], data_[_index(xi, yi + 1, zi)],
+      data_[_index(xi + 1, yi + 1, zi)], data_[_index(xi, yi, zi + 1)],
+      data_[_index(xi + 1, yi, zi + 1)], data_[_index(xi, yi + 1, zi + 1)],
+      data_[_index(xi + 1, yi + 1, zi + 1)],
+      // values of df/dx at each corner.
+      0.5 * (data_[_index(xi + 1, yi, zi)] - data_[_index(xi - 1, yi, zi)]),
+      0.5 * (data_[_index(xi + 2, yi, zi)] - data_[_index(xi, yi, zi)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi)] -
+             data_[_index(xi - 1, yi + 1, zi)]),
+      0.5 * (data_[_index(xi + 2, yi + 1, zi)] - data_[_index(xi, yi + 1, zi)]),
+      0.5 * (data_[_index(xi + 1, yi, zi + 1)] -
+             data_[_index(xi - 1, yi, zi + 1)]),
+      0.5 * (data_[_index(xi + 2, yi, zi + 1)] - data_[_index(xi, yi, zi + 1)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+             data_[_index(xi - 1, yi + 1, zi + 1)]),
+      0.5 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
+             data_[_index(xi, yi + 1, zi + 1)]),
+      // values of df/dy at each corner.
+      0.5 * (data_[_index(xi, yi + 1, zi)] - data_[_index(xi, yi - 1, zi)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi)] -
+             data_[_index(xi + 1, yi - 1, zi)]),
+      0.5 * (data_[_index(xi, yi + 2, zi)] - data_[_index(xi, yi, zi)]),
+      0.5 * (data_[_index(xi + 1, yi + 2, zi)] - data_[_index(xi + 1, yi, zi)]),
+      0.5 * (data_[_index(xi, yi + 1, zi + 1)] -
+             data_[_index(xi, yi - 1, zi + 1)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+             data_[_index(xi + 1, yi - 1, zi + 1)]),
+      0.5 * (data_[_index(xi, yi + 2, zi + 1)] - data_[_index(xi, yi, zi + 1)]),
+      0.5 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
+             data_[_index(xi + 1, yi, zi + 1)]),
+      // values of df/dz at each corner.
+      0.5 * (data_[_index(xi, yi, zi + 1)] - data_[_index(xi, yi, zi - 1)]),
+      0.5 * (data_[_index(xi + 1, yi, zi + 1)] -
+             data_[_index(xi + 1, yi, zi - 1)]),
+      0.5 * (data_[_index(xi, yi + 1, zi + 1)] -
+             data_[_index(xi, yi + 1, zi - 1)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+             data_[_index(xi + 1, yi + 1, zi - 1)]),
+      0.5 * (data_[_index(xi, yi, zi + 2)] - data_[_index(xi, yi, zi)]),
+      0.5 * (data_[_index(xi + 1, yi, zi + 2)] - data_[_index(xi + 1, yi, zi)]),
+      0.5 * (data_[_index(xi, yi + 1, zi + 2)] - data_[_index(xi, yi + 1, zi)]),
+      0.5 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
+             data_[_index(xi + 1, yi + 1, zi)]),
+      // values of d2f/dxdy at each corner.
+      0.25 * (data_[_index(xi + 1, yi + 1, zi)] -
+              data_[_index(xi - 1, yi + 1, zi)] -
+              data_[_index(xi + 1, yi - 1, zi)] +
+              data_[_index(xi - 1, yi - 1, zi)]),
+      0.25 *
+          (data_[_index(xi + 2, yi + 1, zi)] - data_[_index(xi, yi + 1, zi)] -
+           data_[_index(xi + 2, yi - 1, zi)] + data_[_index(xi, yi - 1, zi)]),
+      0.25 * (data_[_index(xi + 1, yi + 2, zi)] -
+              data_[_index(xi - 1, yi + 2, zi)] -
+              data_[_index(xi + 1, yi, zi)] + data_[_index(xi - 1, yi, zi)]),
+      0.25 *
+          (data_[_index(xi + 2, yi + 2, zi)] - data_[_index(xi, yi + 2, zi)] -
+           data_[_index(xi + 2, yi, zi)] + data_[_index(xi, yi, zi)]),
+      0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+              data_[_index(xi - 1, yi + 1, zi + 1)] -
+              data_[_index(xi + 1, yi - 1, zi + 1)] +
+              data_[_index(xi - 1, yi - 1, zi + 1)]),
+      0.25 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
+              data_[_index(xi, yi + 1, zi + 1)] -
+              data_[_index(xi + 2, yi - 1, zi + 1)] +
+              data_[_index(xi, yi - 1, zi + 1)]),
+      0.25 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
+              data_[_index(xi - 1, yi + 2, zi + 1)] -
+              data_[_index(xi + 1, yi, zi + 1)] +
+              data_[_index(xi - 1, yi, zi + 1)]),
+      0.25 *
+          (data_[_index(xi + 2, yi + 2, zi + 1)] -
+           data_[_index(xi, yi + 2, zi + 1)] -
+           data_[_index(xi + 2, yi, zi + 1)] + data_[_index(xi, yi, zi + 1)]),
+      // values of d2f/dxdz at each corner.
+      0.25 * (data_[_index(xi + 1, yi, zi + 1)] -
+              data_[_index(xi - 1, yi, zi + 1)] -
+              data_[_index(xi + 1, yi, zi - 1)] +
+              data_[_index(xi - 1, yi, zi - 1)]),
+      0.25 *
+          (data_[_index(xi + 2, yi, zi + 1)] - data_[_index(xi, yi, zi + 1)] -
+           data_[_index(xi + 2, yi, zi - 1)] + data_[_index(xi, yi, zi - 1)]),
+      0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+              data_[_index(xi - 1, yi + 1, zi + 1)] -
+              data_[_index(xi + 1, yi + 1, zi - 1)] +
+              data_[_index(xi - 1, yi + 1, zi - 1)]),
+      0.25 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
+              data_[_index(xi, yi + 1, zi + 1)] -
+              data_[_index(xi + 2, yi + 1, zi - 1)] +
+              data_[_index(xi, yi + 1, zi - 1)]),
+      0.25 * (data_[_index(xi + 1, yi, zi + 2)] -
+              data_[_index(xi - 1, yi, zi + 2)] -
+              data_[_index(xi + 1, yi, zi)] + data_[_index(xi - 1, yi, zi)]),
+      0.25 *
+          (data_[_index(xi + 2, yi, zi + 2)] - data_[_index(xi, yi, zi + 2)] -
+           data_[_index(xi + 2, yi, zi)] + data_[_index(xi, yi, zi)]),
+      0.25 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
+              data_[_index(xi - 1, yi + 1, zi + 2)] -
+              data_[_index(xi + 1, yi + 1, zi)] +
+              data_[_index(xi - 1, yi + 1, zi)]),
+      0.25 *
+          (data_[_index(xi + 2, yi + 1, zi + 2)] -
+           data_[_index(xi, yi + 1, zi + 2)] -
+           data_[_index(xi + 2, yi + 1, zi)] + data_[_index(xi, yi + 1, zi)]),
+      // values of d2f/dydz at each corner.
+      0.25 * (data_[_index(xi, yi + 1, zi + 1)] -
+              data_[_index(xi, yi - 1, zi + 1)] -
+              data_[_index(xi, yi + 1, zi - 1)] +
+              data_[_index(xi, yi - 1, zi - 1)]),
+      0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+              data_[_index(xi + 1, yi - 1, zi + 1)] -
+              data_[_index(xi + 1, yi + 1, zi - 1)] +
+              data_[_index(xi + 1, yi - 1, zi - 1)]),
+      0.25 *
+          (data_[_index(xi, yi + 2, zi + 1)] - data_[_index(xi, yi, zi + 1)] -
+           data_[_index(xi, yi + 2, zi - 1)] + data_[_index(xi, yi, zi - 1)]),
+      0.25 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
+              data_[_index(xi + 1, yi, zi + 1)] -
+              data_[_index(xi + 1, yi + 2, zi - 1)] +
+              data_[_index(xi + 1, yi, zi - 1)]),
+      0.25 * (data_[_index(xi, yi + 1, zi + 2)] -
+              data_[_index(xi, yi - 1, zi + 2)] -
+              data_[_index(xi, yi + 1, zi)] + data_[_index(xi, yi - 1, zi)]),
+      0.25 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
+              data_[_index(xi + 1, yi - 1, zi + 2)] -
+              data_[_index(xi + 1, yi + 1, zi)] +
+              data_[_index(xi + 1, yi - 1, zi)]),
+      0.25 *
+          (data_[_index(xi, yi + 2, zi + 2)] - data_[_index(xi, yi, zi + 2)] -
+           data_[_index(xi, yi + 2, zi)] + data_[_index(xi, yi, zi)]),
+      0.25 *
+          (data_[_index(xi + 1, yi + 2, zi + 2)] -
+           data_[_index(xi + 1, yi, zi + 2)] -
+           data_[_index(xi + 1, yi + 2, zi)] + data_[_index(xi + 1, yi, zi)]),
+      // values of d3f/dxdydz at each corner.
+      0.125 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
+               data_[_index(xi - 1, yi + 1, zi + 1)] -
+               data_[_index(xi + 1, yi - 1, zi + 1)] +
+               data_[_index(xi - 1, yi - 1, zi + 1)] -
+               data_[_index(xi + 1, yi + 1, zi - 1)] +
+               data_[_index(xi - 1, yi + 1, zi - 1)] +
+               data_[_index(xi + 1, yi - 1, zi - 1)] -
+               data_[_index(xi - 1, yi - 1, zi - 1)]),
+      0.125 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
+               data_[_index(xi, yi + 1, zi + 1)] -
+               data_[_index(xi + 2, yi - 1, zi + 1)] +
+               data_[_index(xi, yi - 1, zi + 1)] -
+               data_[_index(xi + 2, yi + 1, zi - 1)] +
+               data_[_index(xi, yi + 1, zi - 1)] +
+               data_[_index(xi + 2, yi - 1, zi - 1)] -
+               data_[_index(xi, yi - 1, zi - 1)]),
+      0.125 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
+               data_[_index(xi - 1, yi + 2, zi + 1)] -
+               data_[_index(xi + 1, yi, zi + 1)] +
+               data_[_index(xi - 1, yi, zi + 1)] -
+               data_[_index(xi + 1, yi + 2, zi - 1)] +
+               data_[_index(xi - 1, yi + 2, zi - 1)] +
+               data_[_index(xi + 1, yi, zi - 1)] -
+               data_[_index(xi - 1, yi, zi - 1)]),
+      0.125 *
+          (data_[_index(xi + 2, yi + 2, zi + 1)] -
+           data_[_index(xi, yi + 2, zi + 1)] -
+           data_[_index(xi + 2, yi, zi + 1)] + data_[_index(xi, yi, zi + 1)] -
+           data_[_index(xi + 2, yi + 2, zi - 1)] +
+           data_[_index(xi, yi + 2, zi - 1)] +
+           data_[_index(xi + 2, yi, zi - 1)] - data_[_index(xi, yi, zi - 1)]),
+      0.125 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
+               data_[_index(xi - 1, yi + 1, zi + 2)] -
+               data_[_index(xi + 1, yi - 1, zi + 2)] +
+               data_[_index(xi - 1, yi - 1, zi + 2)] -
+               data_[_index(xi + 1, yi + 1, zi)] +
+               data_[_index(xi - 1, yi + 1, zi)] +
+               data_[_index(xi + 1, yi - 1, zi)] -
+               data_[_index(xi - 1, yi - 1, zi)]),
+      0.125 *
+          (data_[_index(xi + 2, yi + 1, zi + 2)] -
+           data_[_index(xi, yi + 1, zi + 2)] -
+           data_[_index(xi + 2, yi - 1, zi + 2)] +
+           data_[_index(xi, yi - 1, zi + 2)] -
+           data_[_index(xi + 2, yi + 1, zi)] + data_[_index(xi, yi + 1, zi)] +
+           data_[_index(xi + 2, yi - 1, zi)] - data_[_index(xi, yi - 1, zi)]),
+      0.125 * (data_[_index(xi + 1, yi + 2, zi + 2)] -
+               data_[_index(xi - 1, yi + 2, zi + 2)] -
+               data_[_index(xi + 1, yi, zi + 2)] +
+               data_[_index(xi - 1, yi, zi + 2)] -
+               data_[_index(xi + 1, yi + 2, zi)] +
+               data_[_index(xi - 1, yi + 2, zi)] +
+               data_[_index(xi + 1, yi, zi)] - data_[_index(xi - 1, yi, zi)]),
+      0.125 *
+          (data_[_index(xi + 2, yi + 2, zi + 2)] -
+           data_[_index(xi, yi + 2, zi + 2)] -
+           data_[_index(xi + 2, yi, zi + 2)] + data_[_index(xi, yi, zi + 2)] -
+           data_[_index(xi + 2, yi + 2, zi)] + data_[_index(xi, yi + 2, zi)] +
+           data_[_index(xi + 2, yi, zi)] - data_[_index(xi, yi, zi)]);
+  return x;
+}
+
+void TriCubicGridInterpolator::InitializeCMatrix() {
   // temporary array is necessary, otherwise compiler has problems with Eigen
   // and takes very long to compile
   const int temp[64][64] = {
@@ -270,263 +528,4 @@ TriCubicGridInterpolator::TriCubicGridInterpolator(
 
   for (int i = 0; i < 64; i++)
     for (int j = 0; j < 64; j++) _C(i, j) = temp[i][j];
-}
-
-TriCubicGridInterpolator::~TriCubicGridInterpolator() {}
-
-TriCubicGridInterpolator::fptype TriCubicGridInterpolator::Evaluate(
-    const Eigen::Matrix<fptype, 3, 1>& point) {
-  fptype x = point.x();
-  fptype y = point.y();
-  fptype z = point.z();
-
-  fptype dx = fmod(x / _spacing, _n1);
-  fptype dy = fmod(y / _spacing, _n2);
-  fptype dz = fmod(z / _spacing, _n3);
-  // determine the relative position in the
-  // box enclosed by nearest data points
-
-  if (dx < 0) dx += _n1;  // periodicity is built in
-  if (dy < 0) dy += _n2;
-  if (dz < 0) dz += _n3;
-
-  int xi = (int)floor(dx);  // calculate lower-bound grid indices
-  int yi = (int)floor(dy);
-  int zi = (int)floor(dz);
-
-  // Check if we can re-use coefficients from the last interpolation.
-  if (!_initialized || xi != _i1 || yi != _i2 || zi != _i3) {
-    // Extract the local vocal values and calculate partial derivatives.
-    Eigen::Matrix<fptype, 64, 1> x;
-    x <<
-        // values of f(x,y,z) at each corner.
-        data_[_index(xi, yi, zi)],
-        data_[_index(xi + 1, yi, zi)], data_[_index(xi, yi + 1, zi)],
-        data_[_index(xi + 1, yi + 1, zi)], data_[_index(xi, yi, zi + 1)],
-        data_[_index(xi + 1, yi, zi + 1)], data_[_index(xi, yi + 1, zi + 1)],
-        data_[_index(xi + 1, yi + 1, zi + 1)],
-        // values of df/dx at each corner.
-        0.5 * (data_[_index(xi + 1, yi, zi)] - data_[_index(xi - 1, yi, zi)]),
-        0.5 * (data_[_index(xi + 2, yi, zi)] - data_[_index(xi, yi, zi)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi)] -
-               data_[_index(xi - 1, yi + 1, zi)]),
-        0.5 *
-            (data_[_index(xi + 2, yi + 1, zi)] - data_[_index(xi, yi + 1, zi)]),
-        0.5 * (data_[_index(xi + 1, yi, zi + 1)] -
-               data_[_index(xi - 1, yi, zi + 1)]),
-        0.5 *
-            (data_[_index(xi + 2, yi, zi + 1)] - data_[_index(xi, yi, zi + 1)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-               data_[_index(xi - 1, yi + 1, zi + 1)]),
-        0.5 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
-               data_[_index(xi, yi + 1, zi + 1)]),
-        // values of df/dy at each corner.
-        0.5 * (data_[_index(xi, yi + 1, zi)] - data_[_index(xi, yi - 1, zi)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi)] -
-               data_[_index(xi + 1, yi - 1, zi)]),
-        0.5 * (data_[_index(xi, yi + 2, zi)] - data_[_index(xi, yi, zi)]),
-        0.5 *
-            (data_[_index(xi + 1, yi + 2, zi)] - data_[_index(xi + 1, yi, zi)]),
-        0.5 * (data_[_index(xi, yi + 1, zi + 1)] -
-               data_[_index(xi, yi - 1, zi + 1)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-               data_[_index(xi + 1, yi - 1, zi + 1)]),
-        0.5 *
-            (data_[_index(xi, yi + 2, zi + 1)] - data_[_index(xi, yi, zi + 1)]),
-        0.5 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
-               data_[_index(xi + 1, yi, zi + 1)]),
-        // values of df/dz at each corner.
-        0.5 * (data_[_index(xi, yi, zi + 1)] - data_[_index(xi, yi, zi - 1)]),
-        0.5 * (data_[_index(xi + 1, yi, zi + 1)] -
-               data_[_index(xi + 1, yi, zi - 1)]),
-        0.5 * (data_[_index(xi, yi + 1, zi + 1)] -
-               data_[_index(xi, yi + 1, zi - 1)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-               data_[_index(xi + 1, yi + 1, zi - 1)]),
-        0.5 * (data_[_index(xi, yi, zi + 2)] - data_[_index(xi, yi, zi)]),
-        0.5 *
-            (data_[_index(xi + 1, yi, zi + 2)] - data_[_index(xi + 1, yi, zi)]),
-        0.5 *
-            (data_[_index(xi, yi + 1, zi + 2)] - data_[_index(xi, yi + 1, zi)]),
-        0.5 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
-               data_[_index(xi + 1, yi + 1, zi)]),
-        // values of d2f/dxdy at each corner.
-        0.25 * (data_[_index(xi + 1, yi + 1, zi)] -
-                data_[_index(xi - 1, yi + 1, zi)] -
-                data_[_index(xi + 1, yi - 1, zi)] +
-                data_[_index(xi - 1, yi - 1, zi)]),
-        0.25 *
-            (data_[_index(xi + 2, yi + 1, zi)] - data_[_index(xi, yi + 1, zi)] -
-             data_[_index(xi + 2, yi - 1, zi)] + data_[_index(xi, yi - 1, zi)]),
-        0.25 * (data_[_index(xi + 1, yi + 2, zi)] -
-                data_[_index(xi - 1, yi + 2, zi)] -
-                data_[_index(xi + 1, yi, zi)] + data_[_index(xi - 1, yi, zi)]),
-        0.25 *
-            (data_[_index(xi + 2, yi + 2, zi)] - data_[_index(xi, yi + 2, zi)] -
-             data_[_index(xi + 2, yi, zi)] + data_[_index(xi, yi, zi)]),
-        0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-                data_[_index(xi - 1, yi + 1, zi + 1)] -
-                data_[_index(xi + 1, yi - 1, zi + 1)] +
-                data_[_index(xi - 1, yi - 1, zi + 1)]),
-        0.25 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
-                data_[_index(xi, yi + 1, zi + 1)] -
-                data_[_index(xi + 2, yi - 1, zi + 1)] +
-                data_[_index(xi, yi - 1, zi + 1)]),
-        0.25 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
-                data_[_index(xi - 1, yi + 2, zi + 1)] -
-                data_[_index(xi + 1, yi, zi + 1)] +
-                data_[_index(xi - 1, yi, zi + 1)]),
-        0.25 *
-            (data_[_index(xi + 2, yi + 2, zi + 1)] -
-             data_[_index(xi, yi + 2, zi + 1)] -
-             data_[_index(xi + 2, yi, zi + 1)] + data_[_index(xi, yi, zi + 1)]),
-        // values of d2f/dxdz at each corner.
-        0.25 * (data_[_index(xi + 1, yi, zi + 1)] -
-                data_[_index(xi - 1, yi, zi + 1)] -
-                data_[_index(xi + 1, yi, zi - 1)] +
-                data_[_index(xi - 1, yi, zi - 1)]),
-        0.25 *
-            (data_[_index(xi + 2, yi, zi + 1)] - data_[_index(xi, yi, zi + 1)] -
-             data_[_index(xi + 2, yi, zi - 1)] + data_[_index(xi, yi, zi - 1)]),
-        0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-                data_[_index(xi - 1, yi + 1, zi + 1)] -
-                data_[_index(xi + 1, yi + 1, zi - 1)] +
-                data_[_index(xi - 1, yi + 1, zi - 1)]),
-        0.25 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
-                data_[_index(xi, yi + 1, zi + 1)] -
-                data_[_index(xi + 2, yi + 1, zi - 1)] +
-                data_[_index(xi, yi + 1, zi - 1)]),
-        0.25 * (data_[_index(xi + 1, yi, zi + 2)] -
-                data_[_index(xi - 1, yi, zi + 2)] -
-                data_[_index(xi + 1, yi, zi)] + data_[_index(xi - 1, yi, zi)]),
-        0.25 *
-            (data_[_index(xi + 2, yi, zi + 2)] - data_[_index(xi, yi, zi + 2)] -
-             data_[_index(xi + 2, yi, zi)] + data_[_index(xi, yi, zi)]),
-        0.25 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
-                data_[_index(xi - 1, yi + 1, zi + 2)] -
-                data_[_index(xi + 1, yi + 1, zi)] +
-                data_[_index(xi - 1, yi + 1, zi)]),
-        0.25 *
-            (data_[_index(xi + 2, yi + 1, zi + 2)] -
-             data_[_index(xi, yi + 1, zi + 2)] -
-             data_[_index(xi + 2, yi + 1, zi)] + data_[_index(xi, yi + 1, zi)]),
-        // values of d2f/dydz at each corner.
-        0.25 * (data_[_index(xi, yi + 1, zi + 1)] -
-                data_[_index(xi, yi - 1, zi + 1)] -
-                data_[_index(xi, yi + 1, zi - 1)] +
-                data_[_index(xi, yi - 1, zi - 1)]),
-        0.25 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-                data_[_index(xi + 1, yi - 1, zi + 1)] -
-                data_[_index(xi + 1, yi + 1, zi - 1)] +
-                data_[_index(xi + 1, yi - 1, zi - 1)]),
-        0.25 *
-            (data_[_index(xi, yi + 2, zi + 1)] - data_[_index(xi, yi, zi + 1)] -
-             data_[_index(xi, yi + 2, zi - 1)] + data_[_index(xi, yi, zi - 1)]),
-        0.25 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
-                data_[_index(xi + 1, yi, zi + 1)] -
-                data_[_index(xi + 1, yi + 2, zi - 1)] +
-                data_[_index(xi + 1, yi, zi - 1)]),
-        0.25 * (data_[_index(xi, yi + 1, zi + 2)] -
-                data_[_index(xi, yi - 1, zi + 2)] -
-                data_[_index(xi, yi + 1, zi)] + data_[_index(xi, yi - 1, zi)]),
-        0.25 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
-                data_[_index(xi + 1, yi - 1, zi + 2)] -
-                data_[_index(xi + 1, yi + 1, zi)] +
-                data_[_index(xi + 1, yi - 1, zi)]),
-        0.25 *
-            (data_[_index(xi, yi + 2, zi + 2)] - data_[_index(xi, yi, zi + 2)] -
-             data_[_index(xi, yi + 2, zi)] + data_[_index(xi, yi, zi)]),
-        0.25 *
-            (data_[_index(xi + 1, yi + 2, zi + 2)] -
-             data_[_index(xi + 1, yi, zi + 2)] -
-             data_[_index(xi + 1, yi + 2, zi)] + data_[_index(xi + 1, yi, zi)]),
-        // values of d3f/dxdydz at each corner.
-        0.125 * (data_[_index(xi + 1, yi + 1, zi + 1)] -
-                 data_[_index(xi - 1, yi + 1, zi + 1)] -
-                 data_[_index(xi + 1, yi - 1, zi + 1)] +
-                 data_[_index(xi - 1, yi - 1, zi + 1)] -
-                 data_[_index(xi + 1, yi + 1, zi - 1)] +
-                 data_[_index(xi - 1, yi + 1, zi - 1)] +
-                 data_[_index(xi + 1, yi - 1, zi - 1)] -
-                 data_[_index(xi - 1, yi - 1, zi - 1)]),
-        0.125 * (data_[_index(xi + 2, yi + 1, zi + 1)] -
-                 data_[_index(xi, yi + 1, zi + 1)] -
-                 data_[_index(xi + 2, yi - 1, zi + 1)] +
-                 data_[_index(xi, yi - 1, zi + 1)] -
-                 data_[_index(xi + 2, yi + 1, zi - 1)] +
-                 data_[_index(xi, yi + 1, zi - 1)] +
-                 data_[_index(xi + 2, yi - 1, zi - 1)] -
-                 data_[_index(xi, yi - 1, zi - 1)]),
-        0.125 * (data_[_index(xi + 1, yi + 2, zi + 1)] -
-                 data_[_index(xi - 1, yi + 2, zi + 1)] -
-                 data_[_index(xi + 1, yi, zi + 1)] +
-                 data_[_index(xi - 1, yi, zi + 1)] -
-                 data_[_index(xi + 1, yi + 2, zi - 1)] +
-                 data_[_index(xi - 1, yi + 2, zi - 1)] +
-                 data_[_index(xi + 1, yi, zi - 1)] -
-                 data_[_index(xi - 1, yi, zi - 1)]),
-        0.125 *
-            (data_[_index(xi + 2, yi + 2, zi + 1)] -
-             data_[_index(xi, yi + 2, zi + 1)] -
-             data_[_index(xi + 2, yi, zi + 1)] + data_[_index(xi, yi, zi + 1)] -
-             data_[_index(xi + 2, yi + 2, zi - 1)] +
-             data_[_index(xi, yi + 2, zi - 1)] +
-             data_[_index(xi + 2, yi, zi - 1)] - data_[_index(xi, yi, zi - 1)]),
-        0.125 * (data_[_index(xi + 1, yi + 1, zi + 2)] -
-                 data_[_index(xi - 1, yi + 1, zi + 2)] -
-                 data_[_index(xi + 1, yi - 1, zi + 2)] +
-                 data_[_index(xi - 1, yi - 1, zi + 2)] -
-                 data_[_index(xi + 1, yi + 1, zi)] +
-                 data_[_index(xi - 1, yi + 1, zi)] +
-                 data_[_index(xi + 1, yi - 1, zi)] -
-                 data_[_index(xi - 1, yi - 1, zi)]),
-        0.125 *
-            (data_[_index(xi + 2, yi + 1, zi + 2)] -
-             data_[_index(xi, yi + 1, zi + 2)] -
-             data_[_index(xi + 2, yi - 1, zi + 2)] +
-             data_[_index(xi, yi - 1, zi + 2)] -
-             data_[_index(xi + 2, yi + 1, zi)] + data_[_index(xi, yi + 1, zi)] +
-             data_[_index(xi + 2, yi - 1, zi)] - data_[_index(xi, yi - 1, zi)]),
-        0.125 * (data_[_index(xi + 1, yi + 2, zi + 2)] -
-                 data_[_index(xi - 1, yi + 2, zi + 2)] -
-                 data_[_index(xi + 1, yi, zi + 2)] +
-                 data_[_index(xi - 1, yi, zi + 2)] -
-                 data_[_index(xi + 1, yi + 2, zi)] +
-                 data_[_index(xi - 1, yi + 2, zi)] +
-                 data_[_index(xi + 1, yi, zi)] - data_[_index(xi - 1, yi, zi)]),
-        0.125 *
-            (data_[_index(xi + 2, yi + 2, zi + 2)] -
-             data_[_index(xi, yi + 2, zi + 2)] -
-             data_[_index(xi + 2, yi, zi + 2)] + data_[_index(xi, yi, zi + 2)] -
-             data_[_index(xi + 2, yi + 2, zi)] + data_[_index(xi, yi + 2, zi)] +
-             data_[_index(xi + 2, yi, zi)] - data_[_index(xi, yi, zi)]);
-    // Convert voxel values and partial derivatives
-    // to interpolatio coefficients
-    _coefs = _C * x;
-    // Remember this voxel for next time.
-    _i1 = xi;
-    _i2 = yi;
-    _i3 = zi;
-    _initialized = true;
-  }
-  // Evaluate the interpolation within this grid voxel.
-  dx -= xi;
-  dy -= yi;
-  dz -= zi;
-  int ijkn(0);
-  fptype dzpow(1);
-  fptype result(0);
-  for (int k = 0; k < 4; ++k) {
-    fptype dypow(1);
-    for (int j = 0; j < 4; ++j) {
-      result += dypow * dzpow *
-                (_coefs[ijkn] +
-                 dx * (_coefs[ijkn + 1] +
-                       dx * (_coefs[ijkn + 2] + dx * _coefs[ijkn + 3])));
-      ijkn += 4;
-      dypow *= dy;
-    }
-    dzpow *= dz;
-  }
-  return result;
 }
