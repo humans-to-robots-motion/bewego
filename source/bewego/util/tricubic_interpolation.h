@@ -65,7 +65,8 @@ class TriCubicGridInterpolator {
                                                              int zi) const;
 
   /* Initialize the C matrix (Called on construction) */
-  void InitializeCMatrix();
+  void InitializeC1Matrix();
+  void InitializeC2Matrix();
 
   std::vector<fptype> data_;
   fptype _spacing;
@@ -73,7 +74,8 @@ class TriCubicGridInterpolator {
   int _i1, _i2, _i3;
   bool _initialized;
   Eigen::Matrix<fptype, 64, 1> _coefs;
-  Eigen::Matrix<fptype, 64, 64> _C;
+  Eigen::Matrix<fptype, 64, 64> _C1;  // _C1 = A_inv matrix
+  Eigen::Matrix<fptype, 64, 64> _C2;  // _C2 = A_inv * B : Matrix including FD
   inline int _index(int i1, int i2, int i3) const {
     if ((i1 %= _n1) < 0) i1 += _n1;
     if ((i2 %= _n2) < 0) i2 += _n2;
