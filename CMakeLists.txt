@@ -153,6 +153,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/util/range.cpp
     ${bewego_SOURCE_DIR}/util/chrono.cpp
     ${bewego_SOURCE_DIR}/util/interpolation.cpp
+    ${bewego_SOURCE_DIR}/util/tricubic_interpolation.cpp
     ${bewego_SOURCE_DIR}/util/socket.cpp
     ${bewego_SOURCE_DIR}/derivatives/differentiable_map.cpp
     ${bewego_SOURCE_DIR}/derivatives/atomic_operators.cpp
