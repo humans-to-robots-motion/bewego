@@ -143,114 +143,71 @@ TEST(LWRTest, Evaluation) {
   EXPECT_NEAR(value, 0.307063690815270, 1e-7);
 }
 
-/**
 class TriCubicTest : public ::testing::Test {
  public:
   void SetUp() {
-    analytical_grid_ = AnalyticalGrid(
-        .02, CreateEnvironmentBox(-.1, .1, -.1, .1, -.1, .1), false);
-    Eigen::VectorXd a(3);
-    a << 1, 2, 3;
-    double b = -.1;
+    verbose_ = false;
     linear_function_ = SetUpLinearFunction();
     constant_function_ = SetUpConstantFunction();
+    delta_ = 1;
+    max_ = 30;
+    n_ = max_ / delta_;
   }
 
-  void ValidateGridPoint(const Eigen::Vector3i &query_cell, double precision,
-                         bool verbose) {
-    Eigen::Vector3d query_pt = analytical_grid_.gridToWorld(query_cell);
-    double actual_value = (*linear_function_)(query_pt)[0];
-    double potential_value = analytical_grid_.CalculatePotential(query_pt);
-    if (verbose) {
-      cout << "------------------------" << endl;
-      cout << "query_cell: " << query_cell.transpose()
-           << ", query_pt: " << query_pt.transpose() << endl;
-      cout << actual_value << endl;
-      cout << potential_value << endl;
+  void InitializeGrid(std::shared_ptr<DifferentiableMap> f) {
+    uint32_t nb_points = n_ * n_ * n_;
+    X_ = Eigen::MatrixXd(nb_points, 3);
+    Y_ = Eigen::VectorXd(nb_points);
+    ASSERT_EQ(Y_.size(), X_.rows());
+    uint32_t i = 0;
+    for (double z = 0.; z < max_; z += delta_) {
+      for (double y = 0.; y < max_; y += delta_) {
+        for (double x = 0.; x < max_; x += delta_) {
+          X_.row(i) << x, y, z;
+          Y_(i) = (*f)(X_.row(i))[0];
+          i++;
+        }
+      }
     }
-    EXPECT_NEAR(actual_value, potential_value, precision);
+  }
+
+  void ValidateGrid() {
+    std::vector<double> data(Y_.data(), Y_.data() + Y_.size());
+    auto tricubic =
+        std::make_shared<TriCubicGridInterpolator>(data, 1, n_, n_, n_);
+    double precision = 1e-3;
+    for (uint i = 0; i < X_.rows(); i++) {
+      double actual_value = Y_(i);
+      double potential_value = tricubic->Evaluate(X_.row(i));
+      if (verbose_) {
+        cout << "------------------------" << endl;
+        cout << "p: " << X_.row(i) << endl;
+        cout << "actual_value: " << actual_value << endl;
+        cout << "potential_value: " << potential_value << endl;
+      }
+      EXPECT_NEAR(actual_value, potential_value, precision);
+    }
   }
 
  protected:
-  double neighborhood_threshold_;
-  double weight_threshold_;
-  AnalyticalGrid analytical_grid_;
-  std::shared_ptr<LinearMap> linear_function_;
-  std::shared_ptr<LinearMap> constant_function_;
+  bool verbose_;
+  double delta_;
+  double max_;
+  uint32_t n_;
+  Eigen::MatrixXd X_;
+  Eigen::VectorXd Y_;
+  std::shared_ptr<DifferentiableMap> linear_function_;
+  std::shared_ptr<DifferentiableMap> constant_function_;
 };
-**/
 
-TEST(TricubicInterpolation, Constant) {
-  bool verbose = false;
-  double delta = 1;
-  double max = 30;
-  uint32_t n = max / delta;
-  uint32_t nb_points = n * n * n;
-  Eigen::MatrixXd X(nb_points, 3);
-  Eigen::VectorXd Y(nb_points);
-  uint32_t i = 0;
-  for (double z = 0.; z < max; z += delta) {
-    for (double x = 0.; x < max; x += delta) {
-      for (double y = 0.; y < max; y += delta) {
-        X.row(i) << x, y, z;
-        Y(i) = 17.;
-        i++;
-      }
-    }
-  }
-
-  ASSERT_EQ(Y.size(), X.rows());
-
-  std::vector<double> data(Y.data(), Y.data() + Y.size());
-  auto tricubic = std::make_shared<TriCubicGridInterpolator>(data, 1, n, n, n);
-  double precision = 1e-3;
-  for (i = 0; i < X.rows(); i++) {
-    double actual_value = 17.;
-    double potential_value = tricubic->Evaluate(X.row(i));
-    if (verbose) {
-      cout << "------------------------" << endl;
-      cout << "p: " << X.row(i) << endl;
-      cout << "actual_value: " << actual_value << endl;
-      cout << "potential_value: " << potential_value << endl;
-    }
-    EXPECT_NEAR(actual_value, potential_value, precision);
-  }
+TEST_F(TriCubicTest, Constant) {
+  verbose_ = false;
+  InitializeGrid(constant_function_);
+  ValidateGrid();
 }
 
-TEST(TricubicInterpolation, Linear) {
-  bool verbose = false;
-  double delta = 1;
-  double max = 30;
-  uint32_t n = max / delta;
-  uint32_t nb_points = n * n * n;
-  Eigen::MatrixXd X(nb_points, 3);
-  Eigen::VectorXd Y(nb_points);
-  auto linear_function = SetUpLinearFunction();
-  uint32_t i = 0;
-  for (double z = 0.; z < max; z += delta) {
-    for (double y = 0.; y < max; y += delta) {
-      for (double x = 0.; x < max; x += delta) {
-        X.row(i) << x, y, z;
-        Y(i) = (*linear_function)(X.row(i))[0];
-        i++;
-      }
-    }
-  }
-
-  ASSERT_EQ(Y.size(), X.rows());
-
-  std::vector<double> data(Y.data(), Y.data() + Y.size());
-  auto tricubic = std::make_shared<TriCubicGridInterpolator>(data, 1, n, n, n);
-  double precision = 1e-3;
-  for (i = 0; i < X.rows(); i++) {
-    double actual_value = Y(i);
-    double potential_value = tricubic->Evaluate(X.row(i));
-    if (verbose) {
-      cout << "------------------------" << endl;
-      cout << "p: " << X.row(i) << endl;
-      cout << "actual_value: " << actual_value << endl;
-      cout << "potential_value: " << potential_value << endl;
-    }
-    EXPECT_NEAR(actual_value, potential_value, precision);
-  }
+TEST_F(TriCubicTest, Linear) {
+  verbose_ = true;
+  InitializeGrid(linear_function_);
+  ValidateGrid();
 }
