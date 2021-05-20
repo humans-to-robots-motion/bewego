@@ -16,6 +16,8 @@ using std::endl;
 #define TEST_DELTA 0.3
 #define TEST_MAX 1.0
 
+static const unsigned int SEED = 0;
+
 void GetData(std::shared_ptr<const AffineMap> f, Eigen::MatrixXd *X,
              Eigen::VectorXd *Y) {
   double delta = TEST_DELTA;
@@ -210,4 +212,58 @@ TEST_F(TriCubicTest, Linear) {
   verbose_ = false;
   InitializeGrid(linear_function_);
   ValidateGrid();
+}
+
+TEST(CubicInterpolatorTest, Evaluation) {
+  std::srand(SEED);
+  bool verbose = false;
+  double precision = 1e-12;
+  uint32_t N = 15;   // nb of points
+  double delta = 1;  // spacing
+  Eigen::VectorXd Y = util::Random(N);
+  std::vector<double> data(Y.data(), Y.data() + Y.size());
+  auto cubic_inter = std::make_shared<CubicInterpolator>(data, delta);
+  for (uint32_t i = 0; i < 10; i++) {
+    double x = N * util::Rand();
+    auto p = cubic_inter->Neighboors(x);
+    double v1 = cubic_inter->Evaluate(x);
+    double v2 = cubic_inter->Interpolate(p, x);
+    if (verbose) {
+      cout << "------------------------" << endl;
+      cout << "Y  : " << Y.transpose() << endl;
+      cout << "x: " << x << endl;
+      cout << "v1: " << v1 << endl;
+      cout << "v2: " << v2 << endl;
+      cout << "p : " << p[0] << " , " << p[1] << " , " << p[2] << " , " << p[3];
+    }
+    EXPECT_NEAR(v1, v2, precision);
+  }
+}
+
+TEST(CubicInterpolatorTest, Derivative) {
+  std::srand(SEED);
+  bool verbose = false;
+  double precision = 1e-06;
+  uint32_t N = 15;   // nb of points
+  double delta = 1;  // spacing
+  Eigen::VectorXd Y = util::Random(N);
+  std::vector<double> data(Y.data(), Y.data() + Y.size());
+  auto cubic_inter = std::make_shared<CubicInterpolator>(data, delta);
+  for (uint32_t i = 0; i < 10; i++) {
+    double x = N * util::Rand();
+    double dx = 1e-4;
+    double dx_half = dx * .5;
+    double v1 = cubic_inter->Evaluate(x - dx_half);
+    double v2 = cubic_inter->Evaluate(x + dx_half);
+    double dv1 = (v2 - v1) / dx;
+    double dv2 = cubic_inter->Derivative(x);
+    if (verbose) {
+      cout << "------------------------" << endl;
+      cout << "Y  : " << Y.transpose() << endl;
+      cout << "x: " << x << endl;
+      cout << "dv1: " << dv1 << endl;
+      cout << "dv2: " << dv2 << endl;
+    }
+    EXPECT_NEAR(dv1, dv2, precision);
+  }
 }

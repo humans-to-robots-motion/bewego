@@ -36,18 +36,63 @@
 //------------------------------------------------------------------------------
 
 CubicInterpolator::CubicInterpolator(const std::vector<fptype>& data,
-                                     fptype spacing) {
+                                     fptype spacing)
+    : data_(data), n_(data.size()), spacing_(spacing) {
   A_.row(0) << 0, 1, 0, 0;
   A_.row(1) << -.5, 0, .5, 0;
-  A_.row(2) << 1, -.5, 2, -.5;
+  A_.row(2) << 1, -2.5, 2, -.5;
   A_.row(3) << -.5, 1.5, -1.5, .5;
 }
 
 CubicInterpolator::~CubicInterpolator() {}
 
-CubicInterpolator::fptype CubicInterpolator::Evaluate(double point) const {
-  // TODO
-  return 0;
+Eigen::Matrix<CubicInterpolator::fptype, 4, 1> CubicInterpolator::Neighboors(
+    CubicInterpolator::fptype x) const {
+  // determine the relative position in the
+  // inteval enclosed by nearest data points
+  fptype dx = fmod(x / spacing_, n_);
+
+  if (dx < 0) dx += n_;     // periodicity is built in
+  int xi = (int)floor(dx);  // calculate lower-bound grid indices
+
+  Eigen::Matrix<fptype, 4, 1> p;
+  p(0) = data_[xi - 1];
+  p(1) = data_[xi];
+  p(2) = data_[xi + 1];
+  p(3) = data_[xi + 2];
+
+  return p;
+}
+
+Eigen::Matrix<CubicInterpolator::fptype, 4, 1> CubicInterpolator::Coefficients(
+    CubicInterpolator::fptype x) const {
+  Eigen::Matrix<fptype, 4, 1> p = Neighboors(x);
+  return A_ * p;
+}
+
+CubicInterpolator::fptype CubicInterpolator::Evaluate(
+    CubicInterpolator::fptype x) const {
+  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x);
+  double xpow2 = x * x;
+  double xpow3 = xpow2 * x;
+  return coef(3) * xpow3 + coef(2) * xpow2 + coef(1) * x + coef(0);
+}
+
+CubicInterpolator::fptype CubicInterpolator::Derivative(fptype x) const {
+  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x);
+  double xpow2 = x * x;
+  double xpow3 = xpow2 * x;
+  return 3. * coef(3) * xpow2 + 2. * coef(2) * x + coef(1);
+}
+
+double CubicInterpolator::Interpolate(const Eigen::Matrix<fptype, 4, 1>& p,
+                                      fptype x) {
+  double xpow2 = x * x;
+  double xpow3 = xpow2 * x;
+  double val = (p(2) - p(0)) * x +
+               (2. * p(0) - 5. * p(1) + 4. * p(2) - p(3)) * xpow2 +
+               (-p(0) + 3. * p(1) - 3 * p(2) + p(3)) * xpow3;
+  return p(1) + 0.5 * val;
 }
 
 //------------------------------------------------------------------------------
@@ -65,22 +110,16 @@ BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Evaluate(
 
 BiCubicGridInterpolator::~BiCubicGridInterpolator() {}
 
-double BiCubicGridInterpolator::Interpolate(double p[4], double x) {
-  return p[1] + 0.5 * x *
-                    (p[2] - p[0] +
-                     x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] +
-                          x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
-}
-
-// https://www.paulinternet.nl/?page=bicubic
-double BiCubicGridInterpolator::Interpolate(double p[4][4], double x,
-                                            double y) {
-  double arr[4];
-  arr[0] = Interpolate(p[0], y);
-  arr[1] = Interpolate(p[1], y);
-  arr[2] = Interpolate(p[2], y);
-  arr[3] = Interpolate(p[3], y);
-  return Interpolate(arr, x);
+BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Interpolate(
+    BiCubicGridInterpolator::fptype p[4][4], double x,
+    BiCubicGridInterpolator::fptype y) {
+  // double arr[4];
+  // arr[0] = CubicInterpolator::Interpolate(p[0], y);
+  // arr[1] = CubicInterpolator::Interpolate(p[1], y);
+  // arr[2] = CubicInterpolator::Interpolate(p[2], y);
+  // arr[3] = CubicInterpolator::Interpolate(p[3], y);
+  // return CubicInterpolator::Interpolate(arr, x);
+  return 0;
 }
 
 //------------------------------------------------------------------------------

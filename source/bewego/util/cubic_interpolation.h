@@ -33,17 +33,27 @@ class CubicInterpolator {
   typedef double fptype;
 
   /* Initializes an interpolator regular interpolation */
-  CubicInterpolator(const std::vector<fptype>& data, fptype spacing);
+  CubicInterpolator(const std::vector<fptype>& data, fptype spacing = 1);
   ~CubicInterpolator();
 
-  fptype Evaluate(double point) const;
+  fptype Evaluate(fptype x) const;
+  fptype Derivative(fptype x) const;
+
+  /* Interpolates on a range [0, 1] using a cubic polynomial
+     and the 4 values before and after the interval */
+  static fptype Interpolate(const Eigen::Matrix<fptype, 4, 1>& p, fptype x);
+
+  /* Returns the 4 neighbors in the data */
+  Eigen::Matrix<fptype, 4, 1> Neighboors(fptype x) const;
+
+  /* Returns the coefficent of the spline */
+  Eigen::Matrix<fptype, 4, 1> Coefficients(fptype x) const;
 
  protected:
   std::vector<fptype> data_;
-  fptype _spacing;
+  int n_;
+  fptype spacing_;
   Eigen::Matrix<fptype, 4, 4> A_;
-  Eigen::Matrix<fptype, 4, 4> C_;
-  Eigen::Matrix<fptype, 4, 1> coefs_;
 };
 
 class BiCubicGridInterpolator {
@@ -66,8 +76,10 @@ class BiCubicGridInterpolator {
 
   fptype Evaluate(const Eigen::Matrix<fptype, 2, 1>& point) const;
 
-  double Interpolate(double p[4], double x);
-  double Interpolate(double p[4][4], double x, double y);
+  /* Interpolates on a range [0, 1]^2 using a cubic polynomial
+    and the 4 values before and after the interval
+    https://www.paulinternet.nl/?page=bicubic */
+  static fptype Interpolate(fptype p[4][4], fptype x, fptype y);
 
  protected:
   std::vector<fptype> data_;
