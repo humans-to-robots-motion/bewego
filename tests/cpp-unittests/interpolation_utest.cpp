@@ -2,9 +2,9 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/derivatives/atomic_operators.h>
+#include <bewego/util/cubic_interpolation.h>
 #include <bewego/util/interpolation.h>
 #include <bewego/util/misc.h>
-#include <bewego/util/tricubic_interpolation.h>
 #include <gtest/gtest.h>
 
 #include <Eigen/LU>

@@ -28,6 +28,61 @@
 #include <Eigen/Dense>
 #include <vector>
 
+class CubicInterpolator {
+ public:
+  typedef double fptype;
+
+  /* Initializes an interpolator regular interpolation */
+  CubicInterpolator(const std::vector<fptype>& data, fptype spacing);
+  ~CubicInterpolator();
+
+  fptype Evaluate(double point) const;
+
+ protected:
+  std::vector<fptype> data_;
+  fptype _spacing;
+  Eigen::Matrix<fptype, 4, 4> A_;
+  Eigen::Matrix<fptype, 4, 4> C_;
+  Eigen::Matrix<fptype, 4, 1> coefs_;
+};
+
+class BiCubicGridInterpolator {
+ public:
+  typedef double fptype;
+
+  /* Initializes an interpolator using a
+     specified datacube of length n1 x n2,
+
+     where data is ordered first along the n1 axis
+     [0,0], [1,0], ..., [n1-1,0], [0,1], ... If n2 is
+     omitted, then n1=n2=n3 is assumed.
+     Data is assumed to be equally spaced and
+     periodic along each axis, with the coordinate origin (0,0)
+     at grid index [0,0].
+   */
+  BiCubicGridInterpolator(const std::vector<fptype>& data, fptype spacing,
+                          int n1, int n2);
+  ~BiCubicGridInterpolator();
+
+  fptype Evaluate(const Eigen::Matrix<fptype, 2, 1>& point) const;
+
+  double Interpolate(double p[4], double x);
+  double Interpolate(double p[4][4], double x, double y);
+
+ protected:
+  std::vector<fptype> data_;
+  fptype _spacing;
+  int _n1, _n2;
+  int _i1, _i2;
+  bool _initialized;
+  Eigen::Matrix<fptype, 16, 1> _coefs;
+  inline int _index(int i1, int i2) const {
+    if ((i1 %= _n1) < 0) i1 += _n1;
+    if ((i2 %= _n2) < 0) i2 += _n2;
+    return i1 + _n1 * i2;
+  }
+};
+
 /* Tri-Cubic Interpolation
 
  This code is adapted from https://github.com/deepzot/likely

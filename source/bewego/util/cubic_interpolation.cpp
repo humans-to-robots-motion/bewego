@@ -25,11 +25,67 @@
 // This code is adapted from
 // https://github.com/danielguterding/pytricubic/blob/master/src/tricubic.cpp
 
-#include <bewego/util/tricubic_interpolation.h>
+#include <bewego/util/cubic_interpolation.h>
 
 #include <array>
 #include <stdexcept>
 #include <string>
+
+//------------------------------------------------------------------------------
+// CubicInterpolator implementation
+//------------------------------------------------------------------------------
+
+CubicInterpolator::CubicInterpolator(const std::vector<fptype>& data,
+                                     fptype spacing) {
+  A_.row(0) << 0, 1, 0, 0;
+  A_.row(1) << -.5, 0, .5, 0;
+  A_.row(2) << 1, -.5, 2, -.5;
+  A_.row(3) << -.5, 1.5, -1.5, .5;
+}
+
+CubicInterpolator::~CubicInterpolator() {}
+
+CubicInterpolator::fptype CubicInterpolator::Evaluate(double point) const {
+  // TODO
+  return 0;
+}
+
+//------------------------------------------------------------------------------
+// BiCubicGridInterpolator implementation
+//------------------------------------------------------------------------------
+
+BiCubicGridInterpolator::BiCubicGridInterpolator(
+    const std::vector<fptype>& data, fptype spacing, int n1, int n2) {}
+
+BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Evaluate(
+    const Eigen::Matrix<fptype, 2, 1>& point) const {
+  // TODO
+  return 0;
+}
+
+BiCubicGridInterpolator::~BiCubicGridInterpolator() {}
+
+double BiCubicGridInterpolator::Interpolate(double p[4], double x) {
+  return p[1] + 0.5 * x *
+                    (p[2] - p[0] +
+                     x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] +
+                          x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
+}
+
+// https://www.paulinternet.nl/?page=bicubic
+double BiCubicGridInterpolator::Interpolate(double p[4][4], double x,
+                                            double y) {
+  double arr[4];
+  arr[0] = Interpolate(p[0], y);
+  arr[1] = Interpolate(p[1], y);
+  arr[2] = Interpolate(p[2], y);
+  arr[3] = Interpolate(p[3], y);
+  return Interpolate(arr, x);
+}
+
+//------------------------------------------------------------------------------
+// TriCubicGridInterpolator implementation
+//------------------------------------------------------------------------------
 
 TriCubicGridInterpolator::TriCubicGridInterpolator(
     const std::vector<fptype>& data, fptype spacing, int n1, int n2, int n3) {
