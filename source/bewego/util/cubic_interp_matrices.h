@@ -29,6 +29,11 @@
 
 #include <Eigen/Dense>
 
+/** Lekien, F., & Marsden, J. (2005).
+    Tricubic interpolation in three dimensions.
+    International Journal for Numerical Methods in Engineering, 63(3), 455-471.
+    http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
+*/
 inline Eigen::Matrix<TriCubicGridInterpolator::fptype, 64, 64>
 InitializeC1Matrix() {
   // temporary array is necessary, otherwise compiler has problems with Eigen
