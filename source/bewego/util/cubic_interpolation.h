@@ -75,23 +75,29 @@ class BiCubicGridInterpolator {
   ~BiCubicGridInterpolator();
 
   fptype Evaluate(const Eigen::Matrix<fptype, 2, 1>& point) const;
+  Eigen::Matrix<fptype, 2, 1> Gradient(
+      const Eigen::Matrix<fptype, 2, 1>& point) const;
+
+  /* Returns the 4 neighbors in the data */
+  Eigen::Matrix<fptype, 16, 1> Neighboors(fptype x, fptype y) const;
+
+  /* Returns the coefficent of the spline */
+  Eigen::Matrix<fptype, 16, 1> Coefficients(fptype x, fptype y) const;
 
   /* Interpolates on a range [0, 1]^2 using a cubic polynomial
     and the 4 values before and after the interval
     https://www.paulinternet.nl/?page=bicubic */
-  static fptype Interpolate(fptype p[4][4], fptype x, fptype y);
+  static fptype Interpolate(const Eigen::Matrix<fptype, 16, 1>& p, fptype x,
+                            fptype y);
 
  protected:
   std::vector<fptype> data_;
-  fptype _spacing;
-  int _n1, _n2;
-  int _i1, _i2;
-  bool _initialized;
-  Eigen::Matrix<fptype, 16, 1> _coefs;
-  inline int _index(int i1, int i2) const {
-    if ((i1 %= _n1) < 0) i1 += _n1;
-    if ((i2 %= _n2) < 0) i2 += _n2;
-    return i1 + _n1 * i2;
+  fptype spacing_;
+  int n1_, n2_;
+  inline int index_(int i1, int i2) const {
+    if ((i1 %= n1_) < 0) i1 += n1_;
+    if ((i2 %= n2_) < 0) i2 += n2_;
+    return i1 + n1_ * i2;
   }
 };
 
@@ -130,10 +136,6 @@ class TriCubicGridInterpolator {
   /* Initialize the Data for voxel xi, yi, zi */
   Eigen::Matrix<fptype, 64, 1> FiniteDifferenceDataAtCorners(int xi, int yi,
                                                              int zi) const;
-
-  /* Initialize the C matrix (Called on construction) */
-  void InitializeC1Matrix();
-  void InitializeC2Matrix();
 
   std::vector<fptype> data_;
   fptype _spacing;
