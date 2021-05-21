@@ -29,8 +29,12 @@
 #include <bewego/util/cubic_interpolation.h>
 
 #include <array>
+#include <iostream>
 #include <stdexcept>
 #include <string>
+
+using std::cout;
+using std::endl;
 
 //------------------------------------------------------------------------------
 // CubicInterpolator implementation
@@ -48,51 +52,50 @@ CubicInterpolator::CubicInterpolator(const std::vector<fptype>& data,
 CubicInterpolator::~CubicInterpolator() {}
 
 Eigen::Matrix<CubicInterpolator::fptype, 4, 1> CubicInterpolator::Neighboors(
-    CubicInterpolator::fptype x) const {
+    fptype x, fptype& dx) const {
   // determine the relative position in the
   // inteval enclosed by nearest data points
-  fptype dx = fmod(x / spacing_, n_);
-
+  dx = fmod(x / spacing_, n_);
   if (dx < 0) dx += n_;     // periodicity is built in
   int xi = (int)floor(dx);  // calculate lower-bound grid indices
+  dx -= xi;                 // coordinate in interval
 
   Eigen::Matrix<fptype, 4, 1> p;
   p(0) = data_[xi - 1];
   p(1) = data_[xi];
   p(2) = data_[xi + 1];
   p(3) = data_[xi + 2];
-
   return p;
 }
 
 Eigen::Matrix<CubicInterpolator::fptype, 4, 1> CubicInterpolator::Coefficients(
-    CubicInterpolator::fptype x) const {
-  Eigen::Matrix<fptype, 4, 1> p = Neighboors(x);
+    fptype x, fptype& dx) const {
+  Eigen::Matrix<fptype, 4, 1> p = Neighboors(x, dx);
   return A_ * p;
 }
 
-CubicInterpolator::fptype CubicInterpolator::Evaluate(
-    CubicInterpolator::fptype x) const {
-  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x);
-  double xpow2 = x * x;
-  double xpow3 = xpow2 * x;
-  return coef(3) * xpow3 + coef(2) * xpow2 + coef(1) * x + coef(0);
+CubicInterpolator::fptype CubicInterpolator::Evaluate(fptype x) const {
+  double dx = 0;
+  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x, dx);
+  double dxpow2 = dx * dx;
+  double dxpow3 = dxpow2 * dx;
+  return coef(3) * dxpow3 + coef(2) * dxpow2 + coef(1) * dx + coef(0);
 }
 
 CubicInterpolator::fptype CubicInterpolator::Derivative(fptype x) const {
-  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x);
-  double xpow2 = x * x;
-  double xpow3 = xpow2 * x;
-  return 3. * coef(3) * xpow2 + 2. * coef(2) * x + coef(1);
+  double dx = 0;
+  Eigen::Matrix<fptype, 4, 1> coef = Coefficients(x, dx);
+  double dxpow2 = dx * dx;
+  return 3. * coef(3) * dxpow2 + 2. * coef(2) * dx + coef(1);
 }
 
 double CubicInterpolator::Interpolate(const Eigen::Matrix<fptype, 4, 1>& p,
-                                      fptype x) {
-  double xpow2 = x * x;
-  double xpow3 = xpow2 * x;
-  double val = (p(2) - p(0)) * x +
-               (2. * p(0) - 5. * p(1) + 4. * p(2) - p(3)) * xpow2 +
-               (-p(0) + 3. * p(1) - 3 * p(2) + p(3)) * xpow3;
+                                      fptype dx) {
+  double dxpow2 = dx * dx;
+  double dxpow3 = dxpow2 * dx;
+  double val = (p(2) - p(0)) * dx +
+               (2. * p(0) - 5. * p(1) + 4. * p(2) - p(3)) * dxpow2 +
+               (-p(0) + 3. * p(1) - 3 * p(2) + p(3)) * dxpow3;
   return p(1) + 0.5 * val;
 }
 
@@ -115,24 +118,27 @@ BiCubicGridInterpolator::BiCubicGridInterpolator(
 }
 
 Eigen::Matrix<CubicInterpolator::fptype, 16, 1>
-BiCubicGridInterpolator::Neighboors(CubicInterpolator::fptype x,
-                                    CubicInterpolator::fptype y) const {
+BiCubicGridInterpolator::Neighboors(fptype x, fptype y, fptype& dx,
+                                    fptype& dy) const {
   // determine the relative position in the
   // inteval enclosed by nearest data points
-  fptype dx = fmod(x / spacing_, n1_);
-  fptype dy = fmod(x / spacing_, n2_);
+  dx = fmod(x / spacing_, n1_);
+  dy = fmod(y / spacing_, n2_);
 
-  if (dx < 0) dx += n1_;    // periodicity is built in
-  if (dy < 0) dy += n2_;    // periodicity is built in
+  if (dx < 0) dx += n1_;  // periodicity is built in
+  if (dy < 0) dy += n2_;
   int xi = (int)floor(dx);  // calculate lower-bound grid indices
-  int yi = (int)floor(dy);  // calculate lower-bound grid indices
+  int yi = (int)floor(dy);
+
+  dx -= xi;
+  dy -= yi;
 
   Eigen::Matrix<fptype, 16, 1> p;
 
   p(0) = data_[index_(xi - 1, yi - 1)];  // p00
   p(1) = data_[index_(xi + 0, yi - 1)];  // p10
-  p(2) = data_[index_(xi + 1, yi - 1)];  // p11
-  p(3) = data_[index_(xi + 2, yi - 1)];  // p12
+  p(2) = data_[index_(xi + 1, yi - 1)];  // p20
+  p(3) = data_[index_(xi + 2, yi - 1)];  // p30
 
   p(4) = data_[index_(xi - 1, yi - 0)];  // p01
   p(5) = data_[index_(xi + 0, yi - 0)];  // p11
@@ -142,7 +148,7 @@ BiCubicGridInterpolator::Neighboors(CubicInterpolator::fptype x,
   p(8) = data_[index_(xi - 1, yi + 1)];   // p02
   p(9) = data_[index_(xi + 0, yi + 1)];   // p12
   p(10) = data_[index_(xi + 1, yi + 1)];  // p22
-  p(11) = data_[index_(xi + 2, yi + 1)];  // p22
+  p(11) = data_[index_(xi + 2, yi + 1)];  // p32
 
   p(12) = data_[index_(xi - 1, yi + 2)];  // p03
   p(13) = data_[index_(xi + 0, yi + 2)];  // p13
@@ -153,10 +159,10 @@ BiCubicGridInterpolator::Neighboors(CubicInterpolator::fptype x,
 }
 
 Eigen::Matrix<CubicInterpolator::fptype, 16, 1>
-BiCubicGridInterpolator::Coefficients(CubicInterpolator::fptype x,
-                                      CubicInterpolator::fptype y) const {
-  auto p = Neighboors(x, y);
-  Eigen::Matrix<CubicInterpolator::fptype, 16, 1> a;
+BiCubicGridInterpolator::Coefficients(fptype x, fptype y, fptype& dx,
+                                      fptype& dy) const {
+  auto p = Neighboors(x, y, dx, dy);
+  Eigen::Matrix<fptype, 16, 1> a;
 
   // a00
   a(0) = p(1 + 4 * 1);
@@ -228,48 +234,46 @@ BiCubicGridInterpolator::Coefficients(CubicInterpolator::fptype x,
 
 BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Evaluate(
     const Eigen::Matrix<BiCubicGridInterpolator::fptype, 2, 1>& point) const {
-  auto a = Coefficients(point.x(), point.y());
+  double dx, dy;
+  auto a = Coefficients(point.x(), point.y(), dx, dy);
 
-  double x = point.x();
-  double y = point.y();
-  double xpow2 = x * x;
-  double xpow3 = xpow2 * x;
-  double ypow2 = y * y;
-  double ypow3 = ypow2 * y;
+  double dxpow2 = dx * dx;
+  double dxpow3 = dxpow2 * dx;
+  double dypow2 = dy * dy;
+  double dypow3 = dypow2 * dy;
 
-  return (a(0) + a(1) * y + a(2) * ypow2 + a(3) * ypow3) +
-         (a(4) + a(5) * y + a(6) * ypow2 + a(7) * ypow3) * x +
-         (a(8) + a(9) * y + a(10) * ypow2 + a(11) * ypow3) * xpow2 +
-         (a(12) + a(13) * y + a(14) * ypow2 + a(15) * ypow3) * xpow3;
+  return (a(0) + a(1) * dy + a(2) * dypow2 + a(3) * dypow3) +
+         (a(4) + a(5) * dy + a(6) * dypow2 + a(7) * dypow3) * dx +
+         (a(8) + a(9) * dy + a(10) * dypow2 + a(11) * dypow3) * dxpow2 +
+         (a(12) + a(13) * dy + a(14) * dypow2 + a(15) * dypow3) * dxpow3;
 }
 
 Eigen::Matrix<BiCubicGridInterpolator::fptype, 2, 1>
 BiCubicGridInterpolator::Gradient(
     const Eigen::Matrix<BiCubicGridInterpolator::fptype, 2, 1>& point) const {
-  auto a = Coefficients(point.x(), point.y());
+  double dx, dy;
+  auto a = Coefficients(point.x(), point.y(), dx, dy);
 
-  double x = point.x();
-  double y = point.y();
-  double xpow2 = x * x;
-  double xpow3 = xpow2 * x;
-  double ypow2 = y * y;
-  double ypow3 = ypow2 * y;
+  double dxpow2 = dx * dx;
+  double dxpow3 = dxpow2 * dx;
+  double dypow2 = dy * dy;
+  double dypow3 = dypow2 * dy;
 
   double dvx =
       // Constant
-      a(4) + a(5) * y + a(6) * ypow2 + a(7) * ypow3 +
+      a(4) + a(5) * dy + a(6) * dypow2 + a(7) * dypow3 +
       // 1st order
-      2 * (a(8) + a(9) * y + a(10) * ypow2 + a(11) * ypow3) * x +
+      2 * (a(8) + a(9) * dy + a(10) * dypow2 + a(11) * dypow3) * dx +
       // 2st order
-      3 * (a(12) + a(13) * y + a(14) * ypow2 + a(15) * ypow3) * xpow2;
+      3 * (a(12) + a(13) * dy + a(14) * dypow2 + a(15) * dypow3) * dxpow2;
 
   double dvy =
       // Constant
-      a(1) + a(5) * x + a(9) * xpow2 + a(13) * xpow3 +
+      a(1) + a(5) * dx + a(9) * dxpow2 + a(13) * dxpow3 +
       // 1st order
-      2. * (a(2) + a(6) * x + a(10) * xpow2 + a(14) * xpow3) * y +
+      2. * (a(2) + a(6) * dx + a(10) * dxpow2 + a(14) * dxpow3) * dy +
       // 2st order
-      3. * (a(3) + a(7) * x + a(11) * xpow2 + a(15) * xpow3) * ypow2;
+      3. * (a(3) + a(7) * dx + a(11) * dxpow2 + a(15) * dxpow3) * dypow2;
 
   return Eigen::Matrix<fptype, 2, 1>(dvx, dvy);
 }
@@ -277,15 +281,16 @@ BiCubicGridInterpolator::Gradient(
 BiCubicGridInterpolator::~BiCubicGridInterpolator() {}
 
 BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Interpolate(
-    const Eigen::Matrix<BiCubicGridInterpolator::fptype, 16, 1>& p,
-    BiCubicGridInterpolator::fptype x, BiCubicGridInterpolator::fptype y) {
-  // double arr[4];
-  // arr[0] = CubicInterpolator::Interpolate(p[0], y);
-  // arr[1] = CubicInterpolator::Interpolate(p[1], y);
-  // arr[2] = CubicInterpolator::Interpolate(p[2], y);
-  // arr[3] = CubicInterpolator::Interpolate(p[3], y);
-  // return CubicInterpolator::Interpolate(arr, x);
-  return 0;
+    const Eigen::Matrix<BiCubicGridInterpolator::fptype, 16, 1>& p, fptype dx,
+    fptype dy) {
+  Eigen::Matrix<fptype, 4, 1> arr;
+  typedef const Eigen::Matrix<fptype, 4, 4, Eigen::RowMajor> MatrixType;
+  MatrixType neigh = Eigen::Map<MatrixType>(p.data());
+  arr[0] = CubicInterpolator::Interpolate(neigh.row(0), dy);
+  arr[1] = CubicInterpolator::Interpolate(neigh.row(1), dy);
+  arr[2] = CubicInterpolator::Interpolate(neigh.row(2), dy);
+  arr[3] = CubicInterpolator::Interpolate(neigh.row(3), dy);
+  return CubicInterpolator::Interpolate(arr, dx);
 }
 
 //------------------------------------------------------------------------------
@@ -323,11 +328,11 @@ TriCubicGridInterpolator::fptype TriCubicGridInterpolator::Evaluate(
   fptype y = point.y();
   fptype z = point.z();
 
+  // determine the relative position in the
+  // box enclosed by nearest data points
   fptype dx = fmod(x / _spacing, _n1);
   fptype dy = fmod(y / _spacing, _n2);
   fptype dz = fmod(z / _spacing, _n3);
-  // determine the relative position in the
-  // box enclosed by nearest data points
 
   if (dx < 0) dx += _n1;  // periodicity is built in
   if (dy < 0) dy += _n2;

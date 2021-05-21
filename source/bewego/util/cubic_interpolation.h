@@ -43,11 +43,11 @@ class CubicInterpolator {
      and the 4 values before and after the interval */
   static fptype Interpolate(const Eigen::Matrix<fptype, 4, 1>& p, fptype x);
 
-  /* Returns the 4 neighbors in the data */
-  Eigen::Matrix<fptype, 4, 1> Neighboors(fptype x) const;
+  /* Returns the 4 neighbors in the data and calculate dx */
+  Eigen::Matrix<fptype, 4, 1> Neighboors(fptype x, fptype& dx) const;
 
   /* Returns the coefficent of the spline */
-  Eigen::Matrix<fptype, 4, 1> Coefficients(fptype x) const;
+  Eigen::Matrix<fptype, 4, 1> Coefficients(fptype x, fptype& dx) const;
 
  protected:
   std::vector<fptype> data_;
@@ -79,10 +79,12 @@ class BiCubicGridInterpolator {
       const Eigen::Matrix<fptype, 2, 1>& point) const;
 
   /* Returns the 4 neighbors in the data */
-  Eigen::Matrix<fptype, 16, 1> Neighboors(fptype x, fptype y) const;
+  Eigen::Matrix<fptype, 16, 1> Neighboors(fptype x, fptype y, fptype& dx,
+                                          fptype& dy) const;
 
   /* Returns the coefficent of the spline */
-  Eigen::Matrix<fptype, 16, 1> Coefficients(fptype x, fptype y) const;
+  Eigen::Matrix<fptype, 16, 1> Coefficients(fptype x, fptype y, fptype& dx,
+                                            fptype& dy) const;
 
   /* Interpolates on a range [0, 1]^2 using a cubic polynomial
     and the 4 values before and after the interval
