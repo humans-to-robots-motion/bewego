@@ -115,6 +115,8 @@ BiCubicGridInterpolator::BiCubicGridInterpolator(
   if (spacing_ <= 0) {
     throw std::runtime_error("Bad datasquare grid spacing.");
   }
+
+  A_ = InitializeBiCubicMatrix();
 }
 
 Eigen::Matrix<CubicInterpolator::fptype, 16, 1>

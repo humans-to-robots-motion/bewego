@@ -34,6 +34,33 @@
     International Journal for Numerical Methods in Engineering, 63(3), 455-471.
     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
 */
+
+inline Eigen::Matrix<TriCubicGridInterpolator::fptype, 16, 16>
+InitializeBiCubicMatrix() {
+  const int temp[16][16] = {
+      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {-3, 3, 0, 0, -2, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {2, -2, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, -3, 3, 0, 0, -2, -1, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 2, -2, 0, 0, 1, 1, 0, 0},
+      {-3, 0, 3, 0, 0, 0, 0, 0, -2, 0, -1, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, -3, 0, 3, 0, 0, 0, 0, 0, -2, 0, -1, 0},
+      {9, -9, -9, 9, 6, 3, -6, -3, 6, -6, 3, -3, 4, 2, 2, 1},
+      {-6, 6, 6, -6, -3, -3, 3, 3, -4, 4, -2, 2, -2, -2, -1, -1},
+      {2, 0, -2, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 2, 0, -2, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+      {-6, 6, 6, -6, -4, -2, 4, 2, -3, 3, -3, 3, -2, -1, -2, -1},
+      {4, -4, -4, 4, 2, 2, -2, -2, 2, -2, 2, -2, 1, 1, 1, 1}};
+
+  Eigen::Matrix<TriCubicGridInterpolator::fptype, 16, 16> C;
+  for (int i = 0; i < 16; i++)
+    for (int j = 0; j < 16; j++) C(i, j) = temp[i][j];
+  return C;
+}
+
 inline Eigen::Matrix<TriCubicGridInterpolator::fptype, 64, 64>
 InitializeC1Matrix() {
   // temporary array is necessary, otherwise compiler has problems with Eigen

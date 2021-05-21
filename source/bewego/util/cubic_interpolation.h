@@ -96,6 +96,7 @@ class BiCubicGridInterpolator {
   std::vector<fptype> data_;
   fptype spacing_;
   int n1_, n2_;
+  Eigen::Matrix<fptype, 16, 16> A_;
   inline int index_(int i1, int i2) const {
     if ((i1 %= n1_) < 0) i1 += n1_;
     if ((i2 %= n2_) < 0) i2 += n2_;
