@@ -20,7 +20,7 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *
- *                                               Jim Mainprice Sam 15 May 2021
+ *                                               Jim Mainprice Sam 22 May 2021
  */
 
 #pragma once
