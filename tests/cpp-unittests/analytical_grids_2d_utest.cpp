@@ -11,7 +11,6 @@ using namespace bewego;
 using std::cout;
 using std::endl;
 
-const double resolution = 0.01;
 const double error_tolerance = 1.e-9;
 const double g_error_tolerance = 1.e-2;
 
@@ -61,7 +60,7 @@ class AnalyticalGridFunc : public ::testing::Test {
 
     Eigen::Vector2i loc;
     auto grid =
-        std::make_shared<PixelMap>(resolution, extends, origin_center_cell);
+        std::make_shared<PixelMap>(resolution_, extends, origin_center_cell);
     for (loc.x() = 0; loc.x() < grid->num_cells_x(); loc.x()++) {
       for (loc.y() = 0; loc.y() < grid->num_cells_y(); loc.y()++) {
         grid->GetCell(loc) = util::Rand();
@@ -147,49 +146,6 @@ class AnalyticalGridFunc : public ::testing::Test {
     }
   }
 
-  void Check2DAnalyticalGridFunction(const extent_t &extends) {
-    cout << __PRETTY_FUNCTION__ << endl;
-    double r = resolution;
-    Eigen::VectorXd a(2);
-    a << 1, 2;
-    double b = -.1;
-    auto f1 = std::make_shared<const AffineMap>(a, b);
-    auto f2 = RegressedGridFrom2DFunction(r, extends, f1);
-    auto grid = Discretize2DFunction(r, extends, f1);
-    cout << "grid->num_cells_x() : " << grid->num_cells_x() << endl;
-    cout << "grid->num_cells_y() : " << grid->num_cells_y() << endl;
-
-    Eigen::Vector2i loc;
-
-    // Check that the value at the center of the grid is correct
-    // Only checks the values inside the padded area
-    // The outer values are correct but not the gradients
-    const int padding = 9;
-    for (loc.x() = padding; loc.x() < grid->num_cells_x() - padding;
-         loc.x()++) {
-      for (loc.y() = padding; loc.y() < grid->num_cells_y() - padding;
-           loc.y()++) {
-        // Get test point
-        Eigen::Vector2d point;
-        grid->GridToWorld(loc, point);
-
-        Eigen::VectorXd g1, g2;
-        // Compute and check errors
-        double e1, e2;
-        double value_0 = grid->GetCell(loc);      // Grid point
-        double value_1 = f1->ForwardFunc(point);  // Analytic function
-        double value_2 = f2->ForwardFunc(point);  // Regressed function
-        g1 = f1->Gradient(point);
-        g2 = f2->Gradient(point);
-        e1 = std::fabs(value_0 - value_1);
-        e2 = std::fabs(value_0 - value_2);
-        EXPECT_GE(error_tolerance, e1);
-        EXPECT_GE(error_tolerance, e2);
-        EXPECT_GE(g_error_tolerance, (g1 - g2).norm());
-      }
-    }
-  }
-
   void Check2DAnalyticalGrid(const extent_t &extends) {
     cout << __PRETTY_FUNCTION__ << endl;
 
@@ -200,10 +156,8 @@ class AnalyticalGridFunc : public ::testing::Test {
 
     auto f = SetUpLinearFunction();
 
-    double res = .1;
-
     // Fill grid with random values, TODO: use an analytical function
-    auto grid = std::make_shared<PixelMap>(res, extends);
+    auto grid = std::make_shared<PixelMap>(resolution_, extends);
     for (loc.x() = 0; loc.x() < grid->num_cells_x(); loc.x()++) {
       for (loc.y() = 0; loc.y() < grid->num_cells_y(); loc.y()++) {
         // grid->GetCell(loc) = util::Rand();
@@ -213,16 +167,19 @@ class AnalyticalGridFunc : public ::testing::Test {
       }
     }
 
-    cout << " - origin      : " << grid->origin().transpose() << endl;
-    cout << " - resolution  : " << grid->resolution() << endl;
-    cout << " - num_cells_x : " << grid->num_cells_x() << endl;
-    cout << " - num_cells_y : " << grid->num_cells_y() << endl;
-    cout << "Matrix : " << endl << grid->GetMatrix() << endl;
-    cout << "Construct splined grids" << endl;
+    if (verbose_) {
+      cout << " - origin      : " << grid->origin().transpose() << endl;
+      cout << " - resolution  : " << grid->resolution() << endl;
+      cout << " - num_cells_x : " << grid->num_cells_x() << endl;
+      cout << " - num_cells_y : " << grid->num_cells_y() << endl;
+      cout << "Matrix : " << endl << grid->GetMatrix() << endl;
+      cout << "Construct splined grids" << endl;
+    }
 
     // Construct interpolation grids
     // 1) grid constructed by setting the values manualy
-    auto s_grid_1 = std::make_shared<AnalyticPixelMapSpline>(res, extends);
+    auto s_grid_1 =
+        std::make_shared<AnalyticPixelMapSpline>(resolution_, extends);
     for (loc.x() = 0; loc.x() < grid->num_cells_x(); loc.x()++) {
       for (loc.y() = 0; loc.y() < grid->num_cells_y(); loc.y()++) {
         s_grid_1->GetCell(loc) = grid->GetCell(loc);
@@ -265,20 +222,68 @@ class AnalyticalGridFunc : public ::testing::Test {
         e1 = std::fabs(value_0 - value_1);
         e2 = std::fabs(value_0 - value_2);
 
-        double tol = 1e-6;
-        ASSERT_GE(tol, e1);
-        ASSERT_GE(tol, e2);
+        double v_tol = error_tolerance;
+        ASSERT_GE(v_tol, e1);
+        ASSERT_GE(v_tol, e2);
 
-        /*
+        Eigen::Vector2d g_1, g_2;
+
         // Same but with gradient
-        Eigen::Vector2d g;
-        value_1 = s_grid_1->CalculateSplineGradient(point, &g);
-        value_2 = s_grid_2->CalculateSplineGradient(point, &g);
+        double g_tol = error_tolerance;
+        g_1 = s_grid_1->CalculateSplineGradient(point);
+        g_2 = s_grid_2->CalculateSplineGradient(point);
+        ASSERT_NEAR(g_1.x(), g_2.x(), g_tol);
+        ASSERT_NEAR(g_1.y(), g_2.y(), g_tol);
+      }
+    }
+  }
+
+  void Check2DAnalyticalGridFunction(const extent_t &extends) {
+    cout << __PRETTY_FUNCTION__ << endl;
+    double r = resolution_;
+    Eigen::VectorXd a(2);
+    a << 1, 2;
+    double b = -.1;
+    auto f1 = std::make_shared<const AffineMap>(a, b);
+    auto f2 = RegressedGridFrom2DFunction(r, extends, f1);
+    auto grid = Discretize2DFunction(r, extends, f1);
+    cout << "grid->num_cells_x() : " << grid->num_cells_x() << endl;
+    cout << "grid->num_cells_y() : " << grid->num_cells_y() << endl;
+
+    Eigen::Vector2i loc;
+
+    // Checks that the value at the center of the grid is correct
+    // Only checks the values inside the padded area
+    // The outer values are correct but not the gradients
+    const int padding = 9;
+    for (loc.x() = padding; loc.x() < grid->num_cells_x() - padding;
+         loc.x()++) {
+      for (loc.y() = padding; loc.y() < grid->num_cells_y() - padding;
+           loc.y()++) {
+        // Get test point
+        Eigen::Vector2d point;
+        grid->GridToWorld(loc, point);
+
+        Eigen::VectorXd g1, g2;
+        // Compute and check errors
+        double e1, e2;
+        double value_0 = grid->GetCell(loc);      // Grid point
+        double value_1 = f1->ForwardFunc(point);  // Analytic function
+        double value_2 = f2->ForwardFunc(point);  // Regressed function
+        g1 = f1->Gradient(point);
+        g2 = f2->Gradient(point);
+        if (verbose_) {
+          cout << "g1 : " << g1.transpose() << endl;
+          cout << "g2 : " << g2.transpose() << endl;
+          cout << "g3 : "
+               << DifferentiableMap::FiniteDifferenceJacobian(*f2, point)
+               << endl;
+        }
         e1 = std::fabs(value_0 - value_1);
         e2 = std::fabs(value_0 - value_2);
         ASSERT_GE(error_tolerance, e1);
         ASSERT_GE(error_tolerance, e2);
-        */
+        ASSERT_GE(g_error_tolerance, (g1 - g2).norm());
       }
     }
   }
@@ -287,14 +292,16 @@ class AnalyticalGridFunc : public ::testing::Test {
 
  protected:
   bool verbose_;
+  double resolution_;
 };
 
-TEST_F(AnalyticalGridFunc, Check2DAllGrids) {
+TEST_F(AnalyticalGridFunc, CheckPixelGrid) {
   verbose_ = false;
   CheckPixelMapMatrix();
 
+  resolution_ = 0.01;
+
   std::vector<extent_t> sizes;
-  // sizes.push_back(extent_t(0, 30, 0, 30));
   sizes.push_back(extent_t(0, 2, 0, 2));
   sizes.push_back(extent_t(-1, 1, -1, 1));
   sizes.push_back(extent_t(-5, -1, -3, 1));
@@ -305,25 +312,48 @@ TEST_F(AnalyticalGridFunc, Check2DAllGrids) {
   for (auto s : sizes) {
     CheckPixelGrid(s, true);
   }
+}
+
+TEST_F(AnalyticalGridFunc, Check2DAnalyticalGrid) {
+  verbose_ = false;
+
+  resolution_ = 0.01;
+
+  std::vector<extent_t> sizes;
+  sizes.push_back(extent_t(0, 2, 0, 2));
+  sizes.push_back(extent_t(-1, 1, -1, 1));
+  sizes.push_back(extent_t(-5, -1, -3, 1));
 
   for (auto s : sizes) {
     Check2DAnalyticalGrid(s);
   }
 
-  /*
-
-  for (auto s : sizes) {
-    ASSERT_TRUE(Check2DAnalyticalGridFunction(s));
-  }
+  /*  TODO fix that, same as bellow with gradient...
   for (int i = 0; i < 1; i++) {
     // Only the ones that have (0, 0) as the origin
-    ASSERT_TRUE(Check2DSaveToFile(sizes[i]));
+    Check2DSaveToFile(sizes[i]);
   }
   */
-  // ASSERT_TRUE(Check2DAllGrids()); }
+}
+
+TEST_F(AnalyticalGridFunc, Check2DAllGrids) {
+  verbose_ = false;
+
+  resolution_ = 1;  // TODO change that
+
+  std::vector<extent_t> sizes;
+  sizes.push_back(extent_t(0, 30, 0, 30));
+  // sizes.push_back(extent_t(0, 2, 0, 2));
+  // sizes.push_back(extent_t(-1, 1, -1, 1));
+  // sizes.push_back(extent_t(-5, -1, -3, 1));
+
+  for (auto s : sizes) {
+    Check2DAnalyticalGridFunction(s);
+  }
 }
 
 TEST(AnalyticalGrid, CheckCrown) {
+  bool verbose = false;
   extent_t extend(0, 1, 0, 1);
   auto pixelmap = std::make_shared<PixelMap>(.1, extend);
   uint32_t n = pixelmap->num_cells_x();
@@ -339,7 +369,9 @@ TEST(AnalyticalGrid, CheckCrown) {
   M = pixelmap->GetMatrix();
   ASSERT_TRUE(M.rows() == n);
   ASSERT_TRUE(M.cols() == n);
-  cout << "M : " << endl << M << endl;
+  if (verbose) {
+    cout << "M : " << endl << M << endl;
+  }
   Eigen::MatrixXd A(10, 10);
   A.row(0) << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
   A.row(1) << 1, 2, 2, 2, 2, 2, 2, 2, 2, 1;

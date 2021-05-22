@@ -55,13 +55,11 @@ class AnalyticPixelMapSpline : public PixelMap {
   double CalculateSplineValue(const Eigen::Vector2d& point) const;
 
   // Get the spline value and gradient
-  double CalculateSplineGradient(const Eigen::Vector2d& point,
-                                 Eigen::Vector2d* g) const;
+  Eigen::Vector2d CalculateSplineGradient(const Eigen::Vector2d& point) const;
 
   // Get the spline value and gradient
-  double CalculateSplineGradientHessian(const Eigen::Vector2d& point,
-                                        Eigen::Vector2d* g,
-                                        Eigen::Matrix2d* H) const;
+  Eigen::Matrix2d CalculateSplineGradientHessian(
+      const Eigen::Vector2d& point) const;
 
   // This has to be called once the values of the base class have been
   // intialized, it makes a copy of the grid data
@@ -88,6 +86,7 @@ class RegressedPixelGridSpline : public DifferentiableMap {
       : analytical_grid_(analytical_grid),
         use_identity_hessian_(use_identity_hessian) {
     PreAllocate();
+    H_.setIdentity();
   }
 
   // Copy

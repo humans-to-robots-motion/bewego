@@ -49,25 +49,22 @@ double AnalyticPixelMapSpline::CalculateSplineValue(
 }
 
 //! Get potential by regression
-double AnalyticPixelMapSpline::CalculateSplineGradient(
-    const Eigen::Vector2d& point, Eigen::Vector2d* g) const {
+Eigen::Vector2d AnalyticPixelMapSpline::CalculateSplineGradient(
+    const Eigen::Vector2d& point) const {
   assert(g->size() == 2);
   double sval, sgrad[2];
   // Trick the compiler by copying the pointer
   // this library is written in C and does not declare its arguments as const
   Eigen::Vector2i pos;
   if (!WorldToGrid(point, pos)) {
-    (*g) = Eigen::Vector2d::Zero();
-    return default_value_;
+    return Eigen::Vector2d::Zero();
   }
-  *g = interpolator_->Gradient(point - offset_);
-  return sval;
+  return interpolator_->Gradient(point - offset_);
 }
 
 // Get the spline value and gradient
-double AnalyticPixelMapSpline::CalculateSplineGradientHessian(
-    const Eigen::Vector2d& point, Eigen::Vector2d* g,
-    Eigen::Matrix2d* H) const {
+Eigen::Matrix2d AnalyticPixelMapSpline::CalculateSplineGradientHessian(
+    const Eigen::Vector2d& point) const {
   assert(g->size() == 2);
   assert(H->rows() == 2);
   assert(H->cols() == 2);
@@ -76,12 +73,9 @@ double AnalyticPixelMapSpline::CalculateSplineGradientHessian(
   // this library is written in C and does not declare its arguments as const
   Eigen::Vector2i pos;
   if (!WorldToGrid(point, pos)) {
-    g->setZero();
-    H->setZero();
-    return default_value_;
+    return Eigen::Matrix2d::Zero();
   }
-  H->setZero();
-  return sval;
+  return Eigen::Matrix2d::Identity();
 }
 
 //-----------------------------------------------------------------------------
@@ -102,28 +96,28 @@ Eigen::VectorXd RegressedPixelGridSpline::Forward(
 
 Eigen::MatrixXd RegressedPixelGridSpline::Jacobian(
     const Eigen::VectorXd& x) const {
+  Eigen::Vector2d x_2d(x);
   if (outside_function_) {
     Eigen::Vector2i pos;
-    if (!analytical_grid_->WorldToGrid(Eigen::Vector2d(x), pos)) {
+    if (!analytical_grid_->WorldToGrid(x_2d, pos)) {
       return outside_function_->Jacobian(x);
     }
   }
-  Eigen::Vector2d g_2d;
-  analytical_grid_->CalculateSplineGradient(Eigen::Vector2d(x), &g_2d);
-  J_ = g_2d.transpose();
-  return J_;
+  return analytical_grid_->CalculateSplineGradient(x_2d).transpose();
+  ;
 }
 
 Eigen::MatrixXd RegressedPixelGridSpline::Hessian(
     const Eigen::VectorXd& x) const {
+  Eigen::Vector2d x_2d(x);
   if (outside_function_) {
     Eigen::Vector2i pos;
-    if (!analytical_grid_->WorldToGrid(Eigen::Vector2d(x), pos)) {
+    if (!analytical_grid_->WorldToGrid(x_2d, pos)) {
       return outside_function_->Hessian(x);
     }
   }
   if (use_identity_hessian_) {
-    H_.setIdentity();
+    // H_.setIdentity();
     // Not identity but Gauss-Netwon approximation
     // *H = (*g) * (*g).transpose();
     // cout << "H : " << *H << endl;
@@ -131,12 +125,8 @@ Eigen::MatrixXd RegressedPixelGridSpline::Hessian(
     return H_;
   } else {
     // double value = Evaluate(x, g);
-    Eigen::Vector2d g_2d;
-    Eigen::Matrix2d H_2d;
 
-    double value = analytical_grid_->CalculateSplineGradientHessian(
-        Eigen::Vector2d(x), &g_2d, &H_2d);
-    H_ = H_2d;
+    return analytical_grid_->CalculateSplineGradientHessian(x_2d);
 
     /*
     //  Finite difference hessian
@@ -150,7 +140,6 @@ Eigen::MatrixXd RegressedPixelGridSpline::Hessian(
     cout << " -- H_approx : " << g_2d.transpose() << endl;
     */
     // CHECK_LE(max_H_diff, 1e-3);
-    return H_;
   }
 }
 
