@@ -279,15 +279,15 @@ class BiCubicTest : public ::testing::Test {
   void ValidateGradientGrid() {
     std::vector<double> data(Y_.data(), Y_.data() + Y_.size());
     auto bicubic = std::make_shared<BiCubicGridInterpolator>(data, 1, n_, n_);
-    double precision = 1e-3;
+    double precision = 1e-4;
+    double dt = 1e-4;
+    double dt_half = dt * .5;
+    double v1, v2, dv_x, dv_y;
+    Eigen::Vector2d p1, p2;
     for (uint i = 0; i < X_.rows(); i++) {
       const Eigen::Vector2d &p = X_.row(i);
-      double potential_value1 = bicubic->Evaluate(p);
 
-      double dt = 1e-4;
-      double dt_half = dt * .5;
-      double v1, v2, dv_x, dv_y;
-      Eigen::Vector2d p1, p2;
+      // Finite difference
       p1 << p.x() - dt_half, p.y();
       p2 << p.x() + dt_half, p.y();
       v1 = bicubic->Evaluate(p1);
@@ -299,6 +299,7 @@ class BiCubicTest : public ::testing::Test {
       v2 = bicubic->Evaluate(p2);
       dv_y = (v2 - v1) / dt;
 
+      // Analytic
       Eigen::Vector2d g = bicubic->Gradient(p);
 
       if (verbose_) {
@@ -352,7 +353,7 @@ TEST_F(BiCubicTest, Linear) {
 }
 
 TEST_F(BiCubicTest, Gradient) {
-  verbose_ = false;
+  verbose_ = true;
   InitializeGrid(linear_function_);
   ValidateGradientGrid();
 }

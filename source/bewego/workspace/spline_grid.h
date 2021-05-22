@@ -25,11 +25,166 @@
 
 #pragma once
 
+#include <bewego/util/cubic_interpolation.h>
 #include <bewego/workspace/analytical_grid.h>
+#include <bewego/workspace/pixelmap.h>
 
 namespace bewego {
 
 #define DEFAULT_ANALYTICAL std::numeric_limits<double>::max()
+
+class AnalyticPixelMapSpline : public PixelMap {
+ public:
+  AnalyticPixelMapSpline(double resolution, const extent_t& extent)
+      : PixelMap(resolution, extent) {}
+  AnalyticPixelMapSpline(double resolution, double x_min, double x_max,
+                         double y_min, double y_max)
+      : PixelMap(resolution, x_min, x_max, y_min, y_max) {}
+
+  AnalyticPixelMapSpline(const PixelMap& grid) : PixelMap(grid) {
+    // InitializeSplines();
+    // Should call the initialize independently
+    // TODO have a better more consistent behavior. The problem is that this has
+    // to be called when the data is setup and there is no good way to check
+    // that
+  }
+
+  ~AnalyticPixelMapSpline() {
+    // TODO if the desctructor works port it to the 3D case
+    // if (splines_ != NULL) {
+    // destroy_Bspline(splines_);
+    // }
+  }
+  // Get the spline value
+  double CalculateSplineValue(const Eigen::Vector2d& point) const;
+
+  // Get the spline value and gradient
+  double CalculateSplineGradient(const Eigen::Vector2d& point,
+                                 Eigen::Vector2d* g) const;
+
+  // Get the spline value and gradient
+  double CalculateSplineGradientHessian(const Eigen::Vector2d& point,
+                                        Eigen::Vector2d* g,
+                                        Eigen::Matrix2d* H) const;
+
+  // This has to be called once the values of the base class have been
+  // intialized, it makes a copy of the grid data
+  void InitializeSplines();
+
+  // protected:
+  // UBspline_2d_d* splines_;
+  // double* data_einslpine_;
+};  // namespace bewego
+
+// Lightweight wrapper around the Analytical grid to implement the
+// NDimZerothOrderFunction interface. Upon construction can decide whether the
+// to use the finite-differenced Hessian or to replace it with the identity
+// matrix.
+class RegressedPixelGridSpline : public DifferentiableMap {
+ public:
+  RegressedPixelGridSpline() { PreAllocate(); }
+
+  // Normal initialization
+  RegressedPixelGridSpline(
+      std::shared_ptr<const AnalyticPixelMapSpline> analytical_grid,
+      bool use_identity_hessian = true)
+      : analytical_grid_(analytical_grid),
+        use_identity_hessian_(use_identity_hessian) {
+    PreAllocate();
+  }
+
+  // Copy
+  RegressedPixelGridSpline(const RegressedPixelGridSpline& other)
+      : RegressedPixelGridSpline(other.analytical_grid_,
+                                 other.use_identity_hessian_) {}
+  // Cloning
+  std::shared_ptr<RegressedPixelGridSpline> Clone() const {
+    return std::make_shared<RegressedPixelGridSpline>(*this);
+  }
+
+  // Keeps a shared pointer to the provided analytical grid.
+  void Initalize(std::shared_ptr<const AnalyticPixelMapSpline> analytical_grid,
+                 bool use_identity_hessian = false) {
+    analytical_grid_ = analytical_grid;
+    set_use_identity_hessian(use_identity_hessian);
+  }
+
+  // Copies the provided analytical grid into this object.
+  void Initalize(const AnalyticPixelMapSpline& analytical_grid,
+                 bool use_identity_hessian = true) {
+    analytical_grid_.reset(new AnalyticPixelMapSpline(analytical_grid));
+    set_use_identity_hessian(use_identity_hessian);
+  }
+
+  // When evaluating the Hessian, replace with the identity matrix.
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd&) const;
+  virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+  // The input dimension will always be 2 because the
+  // underlying pixel grid is in 2 space.
+  uint32_t input_dimension() const { return 2; }
+  uint32_t output_dimension() const { return 1; }
+
+  // Set the analytical grid externally
+  void set_analytical_grid(std::shared_ptr<const AnalyticPixelMapSpline> v) {
+    analytical_grid_ = v;
+  }
+
+  // const accessor to the analytical grid
+  std::shared_ptr<const AnalyticPixelMapSpline> analytical_grid() const {
+    return analytical_grid_;
+  }
+
+  // When variable set to true does not compute the hessian
+  // using finite differences.
+  bool use_identity_hessian(bool v) const { return use_identity_hessian_; }
+  void set_use_identity_hessian(bool v) { use_identity_hessian_ = v; }
+  void set_outside_function(std::shared_ptr<const DifferentiableMap> f) {
+    outside_function_ = f;
+  }
+
+ protected:
+  std::shared_ptr<const AnalyticPixelMapSpline> analytical_grid_;
+  std::shared_ptr<const DifferentiableMap> outside_function_;
+  bool use_identity_hessian_;
+};
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+// Get a regressed grid version of a 2D continuous function
+std::shared_ptr<RegressedPixelGridSpline> RegressedGridFrom2DFunction(
+    double resolution, const extent_t& extends,
+    std::shared_ptr<const DifferentiableMap> f);
+
+// Initializes a Regressed Pixel grid from a matrix of values
+// it sets a particular buffer. TODO what about assumptions...
+std::shared_ptr<RegressedPixelGridSpline>
+InitializeRegressedPixelGridFromMatrix(double resolution,
+                                       const Eigen::MatrixXd& values,
+                                       uint32_t buffer);
+
+// Initializes a Regressed Pixel grid from a matrix of values
+// and exponentiate it. TODO what about assumptions..
+std::shared_ptr<RegressedPixelGridSpline>
+InitializeRegressedPixelGridFromExpMatrix(double resolution,
+                                          const Eigen::MatrixXd& values,
+                                          bool exponentiated, uint32_t buffer);
+
+// Load a regressed pixelmap from file
+// returns an empty pointer when failed to load from text file
+std::shared_ptr<RegressedPixelGridSpline> LoadRegressedPixelGridFromFile(
+    double resolution, const std::string& filename, bool exponentiated,
+    uint32_t buffer);
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+/* TODO
+
 
 class AnalyticalGridSpline : public AnalyticalGrid {
  public:
@@ -247,5 +402,7 @@ class RegressedVoxelGridOffset : public RegressedVoxelGridSpline {
   Eigen::Isometry3d object_pose_inv_;
   bool trilinear_interpolation_;
 };
+
+*/
 
 }  // namespace bewego

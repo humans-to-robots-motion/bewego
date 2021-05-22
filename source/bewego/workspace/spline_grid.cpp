@@ -25,10 +25,237 @@
 
 #include <bewego/util/misc.h>
 #include <bewego/workspace/spline_grid.h>
-#include <einspline/bspline.h>
-#include <einspline/multi_bspline.h>
 
 using namespace bewego;
+
+//-----------------------------------------------------------------------------
+// AnalyticPixelMapSpline implementation.
+//-----------------------------------------------------------------------------
+
+void AnalyticPixelMapSpline::InitializeSplines() {
+  // Ugrid x_grid, y_grid;
+
+  // x_grid.start = origin().x();
+  // x_grid.end = x_grid.start + num_cells_x() * resolution();
+  // x_grid.num = num_cells_x();
+
+  // y_grid.start = origin().y();
+  // y_grid.end = y_grid.start + num_cells_y() * resolution();
+  // y_grid.num = num_cells_y();
+
+  // BCtype_d xBC, yBC;
+  // xBC.lCode = xBC.rCode = PERIODIC;
+  // yBC.lCode = yBC.rCode = PERIODIC;
+
+  // // Does not need a copy, simple pointer is enough
+  // data_einslpine_ = &data_[0];
+
+  // // cout << "create_UBspline_2d_d" << endl;
+  // splines_ = create_UBspline_2d_d(x_grid, y_grid, xBC, yBC, data_einslpine_);
+}
+
+//! Get potential by regression
+double AnalyticPixelMapSpline::CalculateSplineValue(
+    const Eigen::Vector2d& point) const {
+  Eigen::Vector2i pos;
+  if (!WorldToGrid(point, pos)) {
+    return default_value_;
+  }
+  double sval = 0;
+  // Trick the compiler by copying the pointer
+  // this library is written in C and does not declare its arguments as const
+  // UBspline_2d_d* splines_copy = splines_;
+  // eval_UBspline_2d_d(splines_copy, point.x(), point.y(), &sval);
+  return sval;
+}
+
+//! Get potential by regression
+double AnalyticPixelMapSpline::CalculateSplineGradient(
+    const Eigen::Vector2d& point, Eigen::Vector2d* g) const {
+  assert(g->size() == 2);
+  double sval, sgrad[2];
+  // Trick the compiler by copying the pointer
+  // this library is written in C and does not declare its arguments as const
+  Eigen::Vector2i pos;
+  if (!WorldToGrid(point, pos)) {
+    (*g) = Eigen::Vector2d::Zero();
+    return default_value_;
+  }
+  // UBspline_2d_d* splines_copy = splines_;
+  // eval_UBspline_2d_d_vg(splines_copy, point.x(), point.y(), &sval, sgrad);
+  // g->x() = sgrad[0];
+  // g->y() = sgrad[1];
+  // cout << "g : " << g->transpose() << endl;
+  return sval;
+}
+
+// Get the spline value and gradient
+double AnalyticPixelMapSpline::CalculateSplineGradientHessian(
+    const Eigen::Vector2d& point, Eigen::Vector2d* g,
+    Eigen::Matrix2d* H) const {
+  assert(g->size() == 2);
+  assert(H->rows() == 2);
+  assert(H->cols() == 2);
+  double sval, sgrad[2], shess[4];
+  // Trick the compiler by copying the pointer
+  // this library is written in C and does not declare its arguments as const
+  Eigen::Vector2i pos;
+  if (!WorldToGrid(point, pos)) {
+    g->setZero();
+    H->setZero();
+    return default_value_;
+  }
+  // UBspline_2d_d* splines_copy = splines_;
+  // eval_UBspline_2d_d_vgh(splines_copy, point.x(), point.y(), &sval, sgrad,
+  //                        shess);
+  // g->x() = sgrad[0];
+  // g->y() = sgrad[1];
+  // TODO: figure out convention
+  // (*H) << shess[0], shess[2], shess[1], shess[3];
+  return sval;
+}
+
+//-----------------------------------------------------------------------------
+// RegressedPixelGridSpline implementation.
+//-----------------------------------------------------------------------------
+
+Eigen::VectorXd RegressedPixelGridSpline::Forward(
+    const Eigen::VectorXd& x) const {
+  if (outside_function_) {
+    Eigen::Vector2i pos;
+    if (!analytical_grid_->WorldToGrid(Eigen::Vector2d(x), pos)) {
+      return (*outside_function_)(x);
+    }
+  }
+  y_[0] = analytical_grid_->CalculateSplineValue(Eigen::Vector2d(x));
+  return y_;
+}
+
+Eigen::MatrixXd RegressedPixelGridSpline::Jacobian(
+    const Eigen::VectorXd& x) const {
+  if (outside_function_) {
+    Eigen::Vector2i pos;
+    if (!analytical_grid_->WorldToGrid(Eigen::Vector2d(x), pos)) {
+      return outside_function_->Jacobian(x);
+    }
+  }
+  Eigen::Vector2d g_2d;
+  analytical_grid_->CalculateSplineGradient(Eigen::Vector2d(x), &g_2d);
+  J_ = g_2d.transpose();
+  return J_;
+}
+
+Eigen::MatrixXd RegressedPixelGridSpline::Hessian(
+    const Eigen::VectorXd& x) const {
+  if (outside_function_) {
+    Eigen::Vector2i pos;
+    if (!analytical_grid_->WorldToGrid(Eigen::Vector2d(x), pos)) {
+      return outside_function_->Hessian(x);
+    }
+  }
+  if (use_identity_hessian_) {
+    H_.setIdentity();
+    // Not identity but Gauss-Netwon approximation
+    // *H = (*g) * (*g).transpose();
+    // cout << "H : " << *H << endl;
+    // cout << "g : " << (*g).transpose() << endl;
+    return H_;
+  } else {
+    // double value = Evaluate(x, g);
+    Eigen::Vector2d g_2d;
+    Eigen::Matrix2d H_2d;
+
+    double value = analytical_grid_->CalculateSplineGradientHessian(
+        Eigen::Vector2d(x), &g_2d, &H_2d);
+    H_ = H_2d;
+
+    /*
+    //  Finite difference hessian
+    lula::differential_geometry::NDimDiffFunction::
+        GetFiniteDifferenceHessianFromGradients(x, &H_approx);
+
+    double max_H_diff = ((*H) - H_approx).cwiseAbs().maxCoeff();
+    cout << "max_H_diff : " << max_H_diff << endl;
+    cout << " -- H : " << (*H) << endl;
+    cout << " -- H_approx : " << H_approx << endl;
+    cout << " -- H_approx : " << g_2d.transpose() << endl;
+    */
+    // CHECK_LE(max_H_diff, 1e-3);
+    return H_;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+std::shared_ptr<RegressedPixelGridSpline> bewego::RegressedGridFrom2DFunction(
+    double resolution, const extent_t& extends,
+    std::shared_ptr<const DifferentiableMap> f) {
+  assert(2 == f->input_dimension());
+  auto analytic_grid =
+      std::make_shared<AnalyticPixelMapSpline>(resolution, extends);
+  InitializeDataFromFunction(*f, *analytic_grid);
+  analytic_grid->InitializeSplines();
+  return std::make_shared<RegressedPixelGridSpline>(analytic_grid);
+}
+
+std::shared_ptr<RegressedPixelGridSpline>
+bewego::InitializeRegressedPixelGridFromMatrix(double resolution,
+                                               const Eigen::MatrixXd& values,
+                                               uint32_t buffer) {
+  double x_width = (values.cols() + 2 * buffer) * resolution;
+  double y_width = (values.rows() + 2 * buffer) * resolution;
+  extent_t extends;
+  extends.extents_.resize(4);
+  extends.extents_[1] = x_width / 2.;
+  extends.extents_[3] = y_width / 2.;
+  extends.extents_[0] = -extends.x_max();
+  extends.extents_[2] = -extends.y_max();
+  auto analytic_grid =
+      std::make_shared<AnalyticPixelMapSpline>(resolution, extends);
+  // This value should not be too high to
+  // not make the problem numerically unstable
+  analytic_grid->set_default_value(values.maxCoeff());
+  analytic_grid->InitializeFromMatrix(values, buffer);
+  analytic_grid->InitializeSplines();
+  return std::make_shared<RegressedPixelGridSpline>(analytic_grid);
+}
+
+std::shared_ptr<RegressedPixelGridSpline>
+bewego::InitializeRegressedPixelGridFromExpMatrix(double resolution,
+                                                  const Eigen::MatrixXd& values,
+                                                  bool exponentiated,
+                                                  uint32_t buffer) {
+  assert(is_nan(values) == false);
+  assert(values.rows() == 100);
+  assert(values.cols() == 100);
+  if (exponentiated) {
+    Eigen::MatrixXd values_tmp = values;
+    util::ExponentiateMatrix(values_tmp);
+    // cout << "MAX COEEF : " << values_tmp.maxCoeff() << endl;
+    return InitializeRegressedPixelGridFromMatrix(resolution, values_tmp,
+                                                  buffer);
+  }
+  return InitializeRegressedPixelGridFromMatrix(resolution, values, buffer);
+}
+
+std::shared_ptr<RegressedPixelGridSpline>
+bewego::LoadRegressedPixelGridFromFile(double resolution,
+                                       const std::string& filename,
+                                       bool exponentiated, uint32_t buffer) {
+  std::shared_ptr<RegressedPixelGridSpline> regressed_grid;
+  Eigen::MatrixXd values(util::ReadMatrixFromCsvFile(filename));
+  if (values.rows() == 0 || values.cols() == 0) {
+    return regressed_grid;
+  }
+  if (exponentiated) {
+    util::ExponentiateMatrix(values);
+  }
+  return InitializeRegressedPixelGridFromMatrix(resolution, values, buffer);
+}
+
+/* TODO
 
 void AnalyticalGridSpline::Recompute() {
   CHECK_NOTNULL(splines_);
@@ -281,3 +508,5 @@ double RegressedVoxelGridOffset::Evaluate(const Eigen::VectorXd& x,
   *H = g_3d * g_3d.transpose();
   return potential;
 }
+
+*/
