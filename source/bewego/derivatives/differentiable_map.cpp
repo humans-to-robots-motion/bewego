@@ -111,6 +111,15 @@ bool DifferentiableMap::CheckHessian(double precision) const {
   return H.isApprox(H_diff, precision);
 }
 
+void DifferentiableMap::CheckInputDimension(const Eigen::VectorXd& x) const {
+  // We are not using asset's anymore because they
+  // do not integrate well with GoogleTest and pybind
+  // assert(input_dimension() == x.size());
+  if (input_dimension() != x.size()) {
+    throw std::runtime_error("DifferentiableMap : input dimension missmatch");
+  }
+}
+
 //-----------------------------------------------------------------------------
 // CachedDifferentiableMap implementation.
 //-----------------------------------------------------------------------------

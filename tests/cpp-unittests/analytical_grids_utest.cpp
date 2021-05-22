@@ -99,7 +99,7 @@ class AnalyticalGridTest : public ::testing::Test {
     Eigen::VectorXd a(3);
     a << 1, 2, 3;
     double b = -.1;
-    linear_function_.reset(new LinearMap(a, b));
+    affine_function_ = std::make_shared<AffineMap>(a, b);
   }
 
   void InitializeValues() {
@@ -109,7 +109,7 @@ class AnalyticalGridTest : public ::testing::Test {
           Eigen::Vector3i grid_cell(i, j, k);
           Eigen::Vector3d x;
           analytical_grid_.gridToWorld(grid_cell, x);
-          analytical_grid_.setCell(grid_cell, (*linear_function_)(x)[0]);
+          analytical_grid_.setCell(grid_cell, (*affine_function_)(x)[0]);
         }
       }
     }
@@ -145,8 +145,8 @@ class AnalyticalGridTest : public ::testing::Test {
   void ValidateGridPoint(const Eigen::Vector3i& query_cell, double precision,
                          bool verbose) {
     Eigen::Vector3d query_pt = analytical_grid_.gridToWorld(query_cell);
-    double actual_value = (*linear_function_)(query_pt)[0];
     double potential_value = analytical_grid_.CalculatePotential(query_pt);
+    double actual_value = (*affine_function_)(query_pt)[0];
     if (verbose) {
       cout << "------------------------" << endl;
       cout << "query_cell: " << query_cell.transpose()
@@ -161,7 +161,7 @@ class AnalyticalGridTest : public ::testing::Test {
   double neighborhood_threshold_;
   double weight_threshold_;
   AnalyticalGrid analytical_grid_;
-  std::shared_ptr<LinearMap> linear_function_;
+  std::shared_ptr<AffineMap> affine_function_;
 };
 
 std::vector<Eigen::Vector3i> BruteForceNeighbors(double distance_threshold,
@@ -281,7 +281,7 @@ TEST_F(AnalyticalGridTest, ValidateDegredationToZero) {
   for (int i = 0; i < 100; ++i) {
     world_pt += increment;
 
-    double analytical_value = (*linear_function_)(world_pt)[0];
+    double analytical_value = (*affine_function_)(world_pt)[0];
     double value = analytical_grid_.CalculatePotential(world_pt);
     double new_diff = value - analytical_value;
     EXPECT_GT(new_diff, prev_diff);

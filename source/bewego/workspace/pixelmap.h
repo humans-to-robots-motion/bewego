@@ -33,8 +33,9 @@
 
 namespace bewego {
 
-// Squared PixelMap centered at [0, 0]
-// Uses the Gaussians to come up with a binary representation
+/*
+ Squared PixelMap centered at [0, 0]
+ */
 class PixelMap {
  public:
   PixelMap(double resolution, const extent_t& extends,
@@ -138,7 +139,8 @@ class PixelMap {
     resolution_ = resolution;
     num_cells_x_ = util::float_to_uint((x_max - x_min) / resolution_);
     num_cells_y_ = util::float_to_uint((y_max - y_min) / resolution_);
-    stride_ = num_cells_y_;  // This matches einspline's format
+    stride_ = num_cells_y_;
+    // This should match cubic interpolation in cubic_interpolation.h
     // HERE change the origin to be the min and not the center of the cell
     // CHECK whether this matches the einspline format ..
     // TODO write a test script.

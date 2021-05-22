@@ -56,20 +56,21 @@ class CubicInterpolator {
   Eigen::Matrix<fptype, 4, 4> A_;
 };
 
+/* Interpolator using a specified datasquare of length n1 x n2
+
+When Initializing, the data is ordered first along the n1 axis
+
+    [0,0], [1,0], ..., [n1-1,0], [0,1], ...
+
+If n2 is omitted, then n1=n2 is assumed.
+
+Data is assumed to be equally spaced with spacing and
+periodic along each axis, with the coordinate origin (0,0) at grid index [0,0].
+*/
 class BiCubicGridInterpolator {
  public:
   typedef double fptype;
 
-  /* Initializes an interpolator using a
-     specified datacube of length n1 x n2,
-
-     where data is ordered first along the n1 axis
-     [0,0], [1,0], ..., [n1-1,0], [0,1], ... If n2 is
-     omitted, then n1=n2=n3 is assumed.
-     Data is assumed to be equally spaced and
-     periodic along each axis, with the coordinate origin (0,0)
-     at grid index [0,0].
-   */
   BiCubicGridInterpolator(const std::vector<fptype>& data, fptype spacing,
                           int n1, int n2);
   ~BiCubicGridInterpolator();
@@ -100,7 +101,7 @@ class BiCubicGridInterpolator {
   inline int index_(int i1, int i2) const {
     if ((i1 %= n1_) < 0) i1 += n1_;
     if ((i2 %= n2_) < 0) i2 += n2_;
-    return i1 + n1_ * i2;
+    return i1 * n2_ + i2;
   }
 };
 

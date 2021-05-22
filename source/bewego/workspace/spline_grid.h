@@ -49,12 +49,8 @@ class AnalyticPixelMapSpline : public PixelMap {
     // that
   }
 
-  ~AnalyticPixelMapSpline() {
-    // TODO if the desctructor works port it to the 3D case
-    // if (splines_ != NULL) {
-    // destroy_Bspline(splines_);
-    // }
-  }
+  ~AnalyticPixelMapSpline() {}
+
   // Get the spline value
   double CalculateSplineValue(const Eigen::Vector2d& point) const;
 
@@ -71,10 +67,11 @@ class AnalyticPixelMapSpline : public PixelMap {
   // intialized, it makes a copy of the grid data
   void InitializeSplines();
 
-  // protected:
-  // UBspline_2d_d* splines_;
-  // double* data_einslpine_;
-};  // namespace bewego
+ protected:
+  std::shared_ptr<BiCubicGridInterpolator> interpolator_;
+  std::vector<Eigen::Matrix<double, 16, 1>> splines_;
+  Eigen::Vector2d offset_;
+};
 
 // Lightweight wrapper around the Analytical grid to implement the
 // NDimZerothOrderFunction interface. Upon construction can decide whether the

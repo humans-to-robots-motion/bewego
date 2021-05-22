@@ -283,8 +283,7 @@ BiCubicGridInterpolator::Gradient(
 BiCubicGridInterpolator::~BiCubicGridInterpolator() {}
 
 BiCubicGridInterpolator::fptype BiCubicGridInterpolator::Interpolate(
-    const Eigen::Matrix<BiCubicGridInterpolator::fptype, 16, 1>& p, fptype dx,
-    fptype dy) {
+    const Eigen::Matrix<fptype, 16, 1>& p, fptype dx, fptype dy) {
   Eigen::Matrix<fptype, 4, 1> arr;
   typedef const Eigen::Matrix<fptype, 4, 4, Eigen::RowMajor> MatrixType;
   MatrixType neigh = Eigen::Map<MatrixType>(p.data());

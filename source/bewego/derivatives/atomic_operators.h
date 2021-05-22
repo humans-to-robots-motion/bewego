@@ -323,15 +323,9 @@ class LinearMap : public AffineMap {
       : AffineMap(A, Eigen::VectorXd::Zero(A.rows())) {
     type_ = "LinearMap";
   }
-  LinearMap(const Eigen::MatrixXd& A, double a) : AffineMap(A.row(0), a) {
-    type_ = "LinearMap";
-  }
   LinearMap(double a) : AffineMap(a, 0) { type_ = "LinearMap"; }
 
-  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
-    return a_ * x;
-  }
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
 };
 
 /*! \brief A quadric map

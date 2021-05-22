@@ -33,25 +33,9 @@ using namespace bewego;
 //-----------------------------------------------------------------------------
 
 void AnalyticPixelMapSpline::InitializeSplines() {
-  // Ugrid x_grid, y_grid;
-
-  // x_grid.start = origin().x();
-  // x_grid.end = x_grid.start + num_cells_x() * resolution();
-  // x_grid.num = num_cells_x();
-
-  // y_grid.start = origin().y();
-  // y_grid.end = y_grid.start + num_cells_y() * resolution();
-  // y_grid.num = num_cells_y();
-
-  // BCtype_d xBC, yBC;
-  // xBC.lCode = xBC.rCode = PERIODIC;
-  // yBC.lCode = yBC.rCode = PERIODIC;
-
-  // // Does not need a copy, simple pointer is enough
-  // data_einslpine_ = &data_[0];
-
-  // // cout << "create_UBspline_2d_d" << endl;
-  // splines_ = create_UBspline_2d_d(x_grid, y_grid, xBC, yBC, data_einslpine_);
+  offset_ = 0.5 * resolution() * Eigen::Vector2d::Ones() + origin_minus();
+  interpolator_ = std::make_shared<BiCubicGridInterpolator>(
+      data_, resolution(), num_cells_x(), num_cells_y());
 }
 
 //! Get potential by regression
@@ -61,12 +45,7 @@ double AnalyticPixelMapSpline::CalculateSplineValue(
   if (!WorldToGrid(point, pos)) {
     return default_value_;
   }
-  double sval = 0;
-  // Trick the compiler by copying the pointer
-  // this library is written in C and does not declare its arguments as const
-  // UBspline_2d_d* splines_copy = splines_;
-  // eval_UBspline_2d_d(splines_copy, point.x(), point.y(), &sval);
-  return sval;
+  return interpolator_->Evaluate(point - offset_);
 }
 
 //! Get potential by regression
@@ -81,11 +60,7 @@ double AnalyticPixelMapSpline::CalculateSplineGradient(
     (*g) = Eigen::Vector2d::Zero();
     return default_value_;
   }
-  // UBspline_2d_d* splines_copy = splines_;
-  // eval_UBspline_2d_d_vg(splines_copy, point.x(), point.y(), &sval, sgrad);
-  // g->x() = sgrad[0];
-  // g->y() = sgrad[1];
-  // cout << "g : " << g->transpose() << endl;
+  *g = interpolator_->Gradient(point - offset_);
   return sval;
 }
 
@@ -105,13 +80,7 @@ double AnalyticPixelMapSpline::CalculateSplineGradientHessian(
     H->setZero();
     return default_value_;
   }
-  // UBspline_2d_d* splines_copy = splines_;
-  // eval_UBspline_2d_d_vgh(splines_copy, point.x(), point.y(), &sval, sgrad,
-  //                        shess);
-  // g->x() = sgrad[0];
-  // g->y() = sgrad[1];
-  // TODO: figure out convention
-  // (*H) << shess[0], shess[2], shess[1], shess[3];
+  H->setZero();
   return sval;
 }
 

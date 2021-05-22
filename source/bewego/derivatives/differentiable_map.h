@@ -147,6 +147,9 @@ class DifferentiableMap {
     return other.type_ == type_;
   }
 
+  /** Throws an exception when there is a missmatch in dimension */
+  void CheckInputDimension(const Eigen::VectorXd& x) const;
+
  protected:
   bool debug_;
   mutable Eigen::VectorXd y_;

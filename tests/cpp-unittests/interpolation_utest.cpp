@@ -224,8 +224,8 @@ class BiCubicTest : public ::testing::Test {
     Y_ = Eigen::VectorXd(nb_points);
     ASSERT_EQ(Y_.size(), X_.rows());
     uint32_t i = 0;
-    for (double y = 0.; y < max_; y += delta_) {
-      for (double x = 0.; x < max_; x += delta_) {
+    for (double x = 0.; x < max_; x += delta_) {
+      for (double y = 0.; y < max_; y += delta_) {
         X_.row(i) << x, y;
         Y_(i) = (*f)(X_.row(i))[0];
         i++;
@@ -249,7 +249,7 @@ class BiCubicTest : public ::testing::Test {
         cout << "actual_value: " << actual_value << endl;
         cout << "potential_value: " << potential_value << endl;
       }
-      EXPECT_NEAR(actual_value, potential_value, precision);
+      ASSERT_NEAR(actual_value, potential_value, precision);
     }
   }
 
@@ -271,15 +271,15 @@ class BiCubicTest : public ::testing::Test {
         cout << "potential_value1: " << potential_value1 << endl;
         cout << "potential_value1: " << potential_value2 << endl;
       }
-      EXPECT_NEAR(actual_value, potential_value1, precision);
-      EXPECT_NEAR(actual_value, potential_value2, precision);
+      ASSERT_NEAR(actual_value, potential_value1, precision);
+      ASSERT_NEAR(actual_value, potential_value2, precision);
     }
   }
 
   void ValidateGradientGrid() {
     std::vector<double> data(Y_.data(), Y_.data() + Y_.size());
     auto bicubic = std::make_shared<BiCubicGridInterpolator>(data, 1, n_, n_);
-    double precision = 1e-4;
+    double precision = 1e-3;  // TODO make that tighter?
     double dt = 1e-4;
     double dt_half = dt * .5;
     double v1, v2, dv_x, dv_y;
@@ -353,7 +353,7 @@ TEST_F(BiCubicTest, Linear) {
 }
 
 TEST_F(BiCubicTest, Gradient) {
-  verbose_ = true;
+  verbose_ = false;
   InitializeGrid(linear_function_);
   ValidateGradientGrid();
 }
