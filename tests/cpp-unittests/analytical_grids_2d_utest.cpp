@@ -11,8 +11,9 @@ using namespace bewego;
 using std::cout;
 using std::endl;
 
-const double error_tolerance = 1.e-9;
-const double g_error_tolerance = 1.e-2;
+const double error_tolerance = 1e-9;
+const double g_error_tolerance = 1e-6;
+static const unsigned int SEED = 0;
 
 std::shared_ptr<const LinearMap> SetUpLinearFunction() {
   Eigen::MatrixXd a(1, 2);
@@ -410,11 +411,17 @@ TEST_F(AnalyticalGridFunc, Check2DAllGrids) {
 
 TEST_F(AnalyticalGridFunc, CheckRandomPoints) {
   verbose_ = false;
-  resolution_ = .1;
 
-  test_function_ = SetUpLinearFunction();
+  std::srand(SEED);
+
+  resolution_ = .05;  // 40 x 40
+
+  // Test linear function (constant gradient)
+  Eigen::Vector2d a(1, 2);
+  test_function_ = std::make_shared<LinearMap>(a.transpose());
   CheckRandomPoints(extent_t(-1, 1, -1, 1));
 
+  // Test quadric function (constant hessian)
   Eigen::Matrix2d A;
   A.row(0) << 1, 2;
   A.row(1) << 3, 4;
