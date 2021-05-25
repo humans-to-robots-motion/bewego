@@ -84,10 +84,13 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     type_ = "CliquesFunctionNetwork";
   }
   static uint32_t NetworkDim(uint32_t n, uint32_t T) { return (T + 2) * n; }
-  virtual uint32_t input_dimension() const { return input_size_; }
-  virtual uint32_t nb_cliques() const { return nb_cliques_; }
   virtual uint32_t n() const { return clique_element_dim_; }
   virtual uint32_t T() const { return nb_cliques_; }
+  virtual uint32_t input_dimension() const { return input_size_; }
+  virtual uint32_t nb_cliques() const { return nb_cliques_; }
+  virtual uint32_t nb_terms() const { return nb_terms_; }
+  virtual uint32_t clique_dim() const { return clique_dim_; }
+  virtual uint32_t nb_clique_elements() const { return nb_clique_elements_; }
 
   /** We call over all subfunctions in each clique */
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
@@ -259,9 +262,6 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     assert(t < nb_cliques_);
     return std::static_pointer_cast<const SumMap>(functions_[t])->terms();
   }
-
-  uint32_t nb_terms() const { return nb_terms_; }
-  uint32_t clique_dim() const { return clique_dim_; }
 
  private:
   uint32_t input_size_;

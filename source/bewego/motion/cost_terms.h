@@ -183,6 +183,30 @@ inline std::shared_ptr<SquaredNormAcceleration> SquaredAccelerationNorm(
   return std::make_shared<SquaredNormAcceleration>(n, dt);
 }
 
+/** Differentiable map
+ *
+ *          f([q; qd]) = [phi(q); d phi(q)]
+ *                     = [phi(q); J_phi * qd]
+ */
+class PosVelDifferentiableMap : public CombinationOperator {
+ public:
+  PosVelDifferentiableMap(DifferentiableMapPtr phi);
+
+  virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+
+  virtual uint32_t input_dimension() const {
+    return 2 * phi_->input_dimension();
+  }
+  virtual uint32_t output_dimension() const {
+    return 2 * phi_->output_dimension();
+  }
+
+ private:
+  DifferentiableMapPtr phi_;
+  uint32_t n_;
+};
+
 /** Barrier between values v_lower and v_upper */
 class BoundBarrier : public DifferentiableMap {
  public:

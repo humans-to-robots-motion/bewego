@@ -26,3 +26,47 @@
 #include <bewego/motion/cost_terms.h>
 
 using namespace bewego;
+
+//------------------------------------------------------------------------------
+// PosVelDifferentiableMap implementation
+//------------------------------------------------------------------------------
+
+PosVelDifferentiableMap::PosVelDifferentiableMap(DifferentiableMapPtr phi)
+    : phi_(phi), n_(phi_->input_dimension()) {
+  PreAllocate();
+  J_.setZero();
+  type_ = "PosVelDifferentiableMap";
+}
+
+Eigen::VectorXd PosVelDifferentiableMap::Forward(
+    const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+
+  const Eigen::VectorXd& q = x.head(n_);   // position
+  const Eigen::VectorXd& qd = x.tail(n_);  // velocity
+
+  y_.head(phi_->output_dimension()) = (*phi_)(q);              // phi_q
+  y_.tail(phi_->output_dimension()) = phi_->Jacobian(q) * qd;  // phi_qd
+
+  return y_;
+}
+
+Eigen::MatrixXd PosVelDifferentiableMap::Jacobian(
+    const Eigen::VectorXd& x) const {
+  const Eigen::VectorXd& q = x.head(n_);   // position
+  const Eigen::VectorXd& qd = x.tail(n_);  // velocity
+
+  Eigen::MatrixXd J_phi = phi_->Jacobian(q);  // J
+  Eigen::MatrixXd Jd_phi;                     // J dot (finite difference)
+  const double dt = 1e-4;
+  Jd_phi = phi_->Jacobian(q + 0.5 * dt * qd);
+  Jd_phi -= phi_->Jacobian(q - 0.5 * dt * qd);
+  Jd_phi /= dt;
+
+  uint32_t m_phi = phi_->output_dimension();
+  uint32_t n_phi = phi_->input_dimension();
+  J_.topLeftCorner(m_phi, n_phi) = J_phi;
+  J_.bottomRightCorner(m_phi, n_phi) = J_phi;
+  J_.bottomLeftCorner(m_phi, n_phi) = Jd_phi;
+  return J_;
+}

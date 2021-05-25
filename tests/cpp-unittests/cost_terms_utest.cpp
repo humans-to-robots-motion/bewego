@@ -185,3 +185,15 @@ TEST_F(DifferentialMapTest, bound_barrier) {
 
   ASSERT_TRUE(phi->type() == "BoundBarrier");
 }
+
+TEST_F(DifferentialMapTest, pos_vel_differentiable_map) {
+  std::srand(SEED);
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+  hessian_precision_ = -1;
+  auto f = std::make_shared<TrigoTestMap>();
+  auto phi = std::make_shared<PosVelDifferentiableMap>(f);
+  AddRandomTests(phi, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi->type() == "PosVelDifferentiableMap");
+}
