@@ -105,7 +105,11 @@ double CubicInterpolator::Interpolate(const Eigen::Matrix<fptype, 4, 1>& p,
 
 BiCubicGridInterpolator::BiCubicGridInterpolator(
     const std::vector<fptype>& data, fptype spacing, int n1, int n2)
-    : data_(data), n1_(n1), n2_(n2), spacing_(spacing) {
+    : data_(data),
+      n1_(n1),
+      n2_(n2),
+      spacing_(spacing),
+      inv_spacing_(1. / spacing) {
   if (n2_ == 0) {
     n2_ = n1_;
   }
@@ -277,7 +281,7 @@ BiCubicGridInterpolator::Gradient(
       // 2st order
       3. * (a(3) + a(7) * dx + a(11) * dxpow2 + a(15) * dxpow3) * dypow2;
 
-  return Eigen::Matrix<fptype, 2, 1>(dvx, dvy);
+  return inv_spacing_ * Eigen::Matrix<fptype, 2, 1>(dvx, dvy);
 }
 
 BiCubicGridInterpolator::~BiCubicGridInterpolator() {}
