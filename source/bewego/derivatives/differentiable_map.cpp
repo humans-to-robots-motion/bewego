@@ -183,17 +183,21 @@ void DifferentialMapTest::FiniteDifferenceTest(
   Eigen::MatrixXd H, H_diff;
 
   J = f->Jacobian(x);
-  H = f->Hessian(x);
-
   J_diff = DifferentiableMap::FiniteDifferenceJacobian(*f, x);
-  H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
+
+  if (hessian_precision_ > 0) {
+    H = f->Hessian(x);
+    H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
+  }
 
   if (verbose_) {
     cout << "Test for  x : " << x.transpose() << endl;
     cout << "J : " << endl << J << endl;
     cout << "J_diff : " << endl << J_diff << endl;
-    cout << "H : " << endl << H << endl;
-    cout << "H_diff : " << endl << H_diff << endl;
+    if (hessian_precision_ > 0) {
+      cout << "H : " << endl << H << endl;
+      cout << "H_diff : " << endl << H_diff << endl;
+    }
   }
 
   if (use_relative_eq_) {
@@ -203,9 +207,10 @@ void DifferentialMapTest::FiniteDifferenceTest(
     }
   } else {
     double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
-    double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
     EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
+
     if (hessian_precision_ > 0) {
+      double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
       EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
     }
   }

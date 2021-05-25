@@ -36,7 +36,7 @@ using std::endl;
 
 Eigen::VectorXd LinearMap::Forward(const Eigen::VectorXd& x) const {
   CheckInputDimension(x);
-  return a_ * x;
+  return A_ * x;
 }
 
 //------------------------------------------------------------------------------

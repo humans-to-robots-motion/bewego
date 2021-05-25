@@ -536,6 +536,7 @@ class CombinedOutputMap : public CombinationOperator {
   virtual VectorOfMaps nested_operators() const { return maps_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    CheckInputDimension(q);
     uint32_t idx = 0;
     for (auto m : maps_) {
       y_.segment(idx, m->output_dimension()) = (*m)(q);
@@ -545,6 +546,7 @@ class CombinedOutputMap : public CombinationOperator {
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    CheckInputDimension(q);
     uint32_t idx = 0;
     for (auto map : maps_) {
       uint32_t m_map = map->output_dimension();
@@ -570,6 +572,66 @@ class CombinedOutputMap : public CombinationOperator {
  protected:
   uint32_t m_;
   VectorOfMaps maps_;
+};
+
+/*! \brief Evaluates multiple points map
+ *
+ * Details:
+ *
+ *   phi([x1; x2; ...; xN]) = [phi(x1); phi(x2); ...; phi(xN)]
+ *
+ * simply ``stacks" the maps output.
+ * The hessian is not defined as this has > 1 output dimension
+ */
+class MultiEvalMap : public CombinationOperator {
+ public:
+  MultiEvalMap(DifferentiableMapPtr phi, uint32_t N) : phi_(phi), N_(N) {
+    PreAllocate();
+    type_ = "MultiEvalMap";
+  }
+
+  uint32_t output_dimension() const { return N_ * phi_->output_dimension(); }
+  uint32_t input_dimension() const { return N_ * phi_->input_dimension(); }
+
+  virtual VectorOfMaps nested_operators() const { return VectorOfMaps({phi_}); }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const {
+    CheckInputDimension(q);
+    uint32_t m_map = phi_->output_dimension();
+    uint32_t n_map = phi_->input_dimension();
+    for (uint32_t i = 0; i < N_; i++) {
+      y_.segment(i * m_map, m_map) = (*phi_)(q.segment(i * n_map, n_map));
+    }
+    return y_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const {
+    CheckInputDimension(q);
+    uint32_t m_map = phi_->output_dimension();
+    uint32_t n_map = phi_->input_dimension();
+    uint32_t idx = 0;
+    for (uint32_t i = 0; i < N_; i++) {
+      J_.block(i * m_map, i * n_map, m_map, n_map) =
+          phi_->Jacobian(q.segment(i * n_map, n_map));
+    }
+    return J_;
+  }
+
+  /** return true if it is the same operator */
+  virtual bool Compare(const DifferentiableMap& other) const {
+    if (other.type() != type_) {
+      return false;
+    } else {
+      auto f = static_cast<const MultiEvalMap&>(other);
+      bool eq_m = f.N_ == N_;
+      bool eq_phi = f.phi_->type() == phi_->type();
+      return eq_phi && eq_phi;
+    }
+  }
+
+ protected:
+  uint32_t N_;
+  DifferentiableMapPtr phi_;
 };
 
 /** The log barrier slice
@@ -614,7 +676,6 @@ inline DifferentiableMapPtr LogisticActivation(DifferentiableMapPtr f,
  *
  *        f(q) = g_1(q)^T g_2(q)
  *
- * TODO: Write test.
  */
 class DotProduct : public CombinationOperator {
  public:

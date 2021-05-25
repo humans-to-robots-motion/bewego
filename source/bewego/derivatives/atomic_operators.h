@@ -244,18 +244,18 @@ class SquareMap : public DifferentiableMap {
  *
  * Details:
  *
- *     f(x) = ax + b
+ *     f(x) = Ax + b
  */
 class AffineMap : public DifferentiableMap {
  public:
-  AffineMap(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) {
-    Initialize(a, b);
+  AffineMap(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+    Initialize(A, b);
   }
 
-  AffineMap(const Eigen::VectorXd& a, double b) {
-    Eigen::MatrixXd a_T(1, a.size());
-    a_T.row(0) = a;
-    Initialize(a_T, Eigen::VectorXd::Constant(1, b));
+  AffineMap(const Eigen::VectorXd& A, double b) {
+    Eigen::MatrixXd A_T(1, A.size());
+    A_T.row(0) = A;
+    Initialize(A_T, Eigen::VectorXd::Constant(1, b));
   }
 
   AffineMap(double a, double b) {
@@ -263,9 +263,11 @@ class AffineMap : public DifferentiableMap {
                Eigen::VectorXd::Constant(1, b));
   }
 
-  void Initialize(const Eigen::MatrixXd& a, const Eigen::VectorXd& b) {
-    assert(a.rows() == b.size());
-    a_ = a;
+  void Initialize(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+    if (A.rows() != b.size()) {
+      throw std::runtime_error("AffineMap : A.rows() !=  b.size()");
+    }
+    A_ = A;
     b_ = b;
     PreAllocate();
     H_.setZero();
@@ -273,25 +275,25 @@ class AffineMap : public DifferentiableMap {
   }
 
   uint32_t output_dimension() const { return b_.size(); }
-  uint32_t input_dimension() const { return a_.cols(); }
+  uint32_t input_dimension() const { return A_.cols(); }
 
   virtual Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
-    return a_ * x + b_;
+    CheckInputDimension(x);
+    return A_ * x + b_;
   }
 
   virtual Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
-    return a_;
+    CheckInputDimension(x);
+    return A_;
   }
 
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
     assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return H_;
   }
 
-  const Eigen::MatrixXd& a() const { return a_; }
+  const Eigen::MatrixXd& A() const { return A_; }
   const Eigen::VectorXd& b() const { return b_; }
 
   /** return true if it is the same operator */
@@ -300,14 +302,14 @@ class AffineMap : public DifferentiableMap {
       return false;
     } else {
       auto f = static_cast<const AffineMap&>(other);
-      bool a_eq = (f.a_ - a_).cwiseAbs().maxCoeff() < 1e-6;
+      bool a_eq = (f.A_ - A_).cwiseAbs().maxCoeff() < 1e-6;
       bool b_eq = (f.b_ - b_).cwiseAbs().maxCoeff() < 1e-6;
       return a_eq && b_eq;
     }
   }
 
  protected:
-  Eigen::MatrixXd a_;
+  Eigen::MatrixXd A_;
   Eigen::VectorXd b_;
 };
 
@@ -507,6 +509,32 @@ class ExpTestFunction : public DifferentiableMap {
     Eigen::VectorXd v(1);
     v(0) = exp(-pow(2.0 * q[0], 2) - pow(0.5 * q[1], 2));
     return v;
+  }
+};
+
+/** Test function that can be evaluated on a grid **/
+class TrigoTestMap : public DifferentiableMap {
+ public:
+  TrigoTestMap() {
+    type_ = "TrigoTestMap";
+    PreAllocate();
+  }
+
+  uint32_t output_dimension() const { return 2; }
+  uint32_t input_dimension() const { return 2; }
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
+    CheckInputDimension(x);
+    y_[0] = std::sin(x[0]) + std::cos(x[1]);
+    y_[1] = std::cos(x[0]) - std::sin(x[1]);
+    return y_;
+  }
+
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
+    CheckInputDimension(x);
+    J_.row(0) << std::cos(x[0]), -std::sin(x[1]);
+    J_.row(1) << -std::sin(x[0]), -std::cos(x[1]);
+    return J_;
   }
 };
 

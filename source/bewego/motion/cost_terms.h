@@ -54,9 +54,9 @@ class FiniteDifferencesVelocity : public LinearMap {
   void _InitializeMatrix(uint32_t dim, double dt) {
     auto identity = Eigen::MatrixXd::Identity(dim, dim);
     // Ax = [-I , I][x_t ; x_{t+1}] / dt
-    a_.block(0, 0, dim, dim) = -identity;
-    a_.block(0, dim, dim, dim) = identity;
-    a_ /= dt;
+    A_.block(0, 0, dim, dim) = -identity;
+    A_.block(0, dim, dim, dim) = identity;
+    A_ /= dt;
   }
 };
 
@@ -77,10 +77,10 @@ class FiniteDifferencesAcceleration : public LinearMap {
 
   void _InitializeMatrix(uint32_t dim, double dt) {
     auto identity = Eigen::MatrixXd::Identity(dim, dim);
-    a_.block(0, 0, dim, dim) = identity;
-    a_.block(0, dim, dim, dim) = -2 * identity;
-    a_.block(0, 2 * dim, dim, dim) = identity;
-    a_ /= (dt * dt);
+    A_.block(0, 0, dim, dim) = identity;
+    A_.block(0, dim, dim, dim) = -2 * identity;
+    A_.block(0, 2 * dim, dim, dim) = identity;
+    A_ /= (dt * dt);
   }
 };
 
@@ -103,9 +103,9 @@ class FiniteDifferencesPosVel : public LinearMap {
 
     // Ax =  [I,   0]
     //       [-I/dt , I/dt][x_t ; x_{t+1}]
-    a_.block(0, 0, dim, dim) = identity;
-    a_.block(dim, 0, dim, dim) = -identity / dt;
-    a_.block(dim, dim, dim, dim) = identity / dt;
+    A_.block(0, 0, dim, dim) = identity;
+    A_.block(dim, 0, dim, dim) = -identity / dt;
+    A_.block(dim, dim, dim, dim) = identity / dt;
   }
 };
 
@@ -142,11 +142,11 @@ class SquaredNormDerivative : public CombinationOperator {
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& clique) const {
-    return (*derivative_)(clique).transpose() * derivative_->a();
+    return (*derivative_)(clique).transpose() * derivative_->A();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& clique) const {
-    return derivative_->a().transpose() * derivative_->a();
+    return derivative_->A().transpose() * derivative_->A();
   }
 
  protected:

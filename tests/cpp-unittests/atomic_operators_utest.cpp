@@ -286,6 +286,20 @@ TEST(atomic_operators, second_order_tayler_approx) {
   }
 }
 
+TEST_F(DifferentialMapTest, trigo_test_map) {
+  std::srand(SEED);
+  set_verbose(true);
+  set_precisions(1e-6, -1);
+  auto phi = std::make_shared<TrigoTestMap>();
+  Eigen::VectorXd x;
+  for (uint32_t i = 0; i < NB_TESTS; i++) {
+    x = util::RandomVector(2, -10, +10);
+    function_tests_.push_back(std::make_pair(phi, x));
+  }
+  RunAllTests();
+  ASSERT_TRUE(phi->type() == "TrigoTestMap");
+}
+
 TEST_F(DifferentialMapTest, log_barrier) {
   std::srand(SEED);
   auto phi = std::make_shared<LogBarrier>();
@@ -340,15 +354,36 @@ TEST_F(DifferentialMapTest, combined_output_map) {
   std::srand(SEED);
   auto maps = std::make_shared<VectorOfMaps>();
   for (uint32_t i = 0; i < 4; i++) {
-    Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
+    Eigen::MatrixXd A = Eigen::MatrixXd::Random(5, 5);
     Eigen::VectorXd b = Eigen::VectorXd::Random(5);
     Eigen::VectorXd c = Eigen::VectorXd::Random(1);
-    maps->push_back(std::make_shared<QuadricMap>(a, b, c));
+    maps->push_back(std::make_shared<QuadricMap>(A, b, c));
   }
   auto phi = std::make_shared<CombinedOutputMap>(*maps);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
   ASSERT_TRUE(phi->type() == "CombinedOutputMap");
+}
+
+TEST_F(DifferentialMapTest, multi_eval_map) {
+  std::srand(SEED);
+  set_verbose(false);
+  set_precisions(1e-5, -1);
+  auto maps = std::make_shared<VectorOfMaps>();
+  std::shared_ptr<MultiEvalMap> phi;
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Random(3, 5);
+  Eigen::VectorXd b = Eigen::VectorXd::Random(3);
+  auto f1 = std::make_shared<AffineMap>(A, b);
+  phi = std::make_shared<MultiEvalMap>(f1, 3);
+  AddRandomTests(phi, NB_TESTS);
+
+  auto f2 = std::make_shared<TrigoTestMap>();
+  phi = std::make_shared<MultiEvalMap>(f2, 3);
+  AddRandomTests(phi, NB_TESTS);
+
+  RunAllTests();
+  ASSERT_TRUE(phi->type() == "MultiEvalMap");
 }
 
 TEST_F(DifferentialMapTest, square_map) {
