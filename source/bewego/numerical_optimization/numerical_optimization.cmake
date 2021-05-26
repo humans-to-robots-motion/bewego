@@ -36,7 +36,7 @@ add_library(${MODULE_NAME} SHARED
     ${MODULE_DIR}/ipopt_optimizer.cpp
     ${MODULE_DIR}/optimization_test_functions.cpp
     ${MODULE_DIR}/trajectory_optimization.cpp
-    ${MODULE_DIR}/planar_motion_optimization.cpp
+    ${MODULE_DIR}/bewopt_planar.cpp
     ${INC})
 target_include_directories(${MODULE_NAME}
   PUBLIC

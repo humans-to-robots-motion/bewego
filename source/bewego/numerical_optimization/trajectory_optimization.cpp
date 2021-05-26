@@ -32,6 +32,7 @@
 
 #include <bewego/motion/cost_terms.h>
 #include <bewego/motion/trajectory.h>
+#include <bewego/numerical_optimization/ipopt_optimizer.h>
 #include <bewego/numerical_optimization/ipopt_problem.h>
 #include <bewego/numerical_optimization/trajectory_optimization.h>
 #include <bewego/util/misc.h>
@@ -80,6 +81,151 @@ TrajectoryOptimizationProblem::TrajectoryOptimizationProblem(
   // Check that sizes don't not overflow
   n_g_ = size_t_to_uint(inequality_constraints_.size());
   n_h_ = size_t_to_uint(equality_constraints_.size());
+}
+
+//------------------------------------------------------------------------------
+// TrajectoryOptimizer implementation.
+//------------------------------------------------------------------------------
+
+TrajectoryOptimizer::TrajectoryOptimizer(uint32_t T, double dt, uint32_t n)
+    : MotionObjective(T, dt, n),
+      with_rotation_(false),
+      with_attractor_constraint_(false),
+      ipopt_with_bounds_(true),
+      ipopt_hessian_approximation_("limited-memory"),
+      visualize_inner_loop_(false),
+      visualize_slow_down_(false),
+      visualize_t_pause_(100000) {}
+
+void TrajectoryOptimizer::set_trajectory_publisher(bool with_slow_down,
+                                                   uint32_t t_pause) {
+  visualize_inner_loop_ = true;
+  visualize_slow_down_ = with_slow_down;
+  visualize_t_pause_ = t_pause;
+}
+
+std::vector<Bounds> TrajectoryOptimizer::TrajectoryDofBounds() const {
+  // Joint limits with rotations are for freeflyers
+  // the extension of the current optimizer should not be too hard
+  // For now we use the case without rotations, where the configuration
+  // dimension matches the workspace dimension
+  assert(n_ == 2);
+  assert(n_ == workspace_->dimension());
+  auto bounds = DofsBounds();
+  std::vector<Bounds> dof_bounds(bounds.size() * (T_ + 1));
+  double joint_margin = .0;
+  assert(bounds.size() == n_);
+  assert(dof_bounds.size() == n_ * (T_ + 1));
+  uint32_t d = workspace_->dimension();
+  for (uint32_t t = 0; t <= T_; t++) {
+    for (uint32_t i = 0; i < d; i++) {
+      if (t > 0 && t < T_) {
+        dof_bounds[t * n_ + i].upper_ = bounds[i].upper_ - joint_margin;
+        dof_bounds[t * n_ + i].lower_ = bounds[i].lower_ + joint_margin;
+      } else {
+        dof_bounds[t * n_ + i].upper_ = std::numeric_limits<double>::max();
+        dof_bounds[t * n_ + i].lower_ = std::numeric_limits<double>::lowest();
+      }
+    }
+    if (with_rotation_) {
+      uint32_t dof_rot = d == 2 ? 1 : 3;
+      for (uint32_t i = 0; i < dof_rot; i++) {
+        dof_bounds[t * n_ + d + i].upper_ = std::numeric_limits<double>::max();
+        dof_bounds[t * n_ + d + i].lower_ =
+            std::numeric_limits<double>::lowest();
+      }
+    }
+  }
+  return dof_bounds;
+}
+
+std::shared_ptr<const ConstrainedOptimizer>
+TrajectoryOptimizer::SetupIpoptOptimizer(
+    const Eigen::VectorXd& q_init,
+    const std::map<std::string, double>& ipopt_options) const {
+  auto optimizer = std::make_shared<IpoptOptimizer>();
+  if (ipopt_with_bounds_) {
+    optimizer->set_bounds(TrajectoryDofBounds());
+  }
+  optimizer->set_verbose(verbose_);
+  optimizer->set_option("print_level", verbose_ ? 4 : 0);
+
+  // optimizer->set_option("derivative_test", "first-order");
+  // optimizer->set_option("derivative_test", "second-order");  // TODO remove
+  // optimizer->set_option("derivative_test_tol", 1e-4);
+
+  // optimizer->set_option("constr_viol_tol", 1e-7);
+  // optimizer->set_option("hessian_approximation",
+  // ipopt_hessian_approximation_); Parse all options from flags
+  optimizer->set_options_map(ipopt_options);
+
+  // Logging
+  // stats_monitor_ = std::make_shared<StatsMonitor>();
+  if (visualize_inner_loop_) {
+    publisher_ = std::make_shared<TrajectoryPublisher>();
+    if (visualize_slow_down_) {
+      publisher_->set_slow_down(true);
+      publisher_->set_t_pause(visualize_t_pause_);
+    }
+    std::function<void(const Eigen::VectorXd&)> getter_function =
+        std::bind(&TrajectoryPublisher::set_current_solution, publisher_.get(),
+                  std::placeholders::_1);
+    optimizer->set_current_solution_accessor(getter_function);
+    publisher_->Initialize("127.0.0.1", 5555, q_init);
+  }
+  return optimizer;
+}
+
+OptimizeResult TrajectoryOptimizer::Optimize(
+    const Eigen::VectorXd& initial_traj_vect, const Eigen::VectorXd& x_goal,
+    const std::map<std::string, double>& options) const {
+  // 1) Get input data
+  uint32_t dim = initial_traj_vect.size();
+  Eigen::VectorXd q_init = initial_traj_vect.head(n_);
+  Trajectory init_traj(q_init, initial_traj_vect.tail(dim - n_));
+  uint32_t T = init_traj.T();
+  uint32_t n = init_traj.n();
+  assert(n == n_);
+  assert(T == T_);
+  if (T != T_ || n != n_) {
+    // check consistency, TODO asserts are deactivated in pybind11, why?
+    throw std::exception();
+  }
+  cout << "-- T : " << T << endl;
+  cout << "-- verbose : " << verbose_ << endl;
+  cout << "-- n_g : " << g_constraints_.size() << endl;
+  cout << "-- n_h : " << h_constraints_.size() << endl;
+
+  // 2) Create problem and optimizer
+  auto nonlinear_problem = std::make_shared<TrajectoryOptimizationProblem>(
+      q_init, function_network_, g_constraints_, h_constraints_);
+
+  // 3) Optimize trajectory
+  auto optimizer = SetupIpoptOptimizer(q_init, options);
+  auto solution = optimizer->Run(*nonlinear_problem, init_traj.ActiveSegment());
+
+  // 4) Return solution
+  if (verbose_) {
+    if (solution.warning_code() == ConstrainedSolution::DID_NOT_CONVERGE) {
+      std::stringstream ss;
+      printf("Did not converge! : %s", ss.str().c_str());
+    } else {
+      printf("Augmented lagrangian convered!");
+    }
+  }
+  if (visualize_inner_loop_ && publisher_) {
+    cout << "stop visulization..." << endl;
+    publisher_->Stop();
+  }
+  OptimizeResult result;
+  result.success = solution.success();
+  result.x = solution.x();
+  result.fun = Eigen::VectorXd::Constant(1, solution.objective_value());
+  result.message =
+      solution.warning_code() == ConstrainedSolution::DID_NOT_CONVERGE
+          ? "not converged"
+          : "converged";
+  return result;
 }
 
 //------------------------------------------------------------------------------

@@ -2,36 +2,30 @@
  * Copyright (c) 2020, Jim Mainprice
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution  and  use  in  source  and binary  forms,  with  or  without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this
- * list of conditions and the following disclaimer.
+ *   1. Redistributions of  source  code must retain the  above copyright
+ *      notice and this list of conditions.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice and  this list of  conditions in the  documentation and/or
+ *      other materials provided with the distribution.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
+ * THE SOFTWARE  IS PROVIDED "AS IS"  AND THE AUTHOR  DISCLAIMS ALL WARRANTIES
+ * WITH  REGARD   TO  THIS  SOFTWARE  INCLUDING  ALL   IMPLIED  WARRANTIES  OF
+ * MERCHANTABILITY AND  FITNESS.  IN NO EVENT  SHALL THE AUTHOR  BE LIABLE FOR
+ * ANY  SPECIAL, DIRECT,  INDIRECT, OR  CONSEQUENTIAL DAMAGES  OR  ANY DAMAGES
+ * WHATSOEVER  RESULTING FROM  LOSS OF  USE, DATA  OR PROFITS,  WHETHER  IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR  OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *                                                             Thu 11 Feb 2021
  */
-
+// author: Jim Mainprice, mainprice@gmail.com
 #pragma once
 
+#include <bewego/motion/objective.h>
+#include <bewego/motion/publisher.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/numerical_optimization/constrained_optimization_problem.h>
 #include <bewego/numerical_optimization/optimizer.h>
@@ -59,6 +53,60 @@ class TrajectoryOptimizationProblem
 
  protected:
   Eigen::VectorXd q_init_;
+};
+
+/*!\brief This version of the constrained trajectory optimizer
+ * optimizes a TrajectoryOptimizationProblem using IPOPT so far.
+ * TODO test class...
+ */
+class TrajectoryOptimizer : public MotionObjective {
+ public:
+  TrajectoryOptimizer(uint32_t T,  // number of cliques
+                      double dt,   // time between cliques
+                      uint32_t n   // config space dim
+  );
+
+  /** @brief Optimize a given trajectory */
+  OptimizeResult Optimize(
+      const Eigen::VectorXd& initial_traj,          // entire trajectory
+      const Eigen::VectorXd& x_goal,                // goal configuration
+      const std::map<std::string, double>& options  // optimizer options
+  ) const;
+
+  // @brief Adds trajectory publisher (t_pause in microseconds)
+  void set_trajectory_publisher(bool with_slow_down, uint32_t t_pause = 100000);
+
+ protected:
+  std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
+      const Eigen::VectorXd& q_init,
+      const std::map<std::string, double>& ipopt_options) const;
+
+  virtual std::vector<Bounds> DofsBounds() const = 0;  // Dof bounds limits
+  std::vector<Bounds> TrajectoryDofBounds() const;     // Dof bounds trajectory
+
+  typedef CliquesFunctionNetwork FunctionNetwork;
+  typedef std::shared_ptr<const FunctionNetwork> FunctionNetworkPtr;
+  typedef std::shared_ptr<const DifferentiableMap> ElementaryFunction;
+
+  // options
+  bool with_rotation_;
+  bool with_attractor_constraint_;
+  bool ipopt_with_bounds_;
+  std::string ipopt_hessian_approximation_;
+
+  // constraints networks
+  std::vector<DifferentiableMapPtr>
+      g_constraints_unstructured_;                 // inequalities
+  std::vector<FunctionNetworkPtr> g_constraints_;  // inequalities
+  std::vector<FunctionNetworkPtr> h_constraints_;  // equalities
+
+  // logging
+  bool visualize_inner_loop_;
+  bool visualize_slow_down_;
+  uint32_t visualize_t_pause_;
+  bool monitor_inner_statistics_;
+  mutable std::shared_ptr<TrajectoryPublisher> publisher_;
+  // visualizer_; mutable std::shared_ptr<util::StatsMonitor> stats_monitor_;
 };
 
 /*!\brief Create a very basic trajectory objective, which first and second

@@ -37,7 +37,7 @@
 #include <pybind11/stl.h>
 
 #ifdef WITH_IPOPT
-#include <bewego/numerical_optimization/planar_motion_optimization.h>
+#include <bewego/numerical_optimization/bewopt_planar.h>
 #endif
 
 #include <iostream>
