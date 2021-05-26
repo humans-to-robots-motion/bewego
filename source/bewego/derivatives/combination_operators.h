@@ -674,8 +674,9 @@ inline DifferentiableMapPtr LogisticActivation(DifferentiableMapPtr f,
 /**
  * Computes the dot product between two maps
  *
- *        f(q) = g_1(q)^T g_2(q)
+ * Details:
  *
+ *        f(q) = g_1(q)^T g_2(q)
  */
 class DotProduct : public CombinationOperator {
  public:
@@ -695,6 +696,108 @@ class DotProduct : public CombinationOperator {
   DifferentiableMapPtr map1_;
   DifferentiableMapPtr map2_;
   uint32_t n_;
+};
+
+/*! \brief Implements an interpolation between functions
+ *
+ * Details:
+ *
+ *        f(x; e) = \sum_i e_i(x) * f_i(x)
+ *
+ * Note: this does not seem like a good name for this operator...
+ * used to be called LinearCombine
+ */
+class ActivationWeights : public CombinationOperator {
+ public:
+  ActivationWeights(const VectorOfMaps& e, const VectorOfMaps& f);
+  virtual ~ActivationWeights();
+
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+
+  uint32_t input_dimension() const { return n_; }
+  uint32_t output_dimension() const { return 1; }
+
+  // TODO
+  // VectorOfMaps nested_operators() const {
+  // return VectorOfMaps({map1_, map2_}); }
+
+ protected:
+  uint32_t n_;
+  VectorOfMaps e_times_f_;
+};
+
+/**
+ * \brief Transitions smoothly between two functions
+ *
+ * Details:
+ *
+ *   sigma(x) = 1 /( 1 + exp(-k * phi(x) )
+ *   f(x) = sigma(x) * f_1(x) + (1-sigma(x)) * f_2(x)
+ *
+ * The transition should occur at phi(x) = 0
+ * Implements all of the variants of Evaluate() explicitly for efficiency.
+ * https://en.wikipedia.org/wiki/Logistic_function
+ *
+ * Note: For k see TemperatureParameter bellow.
+ */
+class SmoothTransition : public ActivationWeights {
+ public:
+  SmoothTransition(DifferentiableMapPtr f1, DifferentiableMapPtr f2,
+                   DifferentiableMapPtr phi, double k = 1)
+      : ActivationWeights(
+            std::vector<DifferentiableMapPtr>{
+                LogisticActivation(phi, k),
+                -1 * LogisticActivation(phi, k) + 1},
+            std::vector<DifferentiableMapPtr>{f1, f2}),
+        f1_(f1),
+        f2_(f2),
+        k_(k) {
+    type_ = "SmoothTransition";
+  }
+  virtual ~SmoothTransition();
+
+  /**
+   * @brief TemperatureParameter
+   * @param d : the size of the transition interval
+   * @param threshold : how much mass is set on the function
+   *                    t \in ]0, 1[
+   * @return k : temperature parameter
+   *
+   * The temperature parameter or slope steepness, determines
+   * how fast the transition between the two functions happens.
+   * Here this parameter is set by giving an interval
+   * in which to transition a certain percentage
+   * of the function mass from f1 to f2.
+   * By default we set that mass to 97% which means simply
+   * a vast majority of the function mass.
+   *
+   * The parameter k is obtained as follows:
+   *
+   *                   t = 1 / [ 1 + exp(-kd/2)]
+   *   t[1 + exp(-kd/2)] = 1
+   *          exp(-kd/2) = (1 - t) / t
+   *              -kd/2  = ln[(1 - t) / t]
+   *                   k = -(2/d) ln[(1 - t) / t]
+   */
+  static double TemperatureParameter(double d, double threshold = .97) {
+    return -(2 / d) * std::log(1 / threshold - 1);
+  }
+
+  DifferentiableMapPtr f1() const { return f1_; }
+  DifferentiableMapPtr f2() const { return f2_; }
+  double k() const { return k_; }
+
+  // TODO
+  // VectorOfMaps nested_operators() const {
+  // return VectorOfMaps({map1_, map2_}); }
+
+ protected:
+  DifferentiableMapPtr f1_;
+  DifferentiableMapPtr f2_;
+  // Termperature parameter
+  double k_;
 };
 
 };  // namespace bewego

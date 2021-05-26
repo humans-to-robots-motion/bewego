@@ -450,3 +450,83 @@ TEST_F(DifferentialMapTest, dotproduct) {
   }
   RunAllTests();
 }
+
+TEST_F(DifferentialMapTest, activation_weights) {
+  std::srand(SEED);
+  set_verbose(false);
+  set_precisions(1e-6, 1e-5);
+
+  function_tests_.clear();
+  uint32_t dim = 3;
+  uint32_t nb_tests = 10;
+  uint32_t nb_activations = 10;
+
+  VectorOfMaps activations;
+  VectorOfMaps functions;
+  for (uint32_t i = 0; i < nb_activations; ++i) {
+    Eigen::VectorXd p0 = util::Random(dim);
+    activations.push_back(std::make_shared<SquaredNorm>(p0) - .1);
+    Eigen::VectorXd H = Eigen::MatrixXd::Random(dim, dim);
+    Eigen::VectorXd b = util::Random(dim);
+    double c = util::Rand();
+    functions.push_back(std::make_shared<QuadricMap>(H * H.transpose(), b, c));
+  }
+  auto f = std::make_shared<ActivationWeights>(activations, functions);
+
+  for (uint32_t i = 0; i < nb_tests; ++i) {
+    Eigen::VectorXd x = util::Random(dim);
+    function_tests_.push_back(std::make_pair(f, x));
+  }
+
+  ASSERT_TRUE(f->type() == "ActivationWeights");
+  RunAllTests();
+}
+
+TEST_F(DifferentialMapTest, smooth_transition_test) {
+  set_verbose(false);
+  set_precisions(1e-6, 1e-5);
+
+  function_tests_.clear();
+  uint32_t dim = 3;
+  uint32_t nb_tests = 10;
+
+  Eigen::VectorXd p0 = util::Random(dim);
+  auto phi = std::make_shared<SquaredNorm>(p0) + .5;
+
+  Eigen::MatrixXd H1, H2;
+  Eigen::VectorXd b1, b2;
+  double c1, c2;
+
+  H1 = Eigen::MatrixXd::Random(dim, dim);
+  H1 = H1 * H1.transpose();
+  b1 = util::Random(dim);
+  c1 = util::Rand();
+  auto f1 = std::make_shared<QuadricMap>(H1, b1, c1);
+
+  H2 = Eigen::MatrixXd::Random(dim, dim);
+  H2 = H2 * H2.transpose();
+  b2 = util::Random(dim);
+  c2 = util::Rand();
+  auto f2 = std::make_shared<QuadricMap>(H2, b2, c2);
+
+  // Test points
+  auto f = std::make_shared<SmoothTransition>(f1, f2, phi, 10);
+  for (uint32_t i = 0; i < nb_tests; ++i) {
+    Eigen::VectorXd x = util::Random(dim);
+    function_tests_.push_back(std::make_pair(f, x));
+  }
+
+  ASSERT_TRUE(f->type() == "SmoothTransition");
+  RunAllTests();
+}
+
+TEST(SmoothTransitionParameter, temperature_parameter) {
+  double threshold = 0.97;
+  for (uint32_t i = 0; i < 10; ++i) {
+    double d = util::Rand();
+    double k = SmoothTransition::TemperatureParameter(d, threshold);
+    auto logistic = std::make_shared<Logistic>(k, 0, 1);
+    EXPECT_NEAR(threshold, (*logistic)(d / 2), 1e-7);
+    EXPECT_NEAR(1 - threshold, (*logistic)(-d / 2), 1e-7);
+  }
+}

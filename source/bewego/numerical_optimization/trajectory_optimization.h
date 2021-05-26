@@ -77,15 +77,15 @@ class TrajectoryOptimizer : public MotionObjective {
   void set_trajectory_publisher(bool with_slow_down, uint32_t t_pause = 100000);
 
   /** @brief Adds goal constraint */
-  void AddInequalityConstraintToEachActiveClique(DifferentiableMapPtr phi,
-                                                 double scalar);
+  virtual void AddInequalityConstraintToEachActiveClique(
+      DifferentiableMapPtr phi, double scalar);
 
   /** @brief Adds goal constraint */
-  void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
+  virtual void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
 
   /** @brief Adds waypoint constraint */
-  void AddWayPointConstraint(const Eigen::VectorXd& q_waypoint, uint32_t t,
-                             double scalar);
+  virtual void AddWayPointConstraint(const Eigen::VectorXd& q_waypoint,
+                                     uint32_t t, double scalar);
 
  protected:
   std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(

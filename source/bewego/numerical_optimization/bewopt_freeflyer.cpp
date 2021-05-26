@@ -46,25 +46,20 @@ using std::cout;
 using std::endl;
 
 FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
-                                     Box workspace_bounds,
+                                     ExtentBox workspace_bounds,
                                      std::shared_ptr<Freeflyer> robot)
-    : MotionObjective(T, dt, n),
+    : TrajectoryOptimizer(T, dt, n),
       workspace_dim_(robot->n()),
-      n_(n),
-      T_(T),
-      dt_(dt),
       workspace_bounds_(workspace_bounds),
       robot_(robot),
       end_effector_id_(0),
-      attractor_type_("euclidean"),
-      visualize_inner_loop_(false),
-      monitor_inner_statistics_(false) {
+      attractor_type_("euclidean") {
   cout << "Create freeflyer optimizer with n : " << n << endl;
   assert(n_ > 1);
   assert(T_ > 2);
 
   // Initialize to NULL
-  geodesic_flow_ = std::shared_ptr<const DifferentiableMap>();
+  geodesic_flow_ = DifferentiableMapPtr();
 
   // Initialize smooth collision constraint
   auto collision_checker = std::make_shared<FreeFlyerCollisionConstraints>(
@@ -72,12 +67,21 @@ FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
   smooth_collision_constraint_ = collision_checker->smooth_constraint();
 }
 
-std::shared_ptr<const DifferentiableMap>
-FreeflyerOptimzer::GetDistanceActivation() const {
+std::vector<util::Bounds> FreeflyerOptimzer::DofsBounds() const {
+  assert(workspace_bounds_.dim() == workspace_dim_);
+  std::vector<util::Bounds> limits(n_);
+  for (uint32_t i = 0; i < workspace_dim_; i++) {
+    limits[i].lower_ = workspace_bounds_.extent(i, ExtentBox::Min);
+    limits[i].upper_ = workspace_bounds_.extent(i, ExtentBox::Max);
+  }
+  return limits;
+}
+
+DifferentiableMapPtr FreeflyerOptimzer::GetDistanceActivation() const {
   // First interate through all the key points in the environment
   // Add a constraint per keypoint on the robot.
   // TODO have a different model for the robot (with capsules or ellipsoids)
-  VectorOfConstMaps sdfs;
+  VectorOfMaps sdfs;
   for (auto& sdf : workspace_->ExtractSurfaceFunctions()) {
     auto r = robot_->keypoint_radius(0);
     sdfs.push_back(sdf - r);
@@ -136,7 +140,7 @@ void FreeflyerOptimzer::AddGeodesicFlowTerm(FunctionNetwork network) const {
     auto posvel = std::make_shared<FiniteDifferencesPosVel>(n_, dt_);
     auto f = ComposedWith(angle, ComposedWith(posvel, positions));
     for (uint32_t t = 5; t <= T_ - 2; ++t) {
-      network->RegisterFunctionForClique(t, dt_ * scalar_flow_ * f);
+      network->RegisterFunctionForClique(t, f * dt_ * scalar_flow_);
     }
   }
 }
@@ -242,96 +246,45 @@ FreeflyerOptimzer::GetKeyPointsSurfaceConstraints() const {
   return constraints;
 }
 
-void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(
-    FunctionNetwork network) const {
-  if (scalar_surface_constraint_ <= 0.) return;
-  // Set up surface constraints for key points.
-  for (auto& surface_function : workspace_->ExtractSurfaceFunctions()) {
-    for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
-      auto p = robot_->keypoint_map(i);
-      auto r = robot_->keypoint_radius(i);
-      auto constraint_function =
-          Scale(ShiftZero(surface_function, r), scalar_surface_constraint_);
-      CHECK_EQ(p->input_dimension(), n_);
-      network->RegisterSubCliqueFunctionForAllCliques(
-          kinematic_function_transformer_->PullPosTerm(p, constraint_function));
-    }
+void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
+                                                     double scalar) {
+  if (workspace_objects_.empty()) {
+    cerr << "WARNING: no obstacles are in the workspace" << endl;
+    return;
+  }
+  assert(function_network_.get() != nullptr);
+  assert(n_ == 2);
+
+  for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
+    auto p = robot_->keypoint_map(i);
+    auto r = robot_->keypoint_radius(i);
+    // Create clique constraint function phi
+    auto sdf = workspace_->SignedDistanceField() - r - margin;
+    auto constraint_function = ComposedWith(sdf, p);
+    auto center_clique = function_network_->CenterOfCliqueMap();
+    auto phi = ComposedWith(constraint_function, center_clique);
+    AddInequalityConstraintToEachActiveClique(phi, scalar);
   }
 }
 
-std::vector<BoundConstraint> FreeflyerOptimzer::GetJointLimits() const {
-  std::vector<BoundConstraint> limits(n_);
-  for (uint32_t i = 0; i < workspace_dim_; i++) {
-    limits[i] = BoundConstraint(workspace_bounds_.extent(i, Box::Min),
-                                workspace_bounds_.extent(i, Box::Max));
-  }
-  return limits;
-}
-
-std::vector<util::Bounds> FreeflyerOptimzer::GetDofBounds() const {
-  // Joint limits on works for 2D freeflyer for now
-  auto bounds = GetJointLimits();
-  std::vector<util::Bounds> dof_bounds(bounds.size() * (T_ + 1));
-  double joint_margin = .0;
-  CHECK_EQ(bounds.size(), n_);
-  CHECK_EQ(dof_bounds.size(), n_ * (T_ + 1));
-  for (uint32_t t = 0; t <= T_; t++) {
-    auto d = workspace_dim_;
-    for (uint32_t i = 0; i < d; i++) {
-      if (t > 0 && t < T_) {
-        dof_bounds[t * n_ + i].upper_ = bounds[i].upper() - joint_margin;
-        dof_bounds[t * n_ + i].lower_ = bounds[i].lower() + joint_margin;
-      } else {
-        dof_bounds[t * n_ + i].upper_ = std::numeric_limits<double>::max();
-        dof_bounds[t * n_ + i].lower_ = std::numeric_limits<double>::lowest();
-      }
-    }
-    uint32_t dof_rot = d == 2 ? 1 : 3;
-    for (uint32_t i = 0; i < dof_rot; i++) {
-      dof_bounds[t * n_ + d + i].upper_ = std::numeric_limits<double>::max();
-      dof_bounds[t * n_ + d + i].lower_ = std::numeric_limits<double>::lowest();
-    }
-  }
-  return dof_bounds;
-}
-
-void FreeflyerOptimzer::AddJointLimitConstraints(
-    FunctionNetwork network) const {
-  if (scalar_joint_limits_ <= 0) return;
-  // Add upper and lower joint limit constraints for each joint.
-  auto limits = GetJointLimits();
-  cout << "workspace bounds : " << workspace_bounds_ << endl;
-  for (uint32_t i = 0; i < workspace_dim_; i++) {
-    cout << " - limit[" << i << "] : " << limits[i].lower() << " , "
-         << limits[i].upper() << endl;
-    network->RegisterSubCliqueFunctionForAllCliques(
-        kinematic_function_transformer_->PullPosTerm(
-            Scale(std::make_shared<LowerJointLimitConstraint>(limits, i),
-                  scalar_joint_limits_)));
-    network->RegisterSubCliqueFunctionForAllCliques(
-        kinematic_function_transformer_->PullPosTerm(
-            Scale(std::make_shared<UpperJointLimitConstraint>(limits, i),
-                  scalar_joint_limits_)));
-  }
-}
-
-void FreeflyerOptimzer::AddPosturalTerms(FunctionNetwork network) const {
+void FreeflyerOptimzer::AddPosturalTerms(double scalar) const {
   if (scalar_posture_ == 0.) return;
-  auto default_q_potential = lula::differential_geometry::Scale(
-      std::make_shared<lula::motion::SquaredNorm>(q_default_),
-      dt_ * scalar_posture_);
-  network->RegisterSubCliqueFunctionForAllCliques(
-      kinematic_function_transformer_->PullPosTerm(default_q_potential));
+  auto default_q_potential =
+      std::make_shared<SquaredNorm>(q_default_) * dt_ * scalar_posture_;
+  for (uint32_t t = 0; t < T_; t++) {
+    function_network_->RegisterTimeCenteredPositionFunction(
+        t, default_q_potential);
+  }
 }
 
-void FreeflyerOptimzer::AddGoalConstraint(FunctionNetwork network,
-                                          const Eigen::VectorXd& x_goal) const {
+void FreeflyerOptimzer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
+                                          double scalar) const {
   if (scalar_goal_constraint_ <= 0) return;
-  CHECK_EQ(x_goal.size(), n_);
-  CHECK_EQ(robot_->n(), workspace_dim_);
+  assert(x_goal.size() == n_);
+  assert(robot_->n() == workspace_dim_);
 
-  std::shared_ptr<const NDimDiffFunction> attractor;
-  std::shared_ptr<const DifferentiableMap> kinematic_map;
+  DifferentiableMapPtr attractor;
+  DifferentiableMapPtr kinematic_map;
 
   cout << "ATTRACTOR TYPE : " << attractor_type_ << endl;
 
@@ -359,8 +312,8 @@ void FreeflyerOptimzer::AddGoalConstraint(FunctionNetwork network,
         attractor = geodesic_distance_;
         if (FLAGS_attractor_make_smooth) {
           attractor = std::make_shared<SmoothAttractor>(
-              Compose(std::make_shared<ScalarSquaredDifference>(0),
-                      geodesic_distance_),
+              ComposedWith(std::make_shared<ScalarSquaredDifference>(0),
+                           geodesic_distance_),
               p_goal, d_t, d_i);
         }
       } else {
@@ -382,12 +335,12 @@ void FreeflyerOptimzer::AddGoalConstraint(FunctionNetwork network,
       // TODO
       // Square the distance
       attractor =
-          Compose(std::make_shared<ScalarSquaredDifference>(0), attractor);
+          ComposedWith(std::make_shared<ScalarSquaredDifference>(0), attractor);
     }
   }
 
   // Register
-  attractor = Scale(attractor, scalar_goal_constraint_);
+  attractor = attractor * scalar;
 
   // TODO remove.
   //  Eigen::VectorXd p_goal = x_goal.segment(0, workspace_dim_);
@@ -398,10 +351,10 @@ void FreeflyerOptimzer::AddGoalConstraint(FunctionNetwork network,
   if (kinematic_map) {
     attractor = Pullback(kinematic_map, attractor);
   }
-  network->RegisterTimeCenteredSubCliqueFunction(
-      T_, kinematic_function_transformer_->PullPosTerm(attractor));
+  network->RegisterTimeCenteredPositionFunction(T_, attractor);
 }
 
+/**
 std::shared_ptr<FixedSizedFunctionNetwork> FreeflyerOptimzer::ObjectiveNetwork(
     const Eigen::VectorXd& x_goal) const {
   auto objective_terms = std::make_shared<FixedSizedFunctionNetwork>(n_, T_);
@@ -430,7 +383,9 @@ FreeflyerOptimzer::EqualityConstraints(const Eigen::VectorXd& x_goal) const {
   auto constraints = std::make_shared<FixedSizedFunctionNetwork>(n_, T_);
   return constraints;
 }
+*/
 
+/**
 std::shared_ptr<const lula::optimization::ConstrainedOptimizer>
 FreeflyerOptimzer::SetupIpoptOptimizer(const Eigen::VectorXd& q_init) const {
   dstage("constructing optimizer");
@@ -526,3 +481,4 @@ std::shared_ptr<MarkovTrajectory> FreeflyerOptimzer::Optimize(
   dstage("Optimization Done.");
   return optimal_trajectory;
 }
+*/

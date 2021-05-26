@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/util/misc.h>
+#include <bewego/workspace/extent.h>
 #include <bewego/workspace/pixelmap.h>
 #include <gtest/gtest.h>
 
@@ -12,6 +13,24 @@ using std::endl;
 const double error = 1e-05;
 const double nb_test_points = 10;
 const double resolution = 0.01;
+
+TEST(ExtentBox, main) {
+  ExtentBox box(0, 1, 2, 3, 4, 5);
+
+  ASSERT_TRUE(box.extent(0, ExtentBox::Min) == 0);
+  ASSERT_TRUE(box.extent(0, ExtentBox::Max) == 1);
+  ASSERT_TRUE(box.extent(1, ExtentBox::Min) == 2);
+  ASSERT_TRUE(box.extent(1, ExtentBox::Max) == 3);
+  ASSERT_TRUE(box.extent(2, ExtentBox::Min) == 4);
+  ASSERT_TRUE(box.extent(2, ExtentBox::Max) == 5);
+
+  ASSERT_TRUE(box.extent(0, ExtentBox::Min) == box.x_min());
+  ASSERT_TRUE(box.extent(0, ExtentBox::Max) == box.x_max());
+  ASSERT_TRUE(box.extent(1, ExtentBox::Min) == box.y_min());
+  ASSERT_TRUE(box.extent(1, ExtentBox::Max) == box.y_max());
+  ASSERT_TRUE(box.extent(2, ExtentBox::Min) == box.z_min());
+  ASSERT_TRUE(box.extent(2, ExtentBox::Max) == box.z_max());
+}
 
 bool CheckPixelMapMatrix() {
   double resolution = .1;

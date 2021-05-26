@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2021
  * All rights reserved.
  *
  * Redistribution  and  use  in  source  and binary  forms,  with  or  without
@@ -45,18 +45,11 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
                     std::shared_ptr<Workspace> workspace,
                     std::shared_ptr<Freeflyer> robot);
 
-  /** @brief set_parameters_from_flags */
-  void set_parameters_from_flags();
+  /** @brief Adds a geodesic flow object to the optimizer */
+  void set_geodesic_flow(DifferentiableMapPtr v) { geodesic_flow_ = v; }
 
   /** @brief Adds a geodesic flow object to the optimizer */
-  void set_geodesic_flow(std::shared_ptr<const DifferentiableMap> v) {
-    geodesic_flow_ = v;
-  }
-
-  /** @brief Adds a geodesic flow object to the optimizer */
-  void set_geodesic_distance(std::shared_ptr<const DifferentiableMap> v) {
-    geodesic_distance_ = v;
-  }
+  void set_geodesic_distance(DifferentiableMapPtr v) { geodesic_distance_ = v; }
 
   /** @brief Adds a default configuration */
   void set_q_default(const Eigen::VectorXd& v) { q_default_ = v; }
@@ -64,12 +57,6 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   /** @brief Sets the end enffector of the freeflyer, this which what part of
    * the geometry should be used for setting up a goal attractor */
   void set_end_effector(uint32_t i) { end_effector_id_ = i; }
-
-  /** @brief return bounds constraints */
-  std::vector<BoundConstraint> GetJointLimits() const;
-
-  /** @brief return bounds for dofs along the trajectory */
-  std::vector<Bounds> GetDofBounds() const;
 
   void AddGeodesicFlowTerm() const;
   void AddGeodesicTerm() const;
@@ -79,54 +66,28 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   void AddGoalConstraint(const Eigen::VectorXd& x_goal) const;
   void AddPosturalTerms() const;
 
-  /** @brief Optimize a given trajectory */
-  OptimizeResult Optimize(
-      const Eigen::VectorXd& initial_traj,          // entire trajectory
-      const Eigen::VectorXd& x_goal,                // goal configuration
-      const std::map<std::string, double>& options  // optimizer options
-  ) const;
-
  protected:
-  typedef CliquesFunctionNetwork FunctionNetwork;
-  typedef std::shared_ptr<const FunctionNetwork> FunctionNetworkPtr;
-  typedef std::shared_ptr<const DifferentiableMap> ElementaryFunction;
+  /** @brief return bounds constraints */
+  std::vector<BoundConstraint> GetJointLimits() const;
 
-  std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
-      const Eigen::VectorXd& q_init) const;
-
-  FunctionNetwork ObjectiveNetwork(const Eigen::VectorXd& x_goal) const;
-  FunctionNetwork InequalityConstraints() const;
-  FunctionNetwork EqualityConstraints(const Eigen::VectorXd& x_goal) const;
+  /** @brief return bounds for dofs along the trajectory */
+  std::vector<util::Bounds> GetDofBounds() const;
 
   // Get ditance to obstacle
   ElementaryFunction GetDistanceActivation() const;
 
   // ipopt constraints
-  FunctionNetwork GetEmptyFunctionNetwork() const;
   std::vector<FunctionNetwork> GetKeyPointsSurfaceConstraints() const;
 
-  bool verbose_;
-  uint32_t workspace_dim_;  // Dimensionality of the workspace
-  uint32_t n_;              // Dimensionality of the configuration space
-  uint32_t T_;              // Number of active cliques
-  double dt_;               // time interval between cliques
-
-  // Bounds of the workspace
-  Box workspace_bounds_;
-
   // Workspace
-  std::shared_ptr<Workspace> workspace_;
+  uint32_t workspace_dim_;                // Dimensionality of the workspace
+  ExtentBox workspace_bounds_;            // Bounds of the workspace
+  std::shared_ptr<Workspace> workspace_;  // Workspace geometry
   std::shared_ptr<const DifferentiableMap> smooth_collision_constraint_;
 
   // GeodesicFlow
   std::shared_ptr<const DifferentiableMap> geodesic_flow_;
   std::shared_ptr<const DifferentiableMap> geodesic_distance_;
-
-  // Constraints networks
-  std::vector<DifferentiableMapPtr>
-      g_constraints_unstructured_;                 // inequalities
-  std::vector<FunctionNetworkPtr> g_constraints_;  // inequalities
-  std::vector<FunctionNetworkPtr> h_constraints_;  // equalities
 
   // Robot
   std::shared_ptr<Freeflyer> robot_;
@@ -137,27 +98,9 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   // Default posture
   Eigen::VectorXd q_default_;
 
-  // Scalars
-  double scalar_cspace_vel_;
-  double scalar_cspace_acc_;
-  double scalar_flow_;
-  double scalar_geodesic_;
-  double scalar_goal_constraint_;
-  double scalar_obstacle_barrier_;
-  double scalar_joint_limits_;
-  double scalar_surface_constraint_;
-  double scalar_posture_;
-  std::string attractor_type_;
-
   // Parameters
   double freeflyer_gamma_;
   double freeflyer_k_;
-
-  // Logging
-  bool visualize_inner_loop_;
-  bool monitor_inner_statistics_;
-  // mutable std::shared_ptr<FreeflyerOptimizationVisualizer> visualizer_;
-  // mutable std::shared_ptr<StatsMonitor> stats_monitor_;
 };
 
 }  // namespace bewego

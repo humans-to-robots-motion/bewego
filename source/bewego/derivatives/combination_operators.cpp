@@ -150,3 +150,58 @@ Eigen::MatrixXd DotProduct::Hessian(const Eigen::VectorXd& x) const {
   Eigen::MatrixXd J2 = map2_->Jacobian(x);
   return J1 * J2.transpose() + J2 * J1.transpose();
 }
+
+//-----------------------------------------------------------------------------
+// Combine function implementation.
+//-----------------------------------------------------------------------------
+
+ActivationWeights::ActivationWeights(const VectorOfMaps& e,
+                                     const VectorOfMaps& f) {
+  assert(f.size() == e.size());
+  assert(e.back()->input_dimension() == f.back()->input_dimension());
+  n_ = e.back()->input_dimension();
+  e_times_f_.resize(f.size());
+  for (uint32_t i = 0; i < e_times_f_.size(); i++) {
+    assert(n_ == f[i]->input_dimension());
+    assert(n_ == e[i]->input_dimension());
+    e_times_f_[i] = e[i] * f[i];
+  }
+  PreAllocate();
+  type_ = "ActivationWeights";
+}
+ActivationWeights::~ActivationWeights() {}
+
+Eigen::VectorXd ActivationWeights::Forward(const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+  y_.setZero();
+  for (const auto& h : e_times_f_) {
+    y_ += h->Forward(x);
+  }
+  return y_;
+}
+
+Eigen::MatrixXd ActivationWeights::Jacobian(const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+  J_.setZero();
+  for (const auto& h : e_times_f_) {
+    J_ += h->Jacobian(x);
+  }
+  return J_;
+}
+
+Eigen::MatrixXd ActivationWeights::Hessian(const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+  CheckSingleOutputDimension();
+  H_.setZero();
+  uint32_t i = 0;
+  for (const auto& h : e_times_f_) {
+    H_ += h->Hessian(x);
+  }
+  return H_;
+}
+
+//-----------------------------------------------------------------------------
+// SmoothTransition implementation.
+//-----------------------------------------------------------------------------
+
+SmoothTransition::~SmoothTransition() {}

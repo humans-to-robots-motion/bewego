@@ -53,10 +53,19 @@ class DifferentiableMap {
     return Forward(x);
   }
 
-  /** Should return an array or single value */
+  /** Method called when call object */
+  double operator()(double x) const { return ForwardScalarFunc(x); }
+
+  /** Should return a single value */
   virtual double ForwardFunc(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
+    CheckSingleOutputDimension();
     return Forward(x)[0];
+  }
+
+  /** Should return a single value and take a single value as input */
+  virtual double ForwardScalarFunc(double x) const {
+    auto x_vect = Eigen::VectorXd::Constant(1, x);
+    return ForwardFunc(x_vect);
   }
 
   /** Should return an array or single value */

@@ -223,6 +223,12 @@ class CliquesFunctionNetwork : public FunctionNetwork {
     RegisterFunctionForClique(T, f);
   }
 
+  // Register f for position centered at time t.
+  void RegisterTimeCenteredPositionFunction(uint32_t t,
+                                            DifferentiableMapPtr f) {
+    RegisterFunctionForClique(t, ComposedWith(f, CenterOfCliqueMap()));
+  }
+
   // x_{t}
   DifferentiableMapPtr CenterOfCliqueMap() const {
     const uint32_t& n = clique_element_dim_;

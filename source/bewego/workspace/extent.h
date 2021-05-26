@@ -30,6 +30,7 @@ namespace bewego {
 // Struct to pass arguments around
 // TODO change the API to use this
 struct ExtentBox {
+  enum Type { Min, Max };
   ExtentBox() {}
   ExtentBox(const std::vector<double>& v) {
     assert(v.size() == 4 || v.size() == 6);
@@ -63,6 +64,11 @@ struct ExtentBox {
   double y_max() const { return extents_[3]; }
   double z_min() const { return extents_[4]; }
   double z_max() const { return extents_[5]; }
+
+  double extent(uint32_t i, Type b) const {
+    assert(i <= 3);
+    return extents_[b == Min ? 2 * i : 2 * i + 1];
+  }
 
   uint32_t dim() const { return extents_.size() / 2; }
 
