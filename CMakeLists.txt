@@ -175,7 +175,7 @@ set(bewego_SOURCES
     ${bewego_SOURCE_DIR}/workspace/softmax_primitive_workspace.cpp
     ${bewego_SOURCE_DIR}/workspace/pixelmap.cpp
     ${bewego_SOURCE_DIR}/workspace/spline_grid.cpp
-    # ${bewego_SOURCE_DIR}/geodesic_flow/attractors.cpp
+    ${bewego_SOURCE_DIR}/geodesic_flow/attractors.cpp
 )
 add_library(${bewego_LIBRARY} 
   SHARED
