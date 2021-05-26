@@ -120,6 +120,14 @@ void DifferentiableMap::CheckInputDimension(const Eigen::VectorXd& x) const {
   }
 }
 
+void DifferentiableMap::CheckSingleOutputDimension() const {
+  // For Hessian and Gradient computation
+  // the output dimension must be one
+  if (output_dimension() != 1) {
+    throw std::runtime_error("DifferentiableMap : output dimension != 1");
+  }
+}
+
 //-----------------------------------------------------------------------------
 // CachedDifferentiableMap implementation.
 //-----------------------------------------------------------------------------
@@ -182,10 +190,12 @@ void DifferentialMapTest::FiniteDifferenceTest(
   Eigen::MatrixXd J, J_diff;
   Eigen::MatrixXd H, H_diff;
 
+  bool test_hessian = hessian_precision_ > 0 && f->output_dimension() == 1;
+
   J = f->Jacobian(x);
   J_diff = DifferentiableMap::FiniteDifferenceJacobian(*f, x);
 
-  if (hessian_precision_ > 0) {
+  if (test_hessian) {
     H = f->Hessian(x);
     H_diff = DifferentiableMap::FiniteDifferenceHessian(*f, x);
   }
@@ -202,14 +212,14 @@ void DifferentialMapTest::FiniteDifferenceTest(
 
   if (use_relative_eq_) {
     EXPECT_TRUE(util::AlmostEqualRelative(J, J_diff, gradient_precision_));
-    if (hessian_precision_ > 0) {
+    if (test_hessian) {
       EXPECT_TRUE(util::AlmostEqualRelative(H, H_diff, hessian_precision_));
     }
   } else {
     double max_J_delta = (J - J_diff).cwiseAbs().maxCoeff();
     EXPECT_NEAR(max_J_delta, 0., gradient_precision_);
 
-    if (hessian_precision_ > 0) {
+    if (test_hessian) {
       double max_H_delta = (H - H_diff).cwiseAbs().maxCoeff();
       EXPECT_NEAR(max_H_delta, 0., hessian_precision_);
     }

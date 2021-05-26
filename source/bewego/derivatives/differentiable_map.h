@@ -70,7 +70,7 @@ class DifferentiableMap {
       only availables if the output dimension is one.
   */
   virtual Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
+    CheckSingleOutputDimension();
     return Jacobian(x).row(0);
   }
 
@@ -133,22 +133,25 @@ class DifferentiableMap {
   /** check against finite differences */
   bool CheckHessian(double precision = 1e-12) const;
 
-  /** Print check Jacobian and Hessian info */
+  /** print check Jacobian and Hessian info */
   void set_debug(bool v = true) { debug_ = v; }
 
-  /** Returns the type of the differentiable map */
+  /** returns the type of the differentiable map */
   std::string type() const { return type_; }
 
-  /** return true if it is an atomic an operator */
+  /** returns true if it is an atomic an operator */
   bool is_atomic() const { return is_atomic_; }
 
-  /** return true if it is the same operator */
+  /** returns true if it is the same operator */
   virtual bool Compare(const DifferentiableMap& other) const {
     return other.type_ == type_;
   }
 
-  /** Throws an exception when there is a missmatch in dimension */
+  /** throws an exception when there is a missmatch in dimension */
   void CheckInputDimension(const Eigen::VectorXd& x) const;
+
+  /** throws an exception when output dimension > 1 */
+  void CheckSingleOutputDimension() const;
 
  protected:
   bool debug_;

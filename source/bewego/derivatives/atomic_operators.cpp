@@ -83,6 +83,7 @@ Eigen::MatrixXd LogBarrier::Jacobian(const Eigen::VectorXd& x_vect) const {
 }
 
 Eigen::MatrixXd LogBarrier::Hessian(const Eigen::VectorXd& x_vect) const {
+  CheckSingleOutputDimension();
   CheckInputDimension(x_vect);
   double x = x_vect[0];
   return Eigen::MatrixXd::Constant(1, 1, x <= margin_ ? 0 : 1. / (x * x));
@@ -107,6 +108,7 @@ Eigen::MatrixXd SoftNorm::Jacobian(const Eigen::VectorXd& x) const {
 }
 
 Eigen::MatrixXd SoftNorm::Hessian(const Eigen::VectorXd& x) const {
+  CheckSingleOutputDimension();
   CheckInputDimension(x);
   Eigen::VectorXd xd = x - x0_;
   double alpha_norm = sqrt(xd.transpose() * xd + alpha_sq_);
@@ -134,6 +136,7 @@ Eigen::MatrixXd LogSumExp::Jacobian(const Eigen::VectorXd& x) const {
 }
 
 Eigen::MatrixXd LogSumExp::Hessian(const Eigen::VectorXd& x) const {
+  CheckSingleOutputDimension();
   CheckInputDimension(x);
   Eigen::MatrixXd H(Eigen::MatrixXd::Zero(n_, n_));
   Eigen::VectorXd z = (alpha_ * x).array().exp();
@@ -185,6 +188,7 @@ Eigen::MatrixXd Logistic::Jacobian(const Eigen::VectorXd& x) const {
 }
 
 Eigen::MatrixXd Logistic::Hessian(const Eigen::VectorXd& x) const {
+  CheckSingleOutputDimension();
   CheckInputDimension(x);
   double p = Sigmoid(k_ * (x[0] - x0_));
   double v = L_ * p;
@@ -217,6 +221,7 @@ Eigen::MatrixXd Arccos::Jacobian(const Eigen::VectorXd& x) const {
 }
 
 Eigen::MatrixXd Arccos::Hessian(const Eigen::VectorXd& x) const {
+  CheckSingleOutputDimension();
   CheckInputDimension(x);
   double a = 1. - x[0] * x[0];
   H_(0, 0) = -x[0] / std::pow(a, 1.5);

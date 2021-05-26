@@ -54,24 +54,24 @@ class ZeroMap : public DifferentiableMap {
   uint32_t input_dimension() const { return n_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(x.size() == n_);
+    CheckInputDimension(x);
     return Eigen::VectorXd::Zero(m_);
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(x.size() == n_);
+    CheckInputDimension(x);
     return J_;
   }
 
   Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return g_;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(m_ == 1);
-    assert(n_ == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return H_;
   }
 
@@ -113,24 +113,24 @@ class IdentityMap : public DifferentiableMap {
   uint32_t input_dimension() const { return dim_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return x;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return J_;
   }
 
   Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return g_;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return H_;
   }
 
@@ -171,24 +171,24 @@ class ConstantMap : public DifferentiableMap {
   uint32_t input_dimension() const { return dim_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return a_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return J_;
   }
 
   Eigen::VectorXd Gradient(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return g_;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return H_;
   }
 
@@ -225,17 +225,17 @@ class SquareMap : public DifferentiableMap {
   uint32_t input_dimension() const { return 1; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return .5 * x * x;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return x;
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return H_;
   }
 };
@@ -288,7 +288,7 @@ class AffineMap : public DifferentiableMap {
   }
 
   virtual Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
+    CheckSingleOutputDimension();
     CheckInputDimension(x);
     return H_;
   }
@@ -361,17 +361,18 @@ class QuadricMap : public DifferentiableMap {
   uint32_t input_dimension() const { return b_.size(); }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return .5 * x.transpose() * a_ * x + b_.transpose() * x + c_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return (H_ * x + b_).transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return H_;
   }
 
@@ -466,19 +467,19 @@ class SquaredNorm : public DifferentiableMap {
   uint32_t input_dimension() const { return x0_.size(); }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     y_[0] = 0.5 * (x - x0_).squaredNorm();
     return y_;
   }
 
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == x.size());
+    CheckInputDimension(x);
     return (x - x0_).transpose();
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
-    assert(input_dimension() == x.size());
+    CheckSingleOutputDimension();
+    CheckInputDimension(x);
     return H_;
   }
 
@@ -566,12 +567,15 @@ class RangeSubspaceMap : public DifferentiableMap {
     }
     return y_;
   }
+
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const {
-    assert(input_dimension() == dim_);
+    CheckInputDimension(x);
     return J_;
   }
+
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
-    assert(output_dimension() == 1);
+    CheckInputDimension(x);
+    CheckSingleOutputDimension();
     return H_;
   }
 
