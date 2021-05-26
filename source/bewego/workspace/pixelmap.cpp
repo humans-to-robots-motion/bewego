@@ -28,24 +28,14 @@
 #include <bewego/workspace/pixelmap.h>
 
 // Standard and other includes
-// #include <einspline/bspline.h>
-// #include <einspline/multi_bspline.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
 using std::cout;
 using std::endl;
-namespace bewego {
 
-// Prints the extends of the PixelMap.
-std::ostream& operator<<(std::ostream& os, const extent_t& v) {
-  os << v.x_min() << ", ";
-  os << v.x_max() << ", ";
-  os << v.y_min() << ", ";
-  os << v.y_max();
-  return os;
-}
+namespace bewego {
 
 // Returns the matrix of values
 Eigen::MatrixXd PixelMap::GetMatrix(uint32_t buffer) const {
@@ -178,7 +168,7 @@ void InitializeDataFromFunction(const DifferentiableMap& f, PixelMap& grid,
 }
 
 std::shared_ptr<PixelMap> Discretize2DFunction(
-    double resolution, const extent_t& extends,
+    double resolution, const ExtentBox& extends,
     std::shared_ptr<const DifferentiableMap> f) {
   assert(2 == f->input_dimension());
   auto grid = std::make_shared<PixelMap>(resolution, extends);

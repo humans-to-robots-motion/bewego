@@ -26,21 +26,11 @@
 #pragma once
 
 #include <bewego/derivatives/differentiable_map.h>
+#include <bewego/util/bounds.h>
 #include <bewego/util/misc.h>
 
 namespace bewego {
 namespace numerical_optimization {
-
-//! variable bounds
-struct Bounds {
-  Bounds(double lower = 0.0, double upper = 0.0)
-      : lower_(lower), upper_(upper) {}
-  double lower_;
-  double upper_;
-};
-
-//!\brief Clips vector x to bounds v
-void BoundClip(const std::vector<Bounds>& v, Eigen::VectorXd* x);
 
 //!\brief Constraint Optimization Problem class.
 class ConstrainedOptimizationProblem {

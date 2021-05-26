@@ -36,35 +36,13 @@
 
 namespace bewego {
 
-/**
- * Box that can bin inializeed from 6 floating point numbers and then quierried
- * easily for extent. By default initializes to a unit cube.
- */
-struct Box {
-  enum Type { Min, Max };
-  Box() : data(std::vector<double>{0, 1, 0, 1, 0, 1}) {}
-  Box(double x_min, double x_max, double y_min, double y_max, double z_min,
-      double z_max)
-      : data(std::vector<double>{x_min, x_max, y_min, y_max, z_min, z_max}) {}
-  double extent(uint32_t i, Type b) const {
-    assert(i <= 3);
-    return data[b == Min ? 2 * i : 2 * i + 1];
-  }
-  friend ostream& operator<<(ostream& os, const Box& b);
-  std::vector<double> data;
-};
-
-ostream& operator<<(ostream& os, const Box& b) {
-  for (const auto& x : b.data) os << x << " ";
-  return os;
-}
-
 class FreeflyerOptimzer : public TrajectoryOptimizer {
  public:
   FreeflyerOptimzer(uint32_t n,  // size of the configuration space
                     uint32_t T,  // number of cliques
                     double dt,   // time between cliques
-                    Box workspace_bounds, std::shared_ptr<Workspace> workspace,
+                    ExtentBox workspace_bounds,
+                    std::shared_ptr<Workspace> workspace,
                     std::shared_ptr<Freeflyer> robot);
 
   /** @brief set_parameters_from_flags */

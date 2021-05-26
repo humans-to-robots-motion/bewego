@@ -27,6 +27,7 @@
 
 #include <bewego/numerical_optimization/constrained_optimization_problem.h>
 #include <bewego/numerical_optimization/optimizer.h>
+#include <bewego/util/bounds.h>
 
 #include <coin/IpIpoptApplication.hpp>
 #include <coin/IpSolveStatistics.hpp>
@@ -63,12 +64,12 @@ class IpoptOptimizer : public ConstrainedOptimizer {
   /*
    * !\brief get unbounded limits
    */
-  std::vector<Bounds> GetVariableBounds(uint32_t n) const;
-  std::vector<Bounds> GetGenericConstraintsBounds(uint32_t n_g,
-                                                  uint32_t n_h) const;
+  std::vector<util::Bounds> GetVariableBounds(uint32_t n) const;
+  std::vector<util::Bounds> GetGenericConstraintsBounds(uint32_t n_g,
+                                                        uint32_t n_h) const;
 
   // Set bounds.
-  void set_bounds(const std::vector<Bounds>& bounds) { bounds_ = bounds; }
+  void set_bounds(const std::vector<util::Bounds>& bounds) { bounds_ = bounds; }
 
   /*!\brief This function sets a value atouside the optimizer
    * for visualiztion and logging purpuses.
@@ -96,7 +97,7 @@ class IpoptOptimizer : public ConstrainedOptimizer {
 
  private:
   std::shared_ptr<Ipopt::IpoptApplication> ipopt_app_;
-  std::vector<Bounds> bounds_;
+  std::vector<util::Bounds> bounds_;
   mutable std::atomic_bool preempt_;
   std::function<void(const Eigen::VectorXd&)> publish_solution_;
 };

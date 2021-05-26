@@ -29,24 +29,24 @@ namespace bewego {
 
 // Struct to pass arguments around
 // TODO change the API to use this
-struct extent_t {
-  extent_t() {}
-  extent_t(const std::vector<double>& v) {
+struct ExtentBox {
+  ExtentBox() {}
+  ExtentBox(const std::vector<double>& v) {
     assert(v.size() == 4 || v.size() == 6);
     for (uint32_t i = 0; i < (v.size() / 2); i++) {
       assert(v[2 * i + 1] > v[2 * i]);
     }
     extents_ = v;
   }
-  extent_t(double x_min, double x_max, double y_min, double y_max) {
+  ExtentBox(double x_min, double x_max, double y_min, double y_max) {
     extents_.resize(4);
     extents_[0] = x_min;
     extents_[1] = x_max;
     extents_[2] = y_min;
     extents_[3] = y_max;
   }
-  extent_t(double x_min, double x_max, double y_min, double y_max, double z_min,
-           double z_max) {
+  ExtentBox(double x_min, double x_max, double y_min, double y_max,
+            double z_min, double z_max) {
     extents_.resize(6);
     extents_[0] = x_min;
     extents_[1] = x_max;
@@ -55,14 +55,23 @@ struct extent_t {
     extents_[4] = z_min;
     extents_[5] = z_max;
   }
-  extent_t(const extent_t& e) : extents_(e.extents_) {}
+  ExtentBox(const ExtentBox& e) : extents_(e.extents_) {}
+
+  double x_min() const { return extents_[0]; }
+  double x_max() const { return extents_[1]; }
+  double y_min() const { return extents_[2]; }
+  double y_max() const { return extents_[3]; }
+  double z_min() const { return extents_[4]; }
+  double z_max() const { return extents_[5]; }
+
+  uint32_t dim() const { return extents_.size() / 2; }
 
   double ExtendX() const { return x_max() - x_min(); }
   double ExtendY() const { return y_max() - y_min(); }
   double ExtendZ() const { return z_max() - z_min(); }
 
   Eigen::VectorXd Center() const {
-    Eigen::VectorXd c(extents_.size() / 2);
+    Eigen::VectorXd c(dim());
     for (uint32_t i = 0; i < c.size(); i++) {
       c[i] = (extents_[2 * i + 1] + extents_[2 * i]) * .5;
     }
@@ -77,16 +86,21 @@ struct extent_t {
     extents_[2] -= dl_y;
     extents_[3] += dl_y;
   }
-  double x_min() const { return extents_[0]; }
-  double x_max() const { return extents_[1]; }
-  double y_min() const { return extents_[2]; }
-  double y_max() const { return extents_[3]; }
-  double z_min() const { return extents_[4]; }
-  double z_max() const { return extents_[5]; }
+
   std::vector<double> extents_;
 
   // Output x_min, x_max, y_min, y_max to CSV format
-  friend std::ostream& operator<<(std::ostream& os, const extent_t& v);
+  friend std::ostream& operator<<(std::ostream& os, const ExtentBox& v);
 };
+
+inline std::ostream& operator<<(std::ostream& os, const ExtentBox& b) {
+  for (uint32_t i = 0; i < b.extents_.size(); i++) {
+    os << b.extents_[i];
+    if (i < b.extents_.size() - 1) {
+      os << ", ";
+    }
+  }
+  return os;
+}
 
 }  // namespace bewego

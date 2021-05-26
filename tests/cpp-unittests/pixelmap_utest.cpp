@@ -15,7 +15,7 @@ const double resolution = 0.01;
 
 bool CheckPixelMapMatrix() {
   double resolution = .1;
-  extent_t extends(0, 1, 0, 1);
+  ExtentBox extends(0, 1, 0, 1);
 
   Eigen::MatrixXd values = Eigen::MatrixXd::Random(10, 10);
   auto pixelmap = std::make_shared<PixelMap>(resolution, extends);
@@ -29,7 +29,7 @@ bool CheckPixelMapMatrix() {
   return true;
 }
 
-bool CheckPixelGrid(const extent_t& extends, bool origin_center_cell) {
+bool CheckPixelGrid(const ExtentBox& extends, bool origin_center_cell) {
   cout << __PRETTY_FUNCTION__
        << " , origin cell center : " << origin_center_cell << endl;
 
@@ -73,10 +73,10 @@ bool CheckPixelGrid(const extent_t& extends, bool origin_center_cell) {
 TEST(PixelMap, Check2DAllGrids) {
   ASSERT_TRUE(CheckPixelMapMatrix());
 
-  std::vector<extent_t> sizes;
-  sizes.push_back(extent_t(-1, 1, -1, 1));
-  sizes.push_back(extent_t(0, 2, 0, 2));
-  sizes.push_back(extent_t(-5, -1, -3, 1));
+  std::vector<ExtentBox> sizes;
+  sizes.push_back(ExtentBox(-1, 1, -1, 1));
+  sizes.push_back(ExtentBox(0, 2, 0, 2));
+  sizes.push_back(ExtentBox(-5, -1, -3, 1));
 
   for (auto s : sizes) {
     ASSERT_TRUE(CheckPixelGrid(s, false));

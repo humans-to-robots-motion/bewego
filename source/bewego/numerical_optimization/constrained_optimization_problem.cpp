@@ -33,20 +33,6 @@ using std::cout;
 using std::endl;
 
 //------------------------------------------------------------------------------
-// Bounds Clip implementation
-//------------------------------------------------------------------------------
-
-void numerical_optimization::BoundClip(const std::vector<Bounds>& bounds,
-                                       Eigen::VectorXd* x) {
-  assert(x);
-  assert(x->size() == bounds.size());
-  for (uint32_t i = 0; i < bounds.size(); i++) {
-    (*x)[i] = std::max((*x)[i], bounds[i].lower_);
-    (*x)[i] = std::min((*x)[i], bounds[i].upper_);
-  }
-}
-
-//------------------------------------------------------------------------------
 // Simple optimization implementation
 //------------------------------------------------------------------------------
 

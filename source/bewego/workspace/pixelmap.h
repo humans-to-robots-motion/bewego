@@ -38,7 +38,7 @@ namespace bewego {
  */
 class PixelMap {
  public:
-  PixelMap(double resolution, const extent_t& extends,
+  PixelMap(double resolution, const ExtentBox& extends,
            bool origin_center_cell = false) {
     Initialize(resolution, extends.x_min(), extends.x_max(), extends.y_min(),
                extends.y_max(), origin_center_cell);
@@ -50,8 +50,8 @@ class PixelMap {
     Initialize(resolution, x_min, x_max, y_min, y_max, origin_center_cell);
   }
 
-  extent_t GetExtents() const {
-    return extent_t(
+  ExtentBox GetExtents() const {
+    return ExtentBox(
         origin_minus_.x(), origin_minus_.x() + num_cells_x_ * resolution_,
         origin_minus_.y(), origin_minus_.y() + num_cells_y_ * resolution_);
   }
@@ -184,10 +184,10 @@ class PixelMap {
 
 class BitMap : public PixelMap {
  public:
-  BitMap(double threshold, double resolution, const extent_t& exentds)
+  BitMap(double threshold, double resolution, const ExtentBox& exentds)
       : PixelMap(resolution, exentds), threshold_(threshold) {}
 
-  BitMap(double threshold, double resolution, const extent_t& exentds,
+  BitMap(double threshold, double resolution, const ExtentBox& exentds,
          const Eigen::MatrixXd& matrix, bool inverted = false)
       : PixelMap(resolution, exentds), threshold_(threshold) {
     InitializeFromMatrix(matrix);
@@ -243,7 +243,7 @@ Eigen::MatrixXd EvaluateFunction(const DifferentiableMap& f,
 
 // Discretize a 2D function in a pixel map
 std::shared_ptr<PixelMap> Discretize2DFunction(
-    double resolution, const extent_t& extends,
+    double resolution, const ExtentBox& extends,
     std::shared_ptr<const DifferentiableMap> f);
 
 // Save the pixelmap to file

@@ -28,6 +28,7 @@
 using namespace Ipopt;
 using namespace bewego;
 using namespace bewego::numerical_optimization;
+using namespace bewego::util;
 using std::cout;
 using std::endl;
 

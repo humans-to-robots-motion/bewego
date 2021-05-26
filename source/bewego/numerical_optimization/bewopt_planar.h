@@ -52,12 +52,12 @@ class PlanarOptimizer : public TrajectoryOptimizer {
                                      uint32_t t, double radius, double scalar);
 
   /** @brief Returns the bounds for one dof */
-  std::vector<Bounds> DofsBounds() const {
+  std::vector<util::Bounds> DofsBounds() const {
     assert(n_ == 2);
-    std::vector<Bounds> limits(n_);
+    std::vector<util::Bounds> limits(n_);
     auto extent = workspace_bounds_->extent();
-    limits[0] = Bounds(extent.x_min(), extent.x_max());
-    limits[1] = Bounds(extent.y_min(), extent.y_max());
+    limits[0] = util::Bounds(extent.x_min(), extent.x_max());
+    limits[1] = util::Bounds(extent.y_min(), extent.y_max());
     return limits;
   }
 

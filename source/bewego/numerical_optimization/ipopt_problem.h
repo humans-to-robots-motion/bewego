@@ -27,6 +27,7 @@
 
 #include <bewego/numerical_optimization/constrained_optimization_problem.h>
 #include <bewego/numerical_optimization/ipopt_optimizer.h>
+#include <bewego/util/bounds.h>
 #include <bewego/util/misc.h>
 
 #include <Eigen/Core>
@@ -61,8 +62,8 @@ class IpoptProblem : public Ipopt::TNLP {
    * This constructor holds and modifies the passed nlp.
    */
   IpoptProblem(NonLinearProblemPtr nlp,
-               const std::vector<numerical_optimization::Bounds>& bounds_x,
-               const std::vector<numerical_optimization::Bounds>& bounds_g,
+               const std::vector<util::Bounds>& bounds_x,
+               const std::vector<util::Bounds>& bounds_g,
                const Eigen::VectorXd& x0, bool finite_diff = false,
                std::function<void(const Eigen::VectorXd&)> function =
                    std::function<void(const Eigen::VectorXd&)>());
@@ -91,8 +92,8 @@ class IpoptProblem : public Ipopt::TNLP {
   uint32_t n_g_;
   uint32_t n_h_;
   NonLinearProblemPtr nlp_;
-  std::vector<numerical_optimization::Bounds> bounds_x_;
-  std::vector<numerical_optimization::Bounds> bounds_g_;
+  std::vector<util::Bounds> bounds_x_;
+  std::vector<util::Bounds> bounds_g_;
   bool finite_diff_;  ///< Flag that indicates the "finite-difference-values"
 
   std::vector<util::MatrixSparsityPatern> g_gradient_sparcity_paterns_;

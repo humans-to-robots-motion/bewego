@@ -268,12 +268,10 @@ std::vector<BoundConstraint> FreeflyerOptimzer::GetJointLimits() const {
   return limits;
 }
 
-std::vector<numerical_optimization::Bounds> FreeflyerOptimzer::GetDofBounds()
-    const {
+std::vector<util::Bounds> FreeflyerOptimzer::GetDofBounds() const {
   // Joint limits on works for 2D freeflyer for now
   auto bounds = GetJointLimits();
-  std::vector<numerical_optimization::Bounds> dof_bounds(bounds.size() *
-                                                         (T_ + 1));
+  std::vector<util::Bounds> dof_bounds(bounds.size() * (T_ + 1));
   double joint_margin = .0;
   CHECK_EQ(bounds.size(), n_);
   CHECK_EQ(dof_bounds.size(), n_ * (T_ + 1));

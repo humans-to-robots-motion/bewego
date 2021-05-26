@@ -27,7 +27,7 @@ class AnalyticalGridFunc : public ::testing::Test {
 
   void CheckPixelMapMatrix() {
     double resolution = .1;
-    extent_t extends(0, 1, 0, 1);
+    ExtentBox extends(0, 1, 0, 1);
 
     // cout << "test 1" << endl;
     Eigen::MatrixXd values = Eigen::MatrixXd::Random(10, 10);
@@ -54,7 +54,7 @@ class AnalyticalGridFunc : public ::testing::Test {
     EXPECT_GE(1.e-12, (values - costmap).norm());
   }
 
-  void CheckPixelGrid(const extent_t &extends, bool origin_center_cell) {
+  void CheckPixelGrid(const ExtentBox &extends, bool origin_center_cell) {
     if (verbose_) {
       cout << __PRETTY_FUNCTION__
            << " , origin cell center : " << origin_center_cell << endl;
@@ -96,7 +96,7 @@ class AnalyticalGridFunc : public ::testing::Test {
     }
   }
 
-  void Check2DAnalyticalGrid(const extent_t &extends) {
+  void Check2DAnalyticalGrid(const ExtentBox &extends) {
     if (verbose_) cout << __PRETTY_FUNCTION__ << endl;
 
     // HERE you can set a seed
@@ -188,7 +188,7 @@ class AnalyticalGridFunc : public ::testing::Test {
     }
   }
 
-  void Check2DAnalyticalGridFunction(const extent_t &extends) {
+  void Check2DAnalyticalGridFunction(const ExtentBox &extends) {
     if (verbose_) cout << __PRETTY_FUNCTION__ << endl;
     double r = resolution_;
     auto f1 = SetupTestFunction();
@@ -237,7 +237,7 @@ class AnalyticalGridFunc : public ::testing::Test {
     }
   }
 
-  void CheckRandomPoints(const extent_t &extends) {
+  void CheckRandomPoints(const ExtentBox &extends) {
     if (verbose_) cout << __PRETTY_FUNCTION__ << endl;
     double r = resolution_;
     auto f1 = SetupTestFunction();
@@ -276,7 +276,7 @@ class AnalyticalGridFunc : public ::testing::Test {
     }
   }
 
-  void Check2DSaveToFile(const extent_t &extends) {
+  void Check2DSaveToFile(const ExtentBox &extends) {
     cout << __PRETTY_FUNCTION__ << endl;
 
     EXPECT_EQ(extends.ExtendX(), extends.ExtendY());
@@ -363,10 +363,10 @@ TEST_F(AnalyticalGridFunc, CheckPixelGrid) {
 
   resolution_ = 0.01;
 
-  std::vector<extent_t> sizes;
-  sizes.push_back(extent_t(0, 2, 0, 2));
-  sizes.push_back(extent_t(-1, 1, -1, 1));
-  sizes.push_back(extent_t(-5, -1, -3, 1));
+  std::vector<ExtentBox> sizes;
+  sizes.push_back(ExtentBox(0, 2, 0, 2));
+  sizes.push_back(ExtentBox(-1, 1, -1, 1));
+  sizes.push_back(ExtentBox(-5, -1, -3, 1));
 
   for (auto s : sizes) {
     CheckPixelGrid(s, false);
@@ -381,10 +381,10 @@ TEST_F(AnalyticalGridFunc, Check2DAnalyticalGrid) {
 
   resolution_ = 0.01;
 
-  std::vector<extent_t> sizes;
-  sizes.push_back(extent_t(0, 2, 0, 2));
-  sizes.push_back(extent_t(-1, 1, -1, 1));
-  sizes.push_back(extent_t(-5, -1, -3, 1));
+  std::vector<ExtentBox> sizes;
+  sizes.push_back(ExtentBox(0, 2, 0, 2));
+  sizes.push_back(ExtentBox(-1, 1, -1, 1));
+  sizes.push_back(ExtentBox(-5, -1, -3, 1));
 
   for (auto s : sizes) {
     Check2DAnalyticalGrid(s);
@@ -395,18 +395,18 @@ TEST_F(AnalyticalGridFunc, Check2DAllGrids) {
   verbose_ = false;
 
   resolution_ = 1;
-  Check2DAnalyticalGridFunction(extent_t(0, 30, 0, 30));
+  Check2DAnalyticalGridFunction(ExtentBox(0, 30, 0, 30));
 
   resolution_ = .1;
-  Check2DAnalyticalGridFunction(extent_t(0, 2, 0, 2));
+  Check2DAnalyticalGridFunction(ExtentBox(0, 2, 0, 2));
 
   resolution_ = .023;
-  Check2DAnalyticalGridFunction(extent_t(-5, -1, -3, 1));
+  Check2DAnalyticalGridFunction(ExtentBox(-5, -1, -3, 1));
 
   // SAVE grid
   // NOTE: Only the ones that have (0, 0) as the origin
   resolution_ = .1;
-  Check2DSaveToFile(extent_t(-1, 1, -1, 1));
+  Check2DSaveToFile(ExtentBox(-1, 1, -1, 1));
 }
 
 TEST_F(AnalyticalGridFunc, CheckRandomPoints) {
@@ -419,7 +419,7 @@ TEST_F(AnalyticalGridFunc, CheckRandomPoints) {
   // Test linear function (constant gradient)
   Eigen::Vector2d a(1, 2);
   test_function_ = std::make_shared<LinearMap>(a.transpose());
-  CheckRandomPoints(extent_t(-1, 1, -1, 1));
+  CheckRandomPoints(ExtentBox(-1, 1, -1, 1));
 
   // Test quadric function (constant hessian)
   Eigen::Matrix2d A;
@@ -429,12 +429,12 @@ TEST_F(AnalyticalGridFunc, CheckRandomPoints) {
   b << 5, 6;
   double c = 7;
   test_function_ = std::make_shared<QuadricMap>(A, b, c);
-  CheckRandomPoints(extent_t(-1, 1, -1, 1));
+  CheckRandomPoints(ExtentBox(-1, 1, -1, 1));
 }
 
 TEST(AnalyticalGrid, CheckCrown) {
   bool verbose = false;
-  extent_t extend(0, 1, 0, 1);
+  ExtentBox extend(0, 1, 0, 1);
   auto pixelmap = std::make_shared<PixelMap>(.1, extend);
   uint32_t n = pixelmap->num_cells_x();
   cout << "Nb of cells : " << n << endl;

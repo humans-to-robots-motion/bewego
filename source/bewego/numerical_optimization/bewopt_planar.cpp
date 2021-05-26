@@ -56,7 +56,7 @@ PlanarOptimizer::PlanarOptimizer(uint32_t T, double dt,
 
   // For now the workspace is axis-aligned
   assert(workspace_bounds.size() == 4);
-  extent_t bounds(workspace_bounds);
+  ExtentBox bounds(workspace_bounds);
   workspace_bounds_ = std::make_shared<Rectangle>(
       bounds.Center(), Eigen::Vector2d(bounds.ExtendX(), bounds.ExtendY()), 0);
 }

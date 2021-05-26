@@ -148,7 +148,7 @@ Eigen::MatrixXd RegressedPixelGridSpline::Hessian(
 // -----------------------------------------------------------------------------
 
 std::shared_ptr<RegressedPixelGridSpline> bewego::RegressedGridFrom2DFunction(
-    double resolution, const extent_t& extends,
+    double resolution, const ExtentBox& extends,
     std::shared_ptr<const DifferentiableMap> f) {
   assert(2 == f->input_dimension());
   auto analytic_grid =
@@ -164,7 +164,7 @@ bewego::InitializeRegressedPixelGridFromMatrix(double resolution,
                                                uint32_t buffer) {
   double x_width = (values.cols() + 2 * buffer) * resolution;
   double y_width = (values.rows() + 2 * buffer) * resolution;
-  extent_t extends;
+  ExtentBox extends;
   extends.extents_.resize(4);
   extends.extents_[1] = x_width / 2.;
   extends.extents_[3] = y_width / 2.;

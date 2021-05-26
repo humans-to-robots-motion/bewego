@@ -35,7 +35,7 @@ namespace bewego {
 
 class AnalyticPixelMapSpline : public PixelMap {
  public:
-  AnalyticPixelMapSpline(double resolution, const extent_t& extent)
+  AnalyticPixelMapSpline(double resolution, const ExtentBox& extent)
       : PixelMap(resolution, extent) {}
   AnalyticPixelMapSpline(double resolution, double x_min, double x_max,
                          double y_min, double y_max)
@@ -152,7 +152,7 @@ class RegressedPixelGridSpline : public DifferentiableMap {
 
 // Get a regressed grid version of a 2D continuous function
 std::shared_ptr<RegressedPixelGridSpline> RegressedGridFrom2DFunction(
-    double resolution, const extent_t& extends,
+    double resolution, const ExtentBox& extends,
     std::shared_ptr<const DifferentiableMap> f);
 
 // Initializes a Regressed Pixel grid from a matrix of values

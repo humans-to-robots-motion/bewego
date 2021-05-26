@@ -92,8 +92,10 @@ class TrajectoryOptimizer : public MotionObjective {
       const Eigen::VectorXd& q_init,
       const std::map<std::string, double>& ipopt_options) const;
 
-  virtual std::vector<Bounds> DofsBounds() const = 0;  // Dof bounds limits
-  std::vector<Bounds> TrajectoryDofBounds() const;     // Dof bounds trajectory
+  virtual std::vector<util::Bounds> DofsBounds()
+      const = 0;  // Dof bounds limits
+  std::vector<util::Bounds> TrajectoryDofBounds()
+      const;  // Dof bounds trajectory
 
   typedef CliquesFunctionNetwork FunctionNetwork;
   typedef std::shared_ptr<const FunctionNetwork> FunctionNetworkPtr;

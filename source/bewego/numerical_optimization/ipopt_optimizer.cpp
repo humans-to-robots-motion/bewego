@@ -142,11 +142,10 @@ void IpoptOptimizer::set_options_map(
   }
 }
 
-std::vector<numerical_optimization::Bounds> IpoptOptimizer::GetVariableBounds(
-    uint32_t n) const {
+std::vector<util::Bounds> IpoptOptimizer::GetVariableBounds(uint32_t n) const {
   if (bounds_.empty()) {
     // Generic bounds
-    std::vector<numerical_optimization::Bounds> bounds(n);
+    std::vector<util::Bounds> bounds(n);
     for (auto& bound : bounds) {
       bound.upper_ = std::numeric_limits<double>::max();
       bound.lower_ = std::numeric_limits<double>::lowest();
@@ -157,9 +156,9 @@ std::vector<numerical_optimization::Bounds> IpoptOptimizer::GetVariableBounds(
   return bounds_;
 }
 
-std::vector<numerical_optimization::Bounds>
-IpoptOptimizer::GetGenericConstraintsBounds(uint32_t n_g, uint32_t n_h) const {
-  std::vector<numerical_optimization::Bounds> bounds(n_g + n_h);
+std::vector<util::Bounds> IpoptOptimizer::GetGenericConstraintsBounds(
+    uint32_t n_g, uint32_t n_h) const {
+  std::vector<util::Bounds> bounds(n_g + n_h);
   for (uint32_t i = 0; i < n_g; i++) {
     bounds[i].upper_ = std::numeric_limits<double>::max();
   }

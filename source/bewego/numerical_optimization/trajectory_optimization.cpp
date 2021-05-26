@@ -101,7 +101,7 @@ std::vector<Bounds> TrajectoryOptimizer::TrajectoryDofBounds() const {
   // the extension of the current optimizer should not be too hard
   // For now we use the case without rotations, where the configuration
   // dimension matches the workspace dimension
-  assert(n_ == 2);
+  assert(n_ == 2);  // TODO make that work in the general case
   assert(n_ == workspace_->dimension());
   auto bounds = DofsBounds();
   std::vector<Bounds> dof_bounds(bounds.size() * (T_ + 1));
