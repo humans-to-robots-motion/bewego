@@ -59,7 +59,7 @@ ostream& operator<<(ostream& os, const Box& b) {
   return os;
 }
 
-class FreeflyerOptimzer : public MotionObjective {
+class FreeflyerOptimzer : public TrajectoryOptimizer {
  public:
   FreeflyerOptimzer(uint32_t n,  // size of the configuration space
                     uint32_t T,  // number of cliques

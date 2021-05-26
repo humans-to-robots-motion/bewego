@@ -2,32 +2,24 @@
  * Copyright (c) 2020, Jim Mainprice
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution  and  use  in  source  and binary  forms,  with  or  without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this
- * list of conditions and the following disclaimer.
+ *   1. Redistributions of  source  code must retain the  above copyright
+ *      notice and this list of conditions.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice and  this list of  conditions in the  documentation and/or
+ *      other materials provided with the distribution.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
+ * THE SOFTWARE  IS PROVIDED "AS IS"  AND THE AUTHOR  DISCLAIMS ALL WARRANTIES
+ * WITH  REGARD   TO  THIS  SOFTWARE  INCLUDING  ALL   IMPLIED  WARRANTIES  OF
+ * MERCHANTABILITY AND  FITNESS.  IN NO EVENT  SHALL THE AUTHOR  BE LIABLE FOR
+ * ANY  SPECIAL, DIRECT,  INDIRECT, OR  CONSEQUENTIAL DAMAGES  OR  ANY DAMAGES
+ * WHATSOEVER  RESULTING FROM  LOSS OF  USE, DATA  OR PROFITS,  WHETHER  IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR  OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *                                                             Thu 11 Feb 2021
  */
 
 #include <bewego/motion/cost_terms.h>
@@ -137,6 +129,48 @@ std::vector<Bounds> TrajectoryOptimizer::TrajectoryDofBounds() const {
     }
   }
   return dof_bounds;
+}
+
+void TrajectoryOptimizer::AddGoalConstraint(const Eigen::VectorXd& q_goal,
+                                            double scalar) {
+  assert(function_network_.get() != nullptr);
+
+  uint32_t dim = function_network_->input_dimension();
+  auto network = std::make_shared<FunctionNetwork>(dim, n_);
+
+  // Create clique constraint function phi
+  // auto d_goal = std::make_shared<SquaredNorm>(q_goal);
+  auto d_goal = std::make_shared<SoftNorm>(.05, q_goal);
+  auto phi = ComposedWith(d_goal, network->CenterOfCliqueMap());
+
+  // Scale and register to a new network
+  network->RegisterFunctionForLastClique(scalar * phi);
+  h_constraints_.push_back(network);
+}
+
+void TrajectoryOptimizer::AddWayPointConstraint(
+    const Eigen::VectorXd& q_waypoint, uint32_t t, double scalar) {
+  uint32_t dim = function_network_->input_dimension();
+  auto network = std::make_shared<FunctionNetwork>(dim, n_);
+
+  auto d_waypoint = std::make_shared<SoftNorm>(.05, q_waypoint);
+  auto phi = ComposedWith(d_waypoint, network->LeftMostOfCliqueMap());
+
+  // Scale and register to a new network
+  network->RegisterFunctionForClique(t, scalar * phi);
+  h_constraints_.push_back(network);
+}
+
+void TrajectoryOptimizer::AddInequalityConstraintToEachActiveClique(
+    DifferentiableMapPtr phi, double scalar) {
+  // Scale and register to a new network
+  // Set up surface constraints for key points.
+  uint32_t dim = function_network_->input_dimension();
+  for (uint32_t t = 0; t < T_; t++) {
+    auto network = std::make_shared<FunctionNetwork>(dim, n_);
+    network->RegisterFunctionForClique(t, dt_ * scalar * phi);
+    g_constraints_.push_back(network);
+  }
 }
 
 std::shared_ptr<const ConstrainedOptimizer>

@@ -55,7 +55,7 @@ class TrajectoryOptimizationProblem
   Eigen::VectorXd q_init_;
 };
 
-/*!\brief This version of the constrained trajectory optimizer
+/*!@brief This version of the constrained trajectory optimizer
  * optimizes a TrajectoryOptimizationProblem using IPOPT so far.
  * TODO test class...
  */
@@ -73,8 +73,19 @@ class TrajectoryOptimizer : public MotionObjective {
       const std::map<std::string, double>& options  // optimizer options
   ) const;
 
-  // @brief Adds trajectory publisher (t_pause in microseconds)
+  /** @brief Adds trajectory publisher (t_pause in microseconds) */
   void set_trajectory_publisher(bool with_slow_down, uint32_t t_pause = 100000);
+
+  /** @brief Adds goal constraint */
+  void AddInequalityConstraintToEachActiveClique(DifferentiableMapPtr phi,
+                                                 double scalar);
+
+  /** @brief Adds goal constraint */
+  void AddGoalConstraint(const Eigen::VectorXd& q_goal, double scalar);
+
+  /** @brief Adds waypoint constraint */
+  void AddWayPointConstraint(const Eigen::VectorXd& q_waypoint, uint32_t t,
+                             double scalar);
 
  protected:
   std::shared_ptr<const ConstrainedOptimizer> SetupIpoptOptimizer(
