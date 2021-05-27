@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2021, University of Stuttgart
+# Copyright (c) 2021
 # All rights reserved.
 #
 # Permission to use, copy, modify, and distribute this software for any purpose
