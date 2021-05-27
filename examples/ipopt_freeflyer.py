@@ -22,7 +22,7 @@ import numpy as np
 from tqdm import tqdm
 from multiprocessing import Process
 
-from pybewego.motion_optimization import NavigationOptimization
+from pybewego.motion_optimization import FreeflyerOptimization
 from pybewego.motion_optimization import CostFunctionParameters
 from pybewego.workspace_viewer_server import WorkspaceViewerServer
 
@@ -59,7 +59,7 @@ for k, workspace in enumerate(tqdm(workspaces)):
     if trajectory is None:
         continue
 
-    problem = NavigationOptimization(
+    problem = FreeflyerOptimization(
         workspace,
         resample(trajectory, TRAJ_LENGTH),
         # trajectory,

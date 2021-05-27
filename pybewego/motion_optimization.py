@@ -26,6 +26,8 @@ except ImportError:
 
 from pyrieef.motion.trajectory import Trajectory
 from pyrieef.geometry.workspace import *
+from pyrieef.kinematics.robot import *
+
 from scipy import optimize
 import numpy as np
 
@@ -324,3 +326,39 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             if self.verbose:
                 print(("gradient norm : ", np.linalg.norm(res.jac)))
             return [dist < 1.e-3, self.trajectory]
+
+    class FreeflyerOptimization(NavigationOptimization):
+
+        """
+        Freeflyer Optimization
+
+            This class allows plan 2D trajectories using IPOPT
+
+        Parameters
+        ----------
+            workspace : 
+                Workspace object
+            trajectory : 
+                Trajectory object it is theinitial trajectory
+            dt : 
+                Float, time between each configuration in the trajectory
+            q_goal :
+                np.array, configuration at the goal
+            bounds :
+                np.array, [x_min, x_max, y_min, y_max]
+        """
+
+        def __init__(self, workspace, trajectory, dt, q_goal, goal_radius=0.1,
+                     q_waypoint=None,
+                     bounds=[0., 1., 0., 1.]):
+            NavigationOptimization.__init__(
+                workspace, trajectory, dt, q_goal,
+                goal_radius=goal_radius,
+                q_waypoint=q_waypoint,
+                bounds=bounds)
+
+        def _problem(self):
+            """ This version of the problem uses constraints """
+            freeflyer = create_robot_from_file()
+            return FreeflyerOptimizer(
+                3, self.T, self.dt, self.bounds, "freeflyer_2d", )
