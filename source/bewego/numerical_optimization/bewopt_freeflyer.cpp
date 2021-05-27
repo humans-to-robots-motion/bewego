@@ -53,13 +53,19 @@ using std::endl;
 // planner.add_flag("attractor_interval", .10)
 // planner.add_flag("attractor_squared_potential", False)
 
-FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
-                                     ExtentBox workspace_bounds,
-                                     std::shared_ptr<Freeflyer> robot)
+FreeflyerOptimzer::FreeflyerOptimzer(
+    uint32_t n,                                        // dim of the c-space
+    uint32_t T,                                        // number of cliques
+    double dt,                                         // time between configs
+    const std::vector<double>& workspace_bounds,       // workspace bounds
+    std::string ff_name,                               // freeflyer name
+    const std::vector<Eigen::VectorXd>& ff_keypoints,  // freeflyer keypoints
+    const std::vector<double>& ff_radii                // freeflyer radii
+    )
     : TrajectoryOptimizer(T, dt, n),
-      workspace_dim_(robot->n()),
+      robot_(CreateFreeFlyer(ff_name, ff_keypoints, ff_radii)),
+      workspace_dim_(robot_->n()),
       workspace_bounds_(workspace_bounds),
-      robot_(robot),
       end_effector_id_(0),
       attractor_type_("euclidean"),
       attractor_transition_(.05),
@@ -67,16 +73,30 @@ FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
       attractor_value_geodesic_(true),
       attractor_make_smooth_(true),
       clique_collision_constraints_(false) {
-  cout << "Create freeflyer optimizer with n : " << n << endl;
-  assert(n_ > 1);
-  assert(T_ > 2);
+  if (T_ > 2) {
+    throw std::runtime_error("FreeflyerOptimzer : T (should be 2 at least) ( " +
+                             std::to_string(T_) + " )");
+  }
+
+  if (workspace_dim_ != 2 && workspace_dim_ != 2) {
+    throw std::runtime_error(
+        "FreeflyerOptimzer : ws dimension missmatch (should be 2 or 3) ( " +
+        std::to_string(workspace_dim_) + " )");
+  }
+
+  uint32_t c_space_dim = robot_->keypoint_map(0)->input_dimension();
+  if (c_space_dim != n) {
+    throw std::runtime_error(
+        "FreeflyerOptimzer : cspace dimension missmatch ( " +
+        std::to_string(c_space_dim) + " , " + std::to_string(n) + " )");
+  }
 
   // Initialize to NULL
   geodesic_flow_ = DifferentiableMapPtr();
 
   // Initialize smooth collision constraint
   auto collision_checker = std::make_shared<FreeFlyerCollisionConstraints>(
-      robot, workspace_->ExtractSurfaceFunctions());
+      robot_, workspace_->ExtractSurfaceFunctions());
   smooth_collision_constraint_ = collision_checker->smooth_constraint();
 }
 

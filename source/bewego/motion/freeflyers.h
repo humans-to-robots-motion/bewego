@@ -161,6 +161,11 @@ class Freeflyer3D : public Freeflyer {
   }
 };
 
+// Initializes a freeflyer based on keypoint structure.
+std::shared_ptr<Freeflyer> CreateFreeFlyer(
+    std::string name, const std::vector<Eigen::VectorXd>& keypoints,
+    const std::vector<double>& radii);
+
 // Initializes freeflyers for testing
 std::shared_ptr<Freeflyer2D> MakeFreeflyer2D();
 std::shared_ptr<Freeflyer3D> MakeFreeflyer3D();

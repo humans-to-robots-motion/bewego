@@ -37,6 +37,7 @@
 #include <pybind11/stl.h>
 
 #ifdef WITH_IPOPT
+#include <bewego/numerical_optimization/bewopt_freeflyer.h>
 #include <bewego/numerical_optimization/bewopt_planar.h>
 #endif
 
@@ -280,6 +281,49 @@ PYBIND11_MODULE(_pybewego, m) {
            &opt::PlanarOptimizer::set_trajectory_publisher)
       .def("objective", &opt::PlanarOptimizer::objective)
       .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential);
+
+  py::class_<opt::FreeflyerOptimzer>(m, "FreeflyerOptimzer")
+      .def(py::init<uint32_t, uint32_t, double, const std::vector<double>&,
+                    std::string, const std::vector<Eigen::VectorXd>&,
+                    const std::vector<double>&>())
+
+      // Main
+      .def("optimize", &opt::FreeflyerOptimzer::Optimize)
+
+      // Constraints
+      .def("add_keypoints_surface_constraints",
+           &opt::FreeflyerOptimzer::AddKeyPointsSurfaceConstraints)
+      .def("add_smooth_keypoints_surface_constraints",
+           &opt::FreeflyerOptimzer::AddKeyPointsSurfaceConstraints)
+      .def("add_goal_constraint", &opt::FreeflyerOptimzer::AddGoalConstraint)
+      .def("add_waypoint_constraint",
+           &opt::FreeflyerOptimzer::AddWayPointConstraint)
+
+      // Objectives
+      .def("add_smoothness_terms", &opt::FreeflyerOptimzer::AddSmoothnessTerms)
+      .def("add_obstacle_terms", &opt::FreeflyerOptimzer::AddObstacleTerms)
+      .def("add_terminal_potential_terms",
+           &opt::FreeflyerOptimzer::AddTerminalPotentialTerms)
+      .def("add_waypoint_terms", &opt::FreeflyerOptimzer::AddWayPointTerms)
+
+      // Workspace
+      .def("add_sphere", &opt::FreeflyerOptimzer::AddSphere)
+      .def("add_box", &opt::FreeflyerOptimzer::AddBox)
+      .def("clear_workspace", &opt::FreeflyerOptimzer::ClearWorkspace)
+      .def("set_sdf_gamma", &opt::FreeflyerOptimzer::SetSDFGamma)
+      .def("set_sdf_margin", &opt::FreeflyerOptimzer::SetSDFMargin)
+
+      // Functions
+      .def("set_trajectory_publisher",
+           &opt::FreeflyerOptimzer::set_trajectory_publisher)
+      .def("objective", &opt::FreeflyerOptimzer::objective)
+      .def("obstacle_potential", &opt::FreeflyerOptimzer::obstacle_potential)
+
+      // Options
+      .def("set_q_default", &opt::FreeflyerOptimzer::set_q_default)
+      .def("set_end_effector", &opt::FreeflyerOptimzer::set_end_effector)
+      .def("set_clique_collision_constraints",
+           &opt::FreeflyerOptimzer::set_clique_collision_constraints);
 #endif
 
   m.attr("__version__") = "0.0.1";

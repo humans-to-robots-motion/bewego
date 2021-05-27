@@ -35,6 +35,36 @@ using std::endl;
 namespace bewego {
 
 //-----------------------------------------------------------------------------
+// CreateFreeFlyer
+//-----------------------------------------------------------------------------
+
+std::shared_ptr<Freeflyer> CreateFreeFlyer(
+    std::string name, const std::vector<Eigen::VectorXd>& keypoints,
+    const std::vector<double>& radii) {
+  if (keypoints.size() != radii.size()) {
+    throw std::runtime_error("Freeflyer : keypoints size != radii size");
+  }
+  uint32_t dim = keypoints.back().size();
+  if (dim != 2 && dim != 3) {
+    throw std::runtime_error(
+        "Freeflyer : dimension missmatch (should be 2 or 3) got : " +
+        std::to_string(dim));
+  }
+  for (uint32_t i = 0; i < keypoints.size(); i++) {
+    if (keypoints[i].size() != dim) {
+      throw std::runtime_error(
+          "Freeflyer : dimension keypoint missmatch (should be 2 or 3) got :" +
+          std::to_string(keypoints[i].size()));
+    }
+  }
+  if (dim == 2) {
+    return std::make_shared<Freeflyer2D>(name, keypoints, radii);
+  } else {
+    return std::make_shared<Freeflyer3D>(name, keypoints, radii);
+  }
+}
+
+//-----------------------------------------------------------------------------
 // Freeflyer test
 //-----------------------------------------------------------------------------
 

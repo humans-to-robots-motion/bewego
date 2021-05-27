@@ -35,11 +35,13 @@ namespace numerical_optimization {
 
 class FreeflyerOptimzer : public TrajectoryOptimizer {
  public:
-  FreeflyerOptimzer(uint32_t n,  // size of the configuration space
+  FreeflyerOptimzer(uint32_t n,  // dim c-space
                     uint32_t T,  // number of cliques
-                    double dt,   // time between cliques
-                    ExtentBox workspace_bounds,
-                    std::shared_ptr<Freeflyer> robot);
+                    double dt,   // time between configs
+                    const std::vector<double>& workspace_bounds,  // bounds
+                    std::string ff_name,
+                    const std::vector<Eigen::VectorXd>& ff_keypoints,
+                    const std::vector<double>& ff_radii);
 
   /** @brief Adds a geodesic flow object to the optimizer */
   void set_geodesic_flow(DifferentiableMapPtr v) { geodesic_flow_ = v; }
@@ -76,6 +78,9 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   // ipopt constraints
   std::vector<FunctionNetwork> GetKeyPointsSurfaceConstraints() const;
 
+  // Robot
+  std::shared_ptr<Freeflyer> robot_;
+
   // Workspace
   uint32_t workspace_dim_;                // Dimensionality of the workspace
   ExtentBox workspace_bounds_;            // Bounds of the workspace
@@ -90,9 +95,6 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   double attractor_interval_;
   bool attractor_value_geodesic_;
   bool attractor_make_smooth_;
-
-  // Robot
-  std::shared_ptr<Freeflyer> robot_;
 
   // End-effector
   uint32_t end_effector_id_;
