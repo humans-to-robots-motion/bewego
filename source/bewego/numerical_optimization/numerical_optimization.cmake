@@ -37,6 +37,7 @@ add_library(${MODULE_NAME} SHARED
     ${MODULE_DIR}/optimization_test_functions.cpp
     ${MODULE_DIR}/trajectory_optimization.cpp
     ${MODULE_DIR}/bewopt_planar.cpp
+    ${MODULE_DIR}/bewopt_freeflyer.cpp
     ${INC})
 target_include_directories(${MODULE_NAME}
   PUBLIC

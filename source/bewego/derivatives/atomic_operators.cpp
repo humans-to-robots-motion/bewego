@@ -227,3 +227,25 @@ Eigen::MatrixXd Arccos::Hessian(const Eigen::VectorXd& x) const {
   H_(0, 0) = -x[0] / std::pow(a, 1.5);
   return H_;
 }
+
+//-----------------------------------------------------------------------------
+// Normalize implementation.
+//-----------------------------------------------------------------------------
+
+NormalizeMap::NormalizeMap(uint32_t n) : n_(n), min_norm_(1e-30) {
+  type_ = "NormalizeMap";
+}
+NormalizeMap::~NormalizeMap() {}
+
+Eigen::VectorXd NormalizeMap::Forward(const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+  return x / std::max(min_norm_, x.norm());
+}
+
+Eigen::MatrixXd NormalizeMap::Jacobian(const Eigen::VectorXd& x) const {
+  CheckInputDimension(x);
+  double x_norm = std::max(min_norm_, x.norm());
+  double dinv = 1. / x_norm;
+  Eigen::MatrixXd M = (dinv * Eigen::VectorXd::Ones(n_)).asDiagonal();
+  return M - std::pow(dinv, 3) * x * x.transpose();
+}

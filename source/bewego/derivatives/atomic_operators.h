@@ -235,6 +235,7 @@ class SquareMap : public DifferentiableMap {
   }
 
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const {
+    CheckSingleOutputDimension();
     CheckInputDimension(x);
     return H_;
   }
@@ -819,6 +820,31 @@ class Arccos : public DifferentiableMap {
   Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
   Eigen::MatrixXd Hessian(const Eigen::VectorXd& x) const;
+};
+
+/*! \brief Implements a normalize function
+ *
+ * Details:
+ *
+ *   f(x) =  x / |x|
+ *
+ * where |.| is the regular euclidean norm
+ */
+class NormalizeMap : public DifferentiableMap {
+ public:
+  NormalizeMap(uint32_t n);
+  virtual ~NormalizeMap();
+
+  // Evaluates f(x), f'(x), f''(x).
+  Eigen::VectorXd Forward(const Eigen::VectorXd& x) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& x) const;
+
+  uint32_t input_dimension() const { return n_; }
+  uint32_t output_dimension() const { return n_; }
+
+ protected:
+  uint32_t n_;
+  double min_norm_;
 };
 
 }  // namespace bewego

@@ -101,6 +101,10 @@ class WorkspacePotentalPrimitive : public Workspace {
   void Initialize(const VectorOfWorkpaceObjects& objects, double alpha,
                   double scalar);
 
+  virtual DifferentiableMapPtr WorkspaceGeometryMap() const {
+    return workspace_geometry_map_;
+  }
+
  private:
   DifferentiableMapPtr workspace_geometry_map_;
 };

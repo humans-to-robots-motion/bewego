@@ -25,9 +25,9 @@
 
 // Free Flyer Optimizer
 #include <bewego/derivatives/combination_operators.h>
+#include <bewego/geodesic_flow/attractors.h>
 #include <bewego/motion/differentiable_kinematics.h>
-#include <bewego/numerical_optimization/bewopt_planar.h>
-#include <bewego/numerical_optimization/freeflyer_optimization.h>
+#include <bewego/numerical_optimization/bewopt_freeflyer.h>
 #include <bewego/numerical_optimization/ipopt_optimizer.h>
 
 // Exernal includes
@@ -45,6 +45,14 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
+// # Attractor
+// planner.add_flag("attractor_type", "euclidean")
+// planner.add_flag("attractor_constraint", True)
+// planner.add_flag("attractor_make_smooth", True)
+// planner.add_flag("attractor_transition", .15)
+// planner.add_flag("attractor_interval", .10)
+// planner.add_flag("attractor_squared_potential", False)
+
 FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
                                      ExtentBox workspace_bounds,
                                      std::shared_ptr<Freeflyer> robot)
@@ -53,7 +61,12 @@ FreeflyerOptimzer::FreeflyerOptimzer(uint32_t n, uint32_t T, double dt,
       workspace_bounds_(workspace_bounds),
       robot_(robot),
       end_effector_id_(0),
-      attractor_type_("euclidean") {
+      attractor_type_("euclidean"),
+      attractor_transition_(.05),
+      attractor_interval_(.02),
+      attractor_value_geodesic_(true),
+      attractor_make_smooth_(true),
+      clique_collision_constraints_(false) {
   cout << "Create freeflyer optimizer with n : " << n << endl;
   assert(n_ > 1);
   assert(T_ > 2);
@@ -92,9 +105,9 @@ DifferentiableMapPtr FreeflyerOptimzer::GetDistanceActivation() const {
   return LogisticActivation(ComposedWith(smooth_min, stack), freeflyer_k_);
 }
 
-void FreeflyerOptimzer::AddGeodesicFlowTerm(FunctionNetwork network) const {
+void FreeflyerOptimzer::AddGeodesicFlowTerm(double scalar) {
   // Add term to agree with flow
-  if (scalar_flow_ <= 0.) return;
+  if (scalar <= 0.) return;
   assert(geodesic_flow_.get() != nullptr);
 
   cout << "workspace_dim_ : " << workspace_dim_ << endl;
@@ -104,8 +117,8 @@ void FreeflyerOptimzer::AddGeodesicFlowTerm(FunctionNetwork network) const {
   auto normalize = std::make_shared<NormalizeMap>(workspace_dim_);
 
   // Normalized the flow and velocity
-  auto n_vel = CombinedWith(normalize, velocity);
-  auto n_flow = CombinedWith(normalize, CombinedWith(geodesic_flow_, position));
+  auto n_vel = ComposedWith(normalize, velocity);
+  auto n_flow = ComposedWith(normalize, ComposedWith(geodesic_flow_, position));
   // auto activation = Pullback(position, GetDistanceActivation());
   // auto sdf = Pullback(position, ConstructSignedDistanceField(workspace_));
 
@@ -132,23 +145,23 @@ void FreeflyerOptimzer::AddGeodesicFlowTerm(FunctionNetwork network) const {
   // auto position_map = std::make_shared<Translation>(workspace_dim_);
   // auto position_map = robot_->keypoint_map(end_effector_id_);
 
-  cout << "T : " << network->T() << endl;
+  cout << "T : " << function_network_->T() << endl;
   for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
     // Calculate PosVel of FK(q)
     auto positions = std::make_shared<MultiEvalMap>(
-        robot_->keypoint_map(i), network->nb_clique_elements());
+        robot_->keypoint_map(i), function_network_->nb_clique_elements());
     auto posvel = std::make_shared<FiniteDifferencesPosVel>(n_, dt_);
     auto f = ComposedWith(angle, ComposedWith(posvel, positions));
     for (uint32_t t = 5; t <= T_ - 2; ++t) {
-      network->RegisterFunctionForClique(t, f * dt_ * scalar_flow_);
+      function_network_->RegisterFunctionForClique(t, dt_ * scalar * f);
     }
   }
 }
 
-void FreeflyerOptimzer::AddGeodesicTerm(FunctionNetwork network) const {
+void FreeflyerOptimzer::AddGeodesicTerm(double scalar) {
   // Penalize all dimensions equally, because the scaling of the dimensions
   // should already be handled by the workspace geometry map, itself.
-  if (scalar_geodesic_ <= 0.) return;
+  if (scalar <= 0.) return;
   auto phi = workspace_->WorkspaceGeometryMap();
   Eigen::VectorXd regularizers = Eigen::VectorXd::Ones(phi->output_dimension());
 
@@ -167,17 +180,20 @@ void FreeflyerOptimzer::AddGeodesicTerm(FunctionNetwork network) const {
 
       // Calculate PosVel of FK(q)
       auto positions = std::make_shared<MultiEvalMap>(
-          robot_->keypoint_map(i), network->nb_clique_elements());
+          robot_->keypoint_map(i), function_network_->nb_clique_elements());
       auto posvel = std::make_shared<FiniteDifferencesPosVel>(n_, dt_);
       auto f = ComposedWith(potential, ComposedWith(posvel, positions));
 
-      network->RegisterFunctionForClique(t, f * dt_ * scalar_geodesic_);
+      // Scale and register
+      function_network_->RegisterFunctionForClique(t, dt_ * scalar * f);
     }
   }
 }
 
-void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double scalar) const {
+void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double margin,
+                                                       double scalar) {
   if (scalar <= 0.) return;
+  uint32_t dim = function_network_->input_dimension();
   if (clique_collision_constraints_) {
     // Set up surface constraints for key points.
     for (uint32_t t = 0; t < T_; t++) {
@@ -196,25 +212,23 @@ void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double scalar) const {
         assert(p->input_dimension() == n_);
         for (auto& surface_function : workspace_->ExtractSurfaceFunctions()) {
           auto network = std::make_shared<FunctionNetwork>(dim, n_);
-          auto phi = ComposedWith((surface_function - r) * scalar, p);
+          auto phi = ComposedWith(scalar * (surface_function - r), p);
           network->RegisterTimeCenteredPositionFunction(t, phi);
-          constraints.push_back(network);
+          g_constraints_.push_back(network);
         }
       }
     }
   }
-  return constraints;
 }
 
-void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
-                                                     double scalar) {
+/*
+void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double margin,
+                                                       double scalar) {
+  if (scalar <= 0.) return;
   if (workspace_objects_.empty()) {
     cerr << "WARNING: no obstacles are in the workspace" << endl;
     return;
   }
-  assert(function_network_.get() != nullptr);
-  assert(n_ == 2);
-
   for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
     auto p = robot_->keypoint_map(i);
     auto r = robot_->keypoint_radius(i);
@@ -226,20 +240,20 @@ void PlanarOptimizer::AddKeyPointsSurfaceConstraints(double margin,
     AddInequalityConstraintToEachActiveClique(phi, scalar);
   }
 }
+*/
 
 void FreeflyerOptimzer::AddPosturalTerms(double scalar) {
-  if (scalar_posture_ == 0.) return;
-  auto default_q_potential =
-      std::make_shared<SquaredNorm>(q_default_) * dt_ * scalar_posture_;
+  if (scalar == 0.) return;
+  auto default_q_potential = std::make_shared<SquaredNorm>(q_default_);
   for (uint32_t t = 0; t < T_; t++) {
     function_network_->RegisterTimeCenteredPositionFunction(
-        t, default_q_potential);
+        t, dt_ * scalar * default_q_potential);
   }
 }
 
 void FreeflyerOptimzer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
                                           double scalar) {
-  if (scalar_goal_constraint_ <= 0) return;
+  if (scalar <= 0) return;
   assert(x_goal.size() == n_);
   assert(robot_->n() == workspace_dim_);
 
@@ -266,14 +280,13 @@ void FreeflyerOptimzer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
       //    NDim(std::make_shared<SoftNorm>(.025), phi_g.size()));
     }
     if (attractor_type_ == "geodesic") {
-      double d_t = FLAGS_attractor_transition;  // where the transition happens
-      double d_i = FLAGS_attractor_interval;    // how fast is the transition
-      if (FLAGS_attractor_value_geodesic) {
+      double d_t = attractor_transition_;  // where the transition happens
+      double d_i = attractor_interval_;    // how fast is the transition
+      if (attractor_value_geodesic_) {
         attractor = geodesic_distance_;
-        if (FLAGS_attractor_make_smooth) {
+        if (attractor_make_smooth_) {
           attractor = std::make_shared<SmoothAttractor>(
-              ComposedWith(std::make_shared<ScalarSquaredDifference>(0),
-                           geodesic_distance_),
+              ComposedWith(std::make_shared<SquareMap>(), geodesic_distance_),
               p_goal, d_t, d_i);
         }
       } else {
@@ -281,7 +294,7 @@ void FreeflyerOptimzer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
         std::dynamic_pointer_cast<const GeodesicDistance>(geodesic_distance_)
             ->set_value(std::make_shared<NaturalAttractor>(
                 workspace_->WorkspaceGeometryMap(), p_goal, true));
-        if (FLAGS_attractor_make_smooth) {
+        if (attractor_make_smooth_) {
           attractor = std::make_shared<SmoothNatural>(
               geodesic_distance_, workspace_->WorkspaceGeometryMap(), p_goal,
               d_t, d_i);
@@ -294,16 +307,21 @@ void FreeflyerOptimzer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
     if (attractor_type_ == "wasserstein") {
       // TODO
       // Square the distance
-      attractor =
-          ComposedWith(std::make_shared<ScalarSquaredDifference>(0), attractor);
+      // attractor =
+      //     ComposedWith(std::make_shared<ScalarSquaredDifference>(0),
+      //     attractor);
     }
   }
 
   // Register
-  attractor = attractor * scalar;
+  attractor = scalar * attractor;
 
   if (kinematic_map) {
     attractor = ComposedWith(attractor, kinematic_map);
   }
+
+  uint32_t dim = function_network_->input_dimension();
+  auto network = std::make_shared<FunctionNetwork>(dim, n_);
   network->RegisterTimeCenteredPositionFunction(T_, attractor);
+  h_constraints_.push_back(network);
 }

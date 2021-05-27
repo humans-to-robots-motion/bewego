@@ -24,17 +24,14 @@
  */
 #pragma once
 
-// #include <bewego/workspace/analytical_grid.h>
-#include <bewego/freeflyers.h>
-#include <bewego/motion/motion_optimization.h>
-#include <bewego/motion/trajectory_function_network.h>
+#include <bewego/motion/freeflyers.h>
+#include <bewego/motion/trajectory.h>
 #include <bewego/numerical_optimization/optimizer.h>
 #include <bewego/numerical_optimization/trajectory_optimization.h>
-#include <bewego/stats_monitor.h>
-#include <bewego/trajectory_optimization_freeflyer.h>
-#include <bewego/workspace/analytical_workspace.h>
+#include <bewego/workspace/workspace.h>
 
 namespace bewego {
+namespace numerical_optimization {
 
 class FreeflyerOptimzer : public TrajectoryOptimizer {
  public:
@@ -42,7 +39,6 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
                     uint32_t T,  // number of cliques
                     double dt,   // time between cliques
                     ExtentBox workspace_bounds,
-                    std::shared_ptr<Workspace> workspace,
                     std::shared_ptr<Freeflyer> robot);
 
   /** @brief Adds a geodesic flow object to the optimizer */
@@ -58,20 +54,21 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
    * the geometry should be used for setting up a goal attractor */
   void set_end_effector(uint32_t i) { end_effector_id_ = i; }
 
-  void AddGeodesicFlowTerm() const;
-  void AddGeodesicTerm() const;
-  void AddInternalAddKeyPointBarriers() const;
-  void AddKeyPointsSurfaceConstraints() const;
-  void AddJointLimitConstraints() const;
-  void AddGoalConstraint(const Eigen::VectorXd& x_goal) const;
-  void AddPosturalTerms() const;
+  /** @brief Adds a default configuration */
+  void set_clique_collision_constraints(bool v) {
+    clique_collision_constraints_ = v;
+  }
+
+  void AddGeodesicFlowTerm(double scalar);
+  void AddGeodesicTerm(double scalar);
+  void AddKeyPointsSurfaceConstraints(double margin, double scalar);
+  void AddJointLimitConstraints(double scalar);
+  void AddGoalConstraint(const Eigen::VectorXd& x_goal, double scalar);
+  void AddPosturalTerms(double scalar);
 
  protected:
-  /** @brief return bounds constraints */
-  std::vector<BoundConstraint> GetJointLimits() const;
-
   /** @brief return bounds for dofs along the trajectory */
-  std::vector<util::Bounds> GetDofBounds() const;
+  std::vector<util::Bounds> DofsBounds() const;
 
   // Get ditance to obstacle
   ElementaryFunction GetDistanceActivation() const;
@@ -83,11 +80,16 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   uint32_t workspace_dim_;                // Dimensionality of the workspace
   ExtentBox workspace_bounds_;            // Bounds of the workspace
   std::shared_ptr<Workspace> workspace_;  // Workspace geometry
-  std::shared_ptr<const DifferentiableMap> smooth_collision_constraint_;
+  DifferentiableMapPtr smooth_collision_constraint_;
 
-  // GeodesicFlow
-  std::shared_ptr<const DifferentiableMap> geodesic_flow_;
-  std::shared_ptr<const DifferentiableMap> geodesic_distance_;
+  // GeodesicFlow & Attractors
+  DifferentiableMapPtr geodesic_flow_;
+  DifferentiableMapPtr geodesic_distance_;
+  std::string attractor_type_;
+  double attractor_transition_;
+  double attractor_interval_;
+  bool attractor_value_geodesic_;
+  bool attractor_make_smooth_;
 
   // Robot
   std::shared_ptr<Freeflyer> robot_;
@@ -101,6 +103,8 @@ class FreeflyerOptimzer : public TrajectoryOptimizer {
   // Parameters
   double freeflyer_gamma_;
   double freeflyer_k_;
+  bool clique_collision_constraints_;
 };
 
+}  // namespace numerical_optimization
 }  // namespace bewego

@@ -41,8 +41,8 @@ using namespace bewego::util;
 // SoftNorm function implementation.
 //-----------------------------------------------------------------------------
 
-DifferentiableMapPtr SoftNormOffset(const Eigen::VectorXd& x_goal,
-                                    double soft_norm_alpha) {
+DifferentiableMapPtr bewego::SoftNormOffset(const Eigen::VectorXd& x_goal,
+                                            double soft_norm_alpha) {
   uint32_t n = x_goal.size();
   return ComposedWith(std::make_shared<SoftNorm>(soft_norm_alpha, n),
                       std::make_shared<IdentityMap>(n) - x_goal);

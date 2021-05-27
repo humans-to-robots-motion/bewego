@@ -54,20 +54,24 @@ class Workspace {
     return signed_distance_functions;
   }
 
-  // Extract the signed distance field as the minimum of all
-  // the SDF of the objects present in the workspace
-  // This field has first order discontiuities but the values
-  // should be continuous.
+  /**
+   Extract the signed distance field as the minimum of all the SDF of the
+   objects present in the workspace This field has first order discontiuities
+   but the values should be continuous.
+   */
   DifferentiableMapPtr SignedDistanceField() const {
     return std::make_shared<Min>(ExtractSurfaceFunctions());
   }
 
-  // Ambient space dimension of the workspace (2D or 3D)
-  // For now we have only 2 dimensional cases
-  // but it should be easy to extend the rectangles and circles to the 3D case
+  /**
+   Ambient space dimension of the workspace (2D or 3D)
+
+   For now we have only 2 dimensional cases but it should be easy to extend the
+   rectangles and circles to the 3D case
+  */
   uint32_t dimension() const { return dimension_; }
 
-  // Evaluate weather a given point is inside the sphere worlds
+  /* Evaluate wether a given point is inside the sphere worlds */
   bool InCollision(const Eigen::VectorXd& p) const {
     for (const auto& object : objects_) {
       if (object->ConstraintFunction()->ForwardFunc(p) < 0) {
@@ -75,6 +79,27 @@ class Workspace {
       }
     }
     return false;
+  }
+
+  /* The workspace geometry defines in what space do we measure velocities in
+   the workspace. The basic idea is that the distance bewteeen two points in the
+   workspace can be measured as inifinimum of an energy functional:
+
+            E(a, b) = 1/2 \int_a^b 1/2 dq^T A dq  dt
+
+        where A is a metric tensor.
+
+    We can define A as:
+
+            dq^T A dq = | d phi(q) |^2
+                      = | J_phi dq |^2
+                      = dq^T (J_phi^T J_phi) dq
+
+    where phi is the -- workspace geometry map.
+    A is then a Riemanian metric and, the workspace is a Riemanian manifold.
+  */
+  virtual DifferentiableMapPtr WorkspaceGeometryMap() const {
+    return std::make_shared<IdentityMap>(dimension_);
   }
 
  protected:

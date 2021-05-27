@@ -530,3 +530,14 @@ TEST(SmoothTransitionParameter, temperature_parameter) {
     EXPECT_NEAR(1 - threshold, (*logistic)(-d / 2), 1e-7);
   }
 }
+
+TEST_F(DifferentialMapTest, normalize_map) {
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+  uint32_t dim = 10;
+  uint32_t nb_tests = 10;
+  auto normalize = std::make_shared<NormalizeMap>(dim);
+  ASSERT_TRUE(normalize->type() == "NormalizeMap");
+  AddRandomTests(normalize, nb_tests);
+  RunAllTests();
+}

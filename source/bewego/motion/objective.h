@@ -117,9 +117,9 @@ class MotionObjective {
 
  protected:
   bool verbose_;
-  double T_;                // Number of active cliques
+  uint32_t T_;              // Number of active cliques
   double dt_;               // time interval between cliques
-  double n_;                // Dimensionality of the configuration space
+  uint32_t n_;              // Dimensionality of the configuration space
   double gamma_;            // Smoothing parameter of the SDF
   double obstacle_margin_;  // Margin parameter of the SDF
   std::shared_ptr<CliquesFunctionNetwork> function_network_;
