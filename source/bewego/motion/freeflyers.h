@@ -55,15 +55,15 @@ struct CollisionPoint {
 using VectorOfCollisionPoints = std::vector<CollisionPoint>;
 
 /**
-   Interpolates the segments with keypoints given
-   a target total number
+ * Interpolates the segments with keypoints given
+ * a target total number
  */
 std::vector<Eigen::VectorXd> GetKeyPoints(double nb_keypoints,
                                           const std::vector<Segment>& segments);
 
 /**
-   Freeflying robot who's DoF is a single rigid body transformation
-   keypoints are used to define collision constraints.
+ * Freeflying robot who's DoF is a single rigid body transformation
+ * keypoints are used to define collision constraints.
  */
 class Freeflyer {
  public:
@@ -118,8 +118,8 @@ class Freeflyer {
 };
 
 /**
-   Freeflying robot who's DoF is a single rigid-body transformation
-   keypoints are used to define collision constraints.
+ * Freeflying robot who's DoF is a single rigid-body transformation
+ * keypoints are used to define collision constraints.
  */
 class Freeflyer2D : public Freeflyer {
  public:
@@ -140,8 +140,8 @@ class Freeflyer2D : public Freeflyer {
 };
 
 /**
-   Freeflying robot who's DoF is a single rigid-body transformation
-   keypoints are used to define collision constraints.
+ * Freeflying robot who's DoF is a single rigid-body transformation
+ * keypoints are used to define collision constraints.
  */
 class Freeflyer3D : public Freeflyer {
  public:
@@ -170,12 +170,14 @@ std::shared_ptr<Freeflyer> CreateFreeFlyer(
 std::shared_ptr<Freeflyer2D> MakeFreeflyer2D();
 std::shared_ptr<Freeflyer3D> MakeFreeflyer3D();
 
-// Collision constraint function that averages all collision points.
-// Also provides an interface for dissociating each constraint
-// The vector of collision points contains a pointer to each
-// foward kinematics map (task map).
-// to get the surfaces simply use workspace->ExtractSurfaceFunctions
-// there is a surface per object in the workspace
+/**
+ * Collision constraint function that averages all collision points.
+ * Also provides an interface for dissociating each constraint
+ * The vector of collision points contains a pointer to each
+ * foward kinematics map (task map).
+ * to get the surfaces simply use workspace->ExtractSurfaceFunctions
+ * there is a surface per object in the workspace
+ */
 class FreeFlyerCollisionConstraints {
  public:
   FreeFlyerCollisionConstraints(std::shared_ptr<const Freeflyer> freeflyer,
@@ -206,7 +208,7 @@ class FreeFlyerCollisionConstraints {
   uint32_t n_;
 };
 
-/*
+/**
  * Gets the position from state
  */
 class FreeFlyerTranslation : public DifferentiableMap {
