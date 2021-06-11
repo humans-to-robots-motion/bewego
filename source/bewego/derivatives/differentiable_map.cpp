@@ -32,6 +32,8 @@ using std::endl;
 
 namespace bewego {
 
+DifferentiableMap::~DifferentiableMap() {}
+
 Eigen::MatrixXd DifferentiableMap::FiniteDifferenceJacobian(
     const DifferentiableMap& f, const Eigen::VectorXd& q) {
   assert(q.size() == f.input_dimension());
@@ -55,9 +57,9 @@ Eigen::MatrixXd DifferentiableMap::FiniteDifferenceJacobian(
 }
 
 /**
-    Takes an object f that has a forward method returning
-    a numpy array when querried.
-    */
+ * Takes an object f that has a forward method returning
+ * a numpy array when querried.
+ **/
 Eigen::MatrixXd DifferentiableMap::FiniteDifferenceHessian(
     const DifferentiableMap& f, const Eigen::VectorXd& q) {
   assert(q.size() == f.input_dimension());

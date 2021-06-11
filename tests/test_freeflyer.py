@@ -27,6 +27,11 @@ from numpy.testing import assert_allclose
 import time
 
 
-directory = os.path.abspath(os.path.dirname(__file__))
-DATADIR = directory + "/../../pybullet_robots/data/"
+# directory = os.path.abspath(os.path.dirname(__file__))
+# DATADIR = directory + "/../../pybullet_robots/data/"
 
+def test_freeflyer():
+    segment1 = [5.5, 0.5, 0, 0.5, 0.5, 0]
+    segment2 = [0.5, 0.5, 0, 0.5, 5.5, 0]
+    keypoints = create_keypoints(10, segment1, segment2)
+    freeflyer = create_freeflyer("ff_test_2d", )  # TODO

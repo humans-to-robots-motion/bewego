@@ -36,6 +36,7 @@ namespace bewego {
 class DifferentiableMap {
  public:
   DifferentiableMap() : debug_(false), type_("Default"), is_atomic_(true) {}
+  virtual ~DifferentiableMap();
 
   virtual uint32_t output_dimension() const = 0;
   virtual uint32_t input_dimension() const = 0;

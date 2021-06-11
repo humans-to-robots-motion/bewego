@@ -361,4 +361,6 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             """ This version of the problem uses constraints """
             freeflyer = create_robot_from_file()
             return FreeflyerOptimizer(
-                3, self.T, self.dt, self.bounds, "freeflyer_2d", )
+                3, self.T, self.dt, self.bounds, 
+                "freeflyer_2d",
+                freeflyer. )

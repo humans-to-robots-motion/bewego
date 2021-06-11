@@ -177,6 +177,17 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("__call__", &bewego::LWR::Forward, py::arg("e") = nullptr,
            py::is_operator());
 
+  py::class_<bewego::DifferentiableMap,
+             std::shared_ptr<bewego::DifferentiableMap>>(m, "DifferentiableMap")
+      .def("input_dimension", &bewego::DifferentiableMap::input_dimension)
+      .def("output_dimension", &bewego::DifferentiableMap::output_dimension)
+      .def("gradient", &bewego::DifferentiableMap::Gradient)
+      .def("forward", &bewego::DifferentiableMap::Forward)
+      .def("jacobian", &bewego::DifferentiableMap::Jacobian)
+      .def("hessian", &bewego::DifferentiableMap::Hessian)
+      .def("__call__", &bewego::DifferentiableMap::Forward,
+           py::arg("e") = nullptr, py::is_operator());
+
   py::class_<bewego::ObstaclePotential,
              std::shared_ptr<bewego::ObstaclePotential>>(m, "ObstaclePotential")
       .def("input_dimension", &bewego::ObstaclePotential::input_dimension)
@@ -187,6 +198,17 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("hessian", &bewego::ObstaclePotential::Hessian)
       .def("__call__", &bewego::ObstaclePotential::Forward,
            py::arg("e") = nullptr, py::is_operator());
+
+  m.def("create_freeflyer", &bewego::CreateFreeFlyer, R"pbdoc(
+        Returns a Freeflyer
+    )pbdoc");
+
+  py::class_<bewego::Freeflyer, std::shared_ptr<bewego::Freeflyer>>(
+      m, "Freeflyer2D")
+      .def("keypoint_map", &bewego::Freeflyer::keypoint_map)
+      .def("keypoint_radius", &bewego::Freeflyer::keypoint_radius)
+      .def("name", &bewego::Freeflyer::name)
+      .def("n", &bewego::Freeflyer::n);
 
   py::class_<bewego::TrajectoryObjectiveFunction,
              std::shared_ptr<bewego::TrajectoryObjectiveFunction>>(
