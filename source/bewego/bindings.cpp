@@ -26,6 +26,7 @@
 #include <bewego/derivatives/atomic_operators.h>
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/motion/forward_kinematics.h>
+#include <bewego/motion/freeflyers.h>
 #include <bewego/motion/objective.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/planning/planar_grid.h>
@@ -51,13 +52,15 @@ bool test_identity(int n) {
   uint32_t dimension = n;
   auto f = std::make_shared<bewego::IdentityMap>(dimension);
   auto x = Eigen::VectorXd::Random(dimension);
-  auto J1 = f->Jacobian(x);
-  auto J2 = bewego::DifferentiableMap::FiniteDifferenceJacobian(*f, x);
+  Eigen::MatrixXd J1, J2;
+  J1 = f->Jacobian(x);
+  J2 = bewego::DifferentiableMap::FiniteDifferenceJacobian(*f, x);
   bool a = J1.isApprox(J2);
   bool b = true;
-  if (n == 1) {
-    auto H1 = f->Hessian(x);
-    auto H2 = bewego::DifferentiableMap::FiniteDifferenceHessian(*f, x);
+  if (dimension == 1) {
+    Eigen::MatrixXd H1, H2;
+    H1 = f->Hessian(x);
+    H2 = bewego::DifferentiableMap::FiniteDifferenceHessian(*f, x);
     b = H1.isApprox(H2);
   }
   return a && b;
@@ -131,6 +134,10 @@ PYBIND11_MODULE(_pybewego, m) {
         Returns the quaternion corresponding to euler
     )pbdoc");
 
+  m.def("create_freeflyer", &bewego::CreateFreeFlyer, R"pbdoc(
+        Returns a Freeflyer
+    )pbdoc");
+
   py::class_<bewego::Robot>(m, "Robot")
       .def(py::init<>())
       .def("add_rigid_body", &bewego::Robot::AddRigidBody)
@@ -198,10 +205,6 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("hessian", &bewego::ObstaclePotential::Hessian)
       .def("__call__", &bewego::ObstaclePotential::Forward,
            py::arg("e") = nullptr, py::is_operator());
-
-  m.def("create_freeflyer", &bewego::CreateFreeFlyer, R"pbdoc(
-        Returns a Freeflyer
-    )pbdoc");
 
   py::class_<bewego::Freeflyer, std::shared_ptr<bewego::Freeflyer>>(
       m, "Freeflyer2D")

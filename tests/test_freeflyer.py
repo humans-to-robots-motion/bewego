@@ -21,7 +21,7 @@ import os
 import sys
 import numpy as np
 import conftest
-from pybewego import *
+from pybewego import create_freeflyer
 from pyrieef.kinematics.robot import *
 from numpy.testing import assert_allclose
 import time
@@ -31,7 +31,15 @@ import time
 # DATADIR = directory + "/../../pybullet_robots/data/"
 
 def test_freeflyer():
-    segment1 = [5.5, 0.5, 0, 0.5, 0.5, 0]
-    segment2 = [0.5, 0.5, 0, 0.5, 5.5, 0]
-    keypoints = create_keypoints(10, segment1, segment2)
-    freeflyer = create_freeflyer("ff_test_2d", )  # TODO
+    s1 = Segment(p1=[5.5, 0.5], p2=[0.5, 0.5])
+    s2 = Segment(p1=[0.5, 0.5], p2=[0.5, 5.5])
+    nb_keypoints = 10
+    radius = .7
+    keypoints = create_keypoints(nb_keypoints, [s1, s2])
+    # keypoints = [np.array([0, 0]), np.array([1, 1])]
+    print(keypoints)
+    radii = radius * np.ones(nb_keypoints)
+    freeflyer = create_freeflyer("ff_test_2d", keypoints, radii.tolist())
+
+
+test_freeflyer()
