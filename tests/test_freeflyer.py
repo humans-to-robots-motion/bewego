@@ -31,15 +31,24 @@ import time
 # DATADIR = directory + "/../../pybullet_robots/data/"
 
 def test_freeflyer():
-    s1 = Segment(p1=[5.5, 0.5], p2=[0.5, 0.5])
-    s2 = Segment(p1=[0.5, 0.5], p2=[0.5, 5.5])
+    s1 = Segment(p1=[1, 1], p2=[1, 7])
+    s2 = Segment(p1=[1, 1], p2=[7, 1])
     nb_keypoints = 10
     radius = .7
     keypoints = create_keypoints(nb_keypoints, [s1, s2])
     # keypoints = [np.array([0, 0]), np.array([1, 1])]
     print(keypoints)
     radii = radius * np.ones(nb_keypoints)
-    freeflyer = create_freeflyer("ff_test_2d", keypoints, radii.tolist())
+    freeflyer1 = create_freeflyer("ff_test_2d", keypoints, radii.tolist())
+    freeflyer2 = create_freeflyer_from_segments(nb_keypoints=nb_keypoints)
+    configurations = np.random.random((1, 3))
+    for q in configurations:
+        for i in range(nb_keypoints):
+            x1 = freeflyer1.keypoint_map(i)(q)
+            print("{} -> {}".format(q, x1))
+            x2 = freeflyer2.keypoint_map(i)(q)
+            print("{} -> {}".format(q, x2))
+            assert_allclose(x1, x2)
 
 
 test_freeflyer()
