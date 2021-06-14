@@ -22,7 +22,7 @@ import pybullet_utils.bullet_client as bc
 import pybullet
 from kinematics import *
 import numpy as np
-from pybewego import Robot
+from pybewego import KinematicChain
 import os
 
 

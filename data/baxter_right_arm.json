@@ -4,14 +4,14 @@
 
     "keypoints":
         {
-            "p1":  [0, 0],
-            "p2":  [0, 1],
-            "p3":  [0, 8],
-            "p4":  [1, 8],
-            "p5":  [1, 1],
-            "p6":  [8, 1],
-            "p7":  [1, 0],
-            "p8":  [8, 0]
+        "right_upper_elbow": 0.12,
+        "right_lower_elbow": 0.12,
+        "right_upper_forearm":0.10,
+        "right_lower_forearm":0.10,
+        "right_wrist":0.07,
+        "right_gripper_base":0.07,
+        "right_gripper":0.03,
+        "right_gripper_base_midpoint": 0.03
         },
 
     "base_joint_id": 11,

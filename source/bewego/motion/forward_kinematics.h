@@ -147,13 +147,40 @@ class RigidBody {
   Eigen::Vector3d joint_axis_in_base_;
 };
 
-/*!\brief Represents a chain of rigid bodies
+/**
+ * !\brief Represents the info necessary to represent
+ * a rigid body. This can be filled form python, loaded
+ * by parsing a URDF file or something else.
  */
-class Robot {
+struct RigidBodyInfo {
+  std::string name;
+  std::string joint_name;
+  uint32_t joint_type;
+  double dof_lower_limit;
+  double dof_upper_limit;
+  Eigen::Matrix4d local_in_prev;
+  Eigen::Vector3d joint_axis_in_local;
+};
+
+/**
+ * !\brief Represents a chain of rigid bodies
+ */
+class KinematicChain {
  public:
-  Robot() {
+  KinematicChain() {
     base_ = Eigen::Affine3d::Identity();
-    kinematic_chain_.clear();
+    rigid_bodies_.clear();
+  }
+
+  void AddRigidBodyFromInfo(const RigidBodyInfo& info) {
+    AddRigidBody(info.name,                // name of the RB
+                 info.joint_name,          // name of the joint
+                 info.joint_type,          // ROT : 0, TRANS : 1, FIXED = 4
+                 info.dof_lower_limit,     // DoF upper limit
+                 info.dof_upper_limit,     // DoF lower limit
+                 info.local_in_prev,       // Transform from prev
+                 info.joint_axis_in_local  // joint axis
+    );
   }
 
   void AddRigidBody(const std::string& name, const std::string& joint_name,
@@ -164,9 +191,9 @@ class Robot {
     Eigen::Affine3d t;
     t.matrix() = local_in_prev;
 
-    kinematic_chain_.push_back(RigidBody(name, joint_name, joint_type,
-                                         dof_lower_limit, dof_upper_limit, t,
-                                         joint_axis_in_local));
+    rigid_bodies_.push_back(RigidBody(name, joint_name, joint_type,
+                                      dof_lower_limit, dof_upper_limit, t,
+                                      joint_axis_in_local));
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
@@ -175,16 +202,16 @@ class Robot {
   }
 
   void SetConfiguration(const Eigen::VectorXd& q) {
-    for (uint32_t i = 0; i < kinematic_chain_.size(); i++) {
-      kinematic_chain_[i].SetDoF(q[i]);
+    for (uint32_t i = 0; i < rigid_bodies_.size(); i++) {
+      rigid_bodies_[i].SetDoF(q[i]);
     }
   }
 
   void ForwardKinematics() {
-    kinematic_chain_[0].Propagate(base_);
-    for (uint32_t i = 1; i < kinematic_chain_.size(); i++) {
-      auto& child = kinematic_chain_[i];
-      auto& parent = kinematic_chain_[i - 1];
+    rigid_bodies_[0].Propagate(base_);
+    for (uint32_t i = 1; i < rigid_bodies_.size(); i++) {
+      auto& child = rigid_bodies_[i];
+      auto& parent = rigid_bodies_[i - 1];
       child.Propagate(parent.frame_in_base());
     }
   }
@@ -203,21 +230,21 @@ class Robot {
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Vector3d get_position(uint32_t idx) const {
-    return kinematic_chain_[idx].frame_in_base().translation();
+    return rigid_bodies_[idx].frame_in_base().translation();
   }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Matrix3d get_rotation(uint32_t idx) const {
-    return kinematic_chain_[idx].frame_in_base().linear();
+    return rigid_bodies_[idx].frame_in_base().linear();
   }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Matrix4d get_transform(uint32_t idx) const {
-    return kinematic_chain_[idx].frame_in_base().matrix();
+    return rigid_bodies_[idx].frame_in_base().matrix();
   }
 
  protected:
-  std::vector<RigidBody> kinematic_chain_;
+  std::vector<RigidBody> rigid_bodies_;
   Eigen::Affine3d base_;
 };
 
