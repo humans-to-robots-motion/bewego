@@ -141,14 +141,14 @@ PYBIND11_MODULE(_pybewego, m) {
   py::class_<bewego::KinematicChain>(m, "KinematicChain")
       .def(py::init<>())
       .def("add_rigid_body", &bewego::KinematicChain::AddRigidBody)
+      .def("set_base_transform", &bewego::KinematicChain::set_base_transform)
       .def("set_and_update", &bewego::KinematicChain::SetAndUpdate)
-      .def("get_position", &bewego::KinematicChain::get_position)
-      .def("get_rotation", &bewego::KinematicChain::get_rotation)
-      .def("get_transform", &bewego::KinematicChain::get_transform)
-      .def("get_jacobian", &bewego::KinematicChain::JacobianPosition)
-      .def("get_jacobian_axis", &bewego::KinematicChain::JacobianAxis)
-      .def("get_jacobian_frame", &bewego::KinematicChain::JacobianFrame)
-      .def("set_base_transform", &bewego::KinematicChain::set_base_transform);
+      .def("position", &bewego::KinematicChain::get_position)
+      .def("rotation", &bewego::KinematicChain::get_rotation)
+      .def("transform", &bewego::KinematicChain::get_transform)
+      .def("jacobian_pos", &bewego::KinematicChain::JacobianPosition)
+      .def("jacobian_axis", &bewego::KinematicChain::JacobianAxis)
+      .def("jacobian_frame", &bewego::KinematicChain::JacobianFrame);
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")
       .def(py::init<>())

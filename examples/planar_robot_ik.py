@@ -74,8 +74,8 @@ for i, y_goal in enumerate(positions):
     q = robot.sample_config()[dofs]
     robot.set_and_update(q, dofs)
 
-    q = robot.get_configuration()[dofs]
-    y_0 = robot.get_position(eff_idx)[0:2]
+    q = robot.configuration()[dofs]
+    y_0 = robot.position(eff_idx)[0:2]
 
     T = 100  # interpolation
     dist = 1
@@ -85,8 +85,8 @@ for i, y_goal in enumerate(positions):
         # get forward kinematics and jacobian
         robot.set_and_update(q, dofs)
 
-        y = robot.get_position(eff_idx)[0:2]
-        J = robot.get_jacobian(eff_idx)[0:2, 6:9]
+        y = robot.position(eff_idx)[0:2]
+        J = robot.jacobian(eff_idx)[0:2, 6:9]
 
         dist = np.linalg.norm(y - y_goal)
 

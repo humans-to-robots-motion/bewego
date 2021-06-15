@@ -36,8 +36,17 @@ using std::endl;
 //-----------------------------------------------------------------------------
 
 // TODO.
-Eigen::VectorXd KinematicMap::Forward() const { return y_; }
-Eigen::MatrixXd KinematicMap::Jacobian() const { return J_; }
+Eigen::VectorXd KinematicMap::Forward(const Eigen::VectorXd& q) const {
+  if (q != q_) {
+    kinematic_chain_->SetAndUpdate(q);
+    q_ = q;
+  }
+  return y_;
+}
+
+Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
+  return J_;
+}
 
 //-----------------------------------------------------------------------------
 // Robot implementation.

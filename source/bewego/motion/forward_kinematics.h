@@ -206,6 +206,9 @@ class KinematicChain {
   }
 
   void SetConfiguration(const Eigen::VectorXd& q) {
+    if (active_dofs_.size() != q.size()) {
+      throw std::runtime_error("KinematicChain : input dimension missmatch");
+    }
     for (uint32_t i = 0; i < active_dofs_.size(); i++) {
       active_dofs_[i]->SetDoF(q[i]);
     }
@@ -227,6 +230,7 @@ class KinematicChain {
   Eigen::MatrixXd JacobianPosition(int link_index) const;
 
   // Assumes that Forward Kinematics has been called.
+  // { 0 : x axis,  1 : y axis,  2 : z axis }
   Eigen::MatrixXd JacobianAxis(int link_index, int axis_index) const;
 
   // Assumes that Forward Kinematics has been called.
@@ -238,14 +242,30 @@ class KinematicChain {
   }
 
   // Assumes that Forward Kinematics has been called.
+  // { 0 : x axis,  1 : y axis,  2 : z axis }
+  Eigen::Vector3d get_axis(uint32_t idx, uint32_t axis_index) const {
+    return rigid_bodies_[idx]->frame_in_base().linear().col(axis_index);
+  }
+
+  // Assumes that Forward Kinematics has been called.
   Eigen::Matrix3d get_rotation(uint32_t idx) const {
     return rigid_bodies_[idx]->frame_in_base().linear();
   }
 
   // Assumes that Forward Kinematics has been called.
-  Eigen::Matrix4d get_transform(uint32_t idx) const {
+  const Eigen::Matrix4d& get_transform(uint32_t idx) const {
     return rigid_bodies_[idx]->frame_in_base().matrix();
   }
+
+  /**
+   * Returns a part of the frame
+   * Assumes that Forward Kinematics has been called.
+   * id_part = 0 : position
+   * id_part = 1 : x axis
+   * id_part = 2 : y axis
+   * id_part = 3 : z axis
+   */
+  Eigen::Vector3d get_frame_part(uint32_t idx, uint32_t id_part) const;
 
   // Returns the number of active dofs in the chain
   uint32_t nb_active_dofs() const { return active_dofs_.size(); }

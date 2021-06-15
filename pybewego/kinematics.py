@@ -240,11 +240,11 @@ class ForwardKinematics(DifferentiableMap):
 
     def get_jacobian(self):
         if self._output == "position":
-            J = self._robot.get_jacobian(self._eef_id)
+            J = self._robot.jacobian_pos(self._eef_id)
         elif self._output == "axis":
-            J = self._robot.get_jacobian_axis(self._eef_id, self._axis)
+            J = self._robot.jacobian_axis(self._eef_id, self._axis)
         elif self._output == "frame":
-            J = self._robot.get_jacobian_frame(self._eef_id)
+            J = self._robot.jacobian_frame(self._eef_id)
 
         if self._subset is None:
             return J
@@ -253,12 +253,12 @@ class ForwardKinematics(DifferentiableMap):
     def forward(self, q):
         self.set_and_update(q)
         if self._output == "position":
-            return self._robot.get_position(self._eef_id)
+            return self._robot.position(self._eef_id)
         elif self._output == "axis":
-            t = self._robot.get_transform(self._eef_id)
+            t = self._robot.transform(self._eef_id)
             return t[:3, self._axis]
         elif self._output == "frame":
-            t = self._robot.get_transform(self._eef_id)
+            t = self._robot.transform(self._eef_id)
             return np.hstack([t[:3, 3], t[:3, 0], t[:3, 1], t[:3, 2]])
 
     def jacobian(self, q):

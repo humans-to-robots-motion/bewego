@@ -37,8 +37,8 @@ class KinematicMap : public DifferentiableMap {
 
   const std::string& name() const { return name_; }
 
-  Eigen::VectorXd Forward() const;
-  Eigen::MatrixXd Jacobian() const;
+  Eigen::VectorXd Forward(const Eigen::VectorXd& q) const;
+  Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const;
 
   uint32_t input_dimension() const {
     return kinematic_chain_->nb_active_dofs();
@@ -48,6 +48,7 @@ class KinematicMap : public DifferentiableMap {
  protected:
   std::string name_;
   std::shared_ptr<KinematicChain> kinematic_chain_;
+  mutable Eigen::VectorXd q_;
 };
 
 /**

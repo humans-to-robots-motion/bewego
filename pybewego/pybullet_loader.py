@@ -20,8 +20,8 @@
 
 import pybullet_utils.bullet_client as bc
 import pybullet
-from kinematics import *
 import numpy as np
+from pybewego.kinematics import *
 from pybewego import KinematicChain
 import os
 
@@ -105,7 +105,7 @@ class PybulletRobot:
 
     def create_robot(self):
         """ Creates a Bewego robot kinematics object """
-        robot = Robot()
+        robot = KinematicChain()
         for body in self.rigid_bodies:
             robot.add_rigid_body(
                 body.name,
@@ -144,11 +144,11 @@ class PybulletRobot:
         q = np.asarray(q).reshape(len(joint_ids), 1)
         self._p.resetJointStatesMultiDof(self._robot_id, joint_ids, q)
 
-    def get_configuration(self):
+    def configuration(self):
         return np.asarray([i[0] for i in self._p.getJointStates(
             self._robot_id, range(self._njoints))])
 
-    def get_transform(self, idx):
+    def transform(self, idx):
         """
         Returns the tranformation matrix of link origin in world coordinates
 
@@ -166,7 +166,7 @@ class PybulletRobot:
         state = self._p.getLinkState(self._robot_id, idx)
         return transform(state[4], state[5])
 
-    def get_rotation(self, idx):
+    def rotation(self, idx):
         """
         Returns the rotation matrix of link origin in world coordinates
 
@@ -192,16 +192,16 @@ class PybulletRobot:
         R_com_l = np.reshape(np.array(R_com_l), (3, 3))
         return R_com_w @ R_com_l.T
 
-    def get_position(self, idx):
+    def position(self, idx):
         """
         Returns the position of link origin in world coordinates
 
         @param idx joint id
         @return 3d numpy array
         """
-        return self.get_transform(idx)[:3, 3].T
+        return self.transform(idx)[:3, 3].T
 
-    def get_jacobian(self, idx):
+    def jacobian_pos(self, idx):
         com = [0., 0., 0.]
         q, dq, tau = self.get_motor_joint_states()
         jac = self._p.calculateJacobian(self._robot_id, idx, com, q, dq, tau)
