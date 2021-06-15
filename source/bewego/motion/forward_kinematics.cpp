@@ -65,10 +65,10 @@ RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
 
 Eigen::MatrixXd KinematicChain::JacobianPosition(int link_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, rigid_bodies_.size());
-  auto x = rigid_bodies_[link_index].joint_origin_in_base();
+  auto x = rigid_bodies_[link_index]->joint_origin_in_base();
   for (int j = 0; j < J.cols(); j++) {
-    const auto& joint_origin = rigid_bodies_[j].joint_origin_in_base();
-    const auto& joint_axis = rigid_bodies_[j].joint_axis_in_base();
+    const auto& joint_origin = rigid_bodies_[j]->joint_origin_in_base();
+    const auto& joint_axis = rigid_bodies_[j]->joint_axis_in_base();
     J.col(j) = joint_axis.cross(x - joint_origin);
     if (link_index == j) break;
   }
@@ -79,10 +79,10 @@ Eigen::MatrixXd KinematicChain::JacobianAxis(int link_index,
                                              int axis_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, rigid_bodies_.size());
   const Eigen::Vector3d& link_axis =
-      rigid_bodies_[link_index].frame_in_base().linear().col(axis_index);
+      rigid_bodies_[link_index]->frame_in_base().linear().col(axis_index);
   for (int j = 0; j < J.cols(); j++) {
-    const auto& joint_origin = rigid_bodies_[j].joint_origin_in_base();
-    const auto& joint_axis = rigid_bodies_[j].joint_axis_in_base();
+    const auto& joint_origin = rigid_bodies_[j]->joint_origin_in_base();
+    const auto& joint_axis = rigid_bodies_[j]->joint_axis_in_base();
     J.col(j) = joint_axis.cross(link_axis);
     if (link_index == j) break;
   }
@@ -92,12 +92,12 @@ Eigen::MatrixXd KinematicChain::JacobianAxis(int link_index,
 
 Eigen::MatrixXd KinematicChain::JacobianFrame(int link_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3 * 4, rigid_bodies_.size());
-  auto x = rigid_bodies_[link_index].joint_origin_in_base();
+  auto x = rigid_bodies_[link_index]->joint_origin_in_base();
   const auto& link_rotation_in_base =
-      rigid_bodies_[link_index].frame_in_base().linear();
+      rigid_bodies_[link_index]->frame_in_base().linear();
   for (int j = 0; j < J.cols(); j++) {
-    const auto& joint_origin = rigid_bodies_[j].joint_origin_in_base();
-    const auto& joint_axis = rigid_bodies_[j].joint_axis_in_base();
+    const auto& joint_origin = rigid_bodies_[j]->joint_origin_in_base();
+    const auto& joint_axis = rigid_bodies_[j]->joint_axis_in_base();
 
     // Jacobian of Position
     J.col(j).head(3) = joint_axis.cross(x - joint_origin);

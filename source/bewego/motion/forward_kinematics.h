@@ -191,9 +191,13 @@ class KinematicChain {
     Eigen::Affine3d t;
     t.matrix() = local_in_prev;
 
-    rigid_bodies_.push_back(RigidBody(name, joint_name, joint_type,
-                                      dof_lower_limit, dof_upper_limit, t,
-                                      joint_axis_in_local));
+    rigid_bodies_.push_back(std::make_shared<RigidBody>(
+        name, joint_name, joint_type, dof_lower_limit, dof_upper_limit, t,
+        joint_axis_in_local));
+
+    if (joint_type != RigidBody::JointType::FIXED) {
+      active_dofs_.push_back(rigid_bodies_.back());
+    }
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
@@ -202,22 +206,22 @@ class KinematicChain {
   }
 
   void SetConfiguration(const Eigen::VectorXd& q) {
-    for (uint32_t i = 0; i < rigid_bodies_.size(); i++) {
-      rigid_bodies_[i].SetDoF(q[i]);
-    }
-  }
-
-  void ForwardKinematics() {
-    rigid_bodies_[0].Propagate(base_);
-    for (uint32_t i = 1; i < rigid_bodies_.size(); i++) {
-      auto& child = rigid_bodies_[i];
-      auto& parent = rigid_bodies_[i - 1];
-      child.Propagate(parent.frame_in_base());
+    for (uint32_t i = 0; i < active_dofs_.size(); i++) {
+      active_dofs_[i]->SetDoF(q[i]);
     }
   }
 
   // Sets the transform from base
   void set_base_transform(const Eigen::Matrix4d& t) { base_.matrix() = t; }
+
+  void ForwardKinematics() {
+    rigid_bodies_[0]->Propagate(base_);
+    for (uint32_t i = 1; i < rigid_bodies_.size(); i++) {
+      auto& child = rigid_bodies_[i];
+      auto& parent = rigid_bodies_[i - 1];
+      child->Propagate(parent->frame_in_base());
+    }
+  }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::MatrixXd JacobianPosition(int link_index) const;
@@ -230,21 +234,25 @@ class KinematicChain {
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Vector3d get_position(uint32_t idx) const {
-    return rigid_bodies_[idx].frame_in_base().translation();
+    return rigid_bodies_[idx]->frame_in_base().translation();
   }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Matrix3d get_rotation(uint32_t idx) const {
-    return rigid_bodies_[idx].frame_in_base().linear();
+    return rigid_bodies_[idx]->frame_in_base().linear();
   }
 
   // Assumes that Forward Kinematics has been called.
   Eigen::Matrix4d get_transform(uint32_t idx) const {
-    return rigid_bodies_[idx].frame_in_base().matrix();
+    return rigid_bodies_[idx]->frame_in_base().matrix();
   }
 
+  // Returns the number of active dofs in the chain
+  uint32_t nb_active_dofs() const { return active_dofs_.size(); }
+
  protected:
-  std::vector<RigidBody> rigid_bodies_;
+  std::vector<std::shared_ptr<RigidBody>> rigid_bodies_;
+  std::vector<std::shared_ptr<RigidBody>> active_dofs_;
   Eigen::Affine3d base_;
 };
 

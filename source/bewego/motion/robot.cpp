@@ -22,4 +22,32 @@
  *
  *                                               Jim Mainprice Mon 14 June 2021
  */
+
 #include <bewego/motion/robot.h>
+
+using namespace bewego;
+// using namespace bewego::util;
+using std::cerr;
+using std::cout;
+using std::endl;
+
+//-----------------------------------------------------------------------------
+// KinematicMap implementation.
+//-----------------------------------------------------------------------------
+
+// TODO.
+Eigen::VectorXd KinematicMap::Forward() const { return y_; }
+Eigen::MatrixXd KinematicMap::Jacobian() const { return J_; }
+
+//-----------------------------------------------------------------------------
+// Robot implementation.
+//-----------------------------------------------------------------------------
+
+Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
+             const std::vector<std::pair<std::string, double>>& keypoints)
+    : kinematic_chain_(std::make_shared<KinematicChain>()),
+      keypoints_(keypoints) {
+  for (const auto& body : bodies) {
+    kinematic_chain_->AddRigidBodyFromInfo(body);
+  }
+}

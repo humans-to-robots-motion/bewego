@@ -23,7 +23,7 @@
  *                                              Jim Mainprice Mon 14 June 2021
  */
 
-// Free Flyer Optimizer
+// Robot Optimizer
 #include <bewego/derivatives/combination_operators.h>
 #include <bewego/geodesic_flow/attractors.h>
 #include <bewego/motion/differentiable_kinematics.h>
