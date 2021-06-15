@@ -35,8 +35,11 @@ def failing_test_freeflyer():
 
     TODO: FIX THAT it sometimes fail (depending on the seed)
 
+        - seed 0 works
+        - seed 1 fails
+
     """
-    np.random.seed(1)
+    np.random.seed(1) 
     s1 = Segment(p1=[1, 1], p2=[1, 7])
     s2 = Segment(p1=[1, 1], p2=[7, 1])
     nb_keypoints = 10
