@@ -112,15 +112,14 @@ Eigen::MatrixXd KinematicChain::JacobianFrame(int link_index) const {
   return J;
 }
 
-Eigen::Vector3d KinematicChain::get_frame_part(uint32_t idx,
-                                               uint32_t id_part) const {
+void KinematicChain::CheckConsistentQuerry(uint32_t idx,
+                                           uint32_t id_part) const {
   if (id_part > 3) {
     throw std::runtime_error("KinematicChain : frame part id missmatch");
   }
   if (idx >= rigid_bodies_.size()) {
     throw std::runtime_error("KinematicChain : id DoF missmatch");
   }
-  return id_part == 0 ? get_position(idx) : get_axis(idx, id_part - 1);
 }
 
 }  // namespace bewego

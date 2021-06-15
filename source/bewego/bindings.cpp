@@ -143,9 +143,9 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("add_rigid_body", &bewego::KinematicChain::AddRigidBody)
       .def("set_base_transform", &bewego::KinematicChain::set_base_transform)
       .def("set_and_update", &bewego::KinematicChain::SetAndUpdate)
-      .def("position", &bewego::KinematicChain::get_position)
-      .def("rotation", &bewego::KinematicChain::get_rotation)
-      .def("transform", &bewego::KinematicChain::get_transform)
+      .def("position", &bewego::KinematicChain::position)
+      .def("rotation", &bewego::KinematicChain::rotation)
+      .def("transform", &bewego::KinematicChain::transform)
       .def("jacobian_pos", &bewego::KinematicChain::JacobianPosition)
       .def("jacobian_axis", &bewego::KinematicChain::JacobianAxis)
       .def("jacobian_frame", &bewego::KinematicChain::JacobianFrame);

@@ -35,17 +35,20 @@ using std::endl;
 // KinematicMap implementation.
 //-----------------------------------------------------------------------------
 
-// TODO.
 Eigen::VectorXd KinematicMap::Forward(const Eigen::VectorXd& q) const {
   if (q != q_) {
     kinematic_chain_->SetAndUpdate(q);
     q_ = q;
   }
-  return y_;
+  return kinematic_chain_->frame_part(id_dof_, id_frame_part_);
 }
 
 Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
-  return J_;
+  if (q != q_) {
+    kinematic_chain_->SetAndUpdate(q);
+    q_ = q;
+  }
+  return kinematic_chain_->JacobianFramePart(id_dof_, id_frame_part_);
 }
 
 //-----------------------------------------------------------------------------

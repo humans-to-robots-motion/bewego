@@ -80,13 +80,15 @@ for i, y_goal in enumerate(positions):
     T = 100  # interpolation
     dist = 1
 
-    while dist > .10:
+    dq = q
+    
+    while dist > .10 and np.linalg.norm(dq) > 1e-3:
 
         # get forward kinematics and jacobian
         robot.set_and_update(q, dofs)
 
         y = robot.position(eff_idx)[0:2]
-        J = robot.jacobian(eff_idx)[0:2, 6:9]
+        J = robot.jacobian_pos(eff_idx)[0:2, 6:9]
 
         dist = np.linalg.norm(y - y_goal)
 
@@ -99,7 +101,8 @@ for i, y_goal in enumerate(positions):
         # print("J_inv : \n",J_inv)
         # print("J_inv_2 : \n",J_inv_2)
 
-        q = q - eta * J_inv @ (y - y_goal) / dist
+        dq = eta * J_inv @ (y - y_goal) / dist
+        q = q - dq
         # q = q + J.T @ (y_i - y)
 
         # create_sphere(y.tolist(), .05)

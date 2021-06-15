@@ -47,6 +47,8 @@ class KinematicMap : public DifferentiableMap {
 
  protected:
   std::string name_;
+  uint32_t id_dof_;
+  uint32_t id_frame_part_;
   std::shared_ptr<KinematicChain> kinematic_chain_;
   mutable Eigen::VectorXd q_;
 };

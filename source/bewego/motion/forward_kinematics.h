@@ -237,24 +237,41 @@ class KinematicChain {
   Eigen::MatrixXd JacobianFrame(int link_index) const;
 
   // Assumes that Forward Kinematics has been called.
-  Eigen::Vector3d get_position(uint32_t idx) const {
+  Eigen::Vector3d position(uint32_t idx) const {
     return rigid_bodies_[idx]->frame_in_base().translation();
   }
 
   // Assumes that Forward Kinematics has been called.
   // { 0 : x axis,  1 : y axis,  2 : z axis }
-  Eigen::Vector3d get_axis(uint32_t idx, uint32_t axis_index) const {
+  Eigen::Vector3d axis(uint32_t idx, uint32_t axis_index) const {
     return rigid_bodies_[idx]->frame_in_base().linear().col(axis_index);
   }
 
   // Assumes that Forward Kinematics has been called.
-  Eigen::Matrix3d get_rotation(uint32_t idx) const {
+  Eigen::Matrix3d rotation(uint32_t idx) const {
     return rigid_bodies_[idx]->frame_in_base().linear();
   }
 
   // Assumes that Forward Kinematics has been called.
-  const Eigen::Matrix4d& get_transform(uint32_t idx) const {
+  const Eigen::Matrix4d& transform(uint32_t idx) const {
     return rigid_bodies_[idx]->frame_in_base().matrix();
+  }
+
+  // Throws an exception if it is not consistent
+  void CheckConsistentQuerry(uint32_t idx, uint32_t id_part) const;
+
+  /**
+   * Returns the jacobian of part of a frame
+   * Assumes that Forward Kinematics has been called.
+   * id_part = 0 : position
+   * id_part = 1 : x axis
+   * id_part = 2 : y axis
+   * id_part = 3 : z axis
+   */
+  Eigen::MatrixXd JacobianFramePart(uint32_t idx, uint32_t id_part) const {
+    CheckConsistentQuerry(idx, id_part);
+    return id_part == 0 ? JacobianPosition(idx)
+                        : JacobianAxis(idx, id_part - 1);
   }
 
   /**
@@ -265,7 +282,10 @@ class KinematicChain {
    * id_part = 2 : y axis
    * id_part = 3 : z axis
    */
-  Eigen::Vector3d get_frame_part(uint32_t idx, uint32_t id_part) const;
+  Eigen::Vector3d frame_part(uint32_t idx, uint32_t id_part) const {
+    CheckConsistentQuerry(idx, id_part);
+    return id_part == 0 ? position(idx) : axis(idx, id_part - 1);
+  }
 
   // Returns the number of active dofs in the chain
   uint32_t nb_active_dofs() const { return active_dofs_.size(); }

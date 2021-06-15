@@ -85,8 +85,8 @@ class RigidBody:
         out += " - type : " + str(self.type) + '\n'
         out += " - limit (l) : " + str(self.joint_bounds.low) + '\n'
         out += " - limit (h) : " + str(self.joint_bounds.high) + '\n'
-        out += " - axis : " + str(self.joint_axis_in_local) + '\n'
         out += " - local_in_prev : " + '\n' + str(self.local_in_prev) + '\n'
+        out += " - axis : " + str(self.joint_axis_in_local) + '\n'
         return out
 
 
@@ -148,10 +148,14 @@ class Kinematics:
             if self.links[l]["parents"] == []:
                 self.baselink = l
 
-    def create_robot(self, joints):
+    def print_kinematics_info(self):
+        for idx, name in enumerate(self.joints):
+            print("body ({}) ->\n{}".format(idx, self.joints[name]))
+
+    def create_robot(self, active_bodies):
         kinematic_chain = KinematicChain()
-        for j in joints:
-            body = self.joints[j]
+        for name in active_bodies:
+            body = self.joints[name]
             kinematic_chain.add_rigid_body(
                 body.name,
                 body.joint_name,

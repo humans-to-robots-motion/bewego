@@ -37,6 +37,11 @@ def test_import_planar():
     PybulletRobot("../data/r2_robot.urdf")
 
 
+def test_import_planar():
+    kinematics = Kinematics("../data/r3_robot.urdf")
+    kinematics.print_kinematics_info()
+
+
 def test_geometry():
     robot = PybulletRobot("../data/r2_robot.urdf")
     rpy = np.random.random(3)
@@ -233,12 +238,13 @@ def test_jacobian_baxter():
     assert_allclose(J1, J2, atol=1e-6)
 
 
-test_geometry()
-test_parser()
-test_pybullet_forward_kinematics()
-test_bewego_forward_kinematics()
-test_random_forward_kinematics()
-test_jacobian()
-test_forward_kinematics_baxter()
-test_differentiable_jacobian()
-test_jacobian_baxter()
+test_import_planar()
+# test_geometry()
+# test_parser()
+# test_pybullet_forward_kinematics()
+# test_bewego_forward_kinematics()
+# test_random_forward_kinematics()
+# test_jacobian()
+# test_forward_kinematics_baxter()
+# test_differentiable_jacobian()
+# test_jacobian_baxter()
