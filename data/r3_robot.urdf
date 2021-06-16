@@ -68,7 +68,6 @@
   <limit effort="15" lower="-3.15" upper="3.15" velocity="5"/>
 </joint>
 
-
 <joint name="link1_to_link2" type="revolute">
   <axis xyz="0 0 1"/>
   <parent link="link1"/>

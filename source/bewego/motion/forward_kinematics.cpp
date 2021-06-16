@@ -24,6 +24,7 @@
  */
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/motion/forward_kinematics.h>
+#include <bewego/motion/hardcoded_robots.h>
 
 using std::cout;
 using std::endl;

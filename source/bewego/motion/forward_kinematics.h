@@ -152,7 +152,10 @@ class RigidBody {
  * a rigid body. This can be filled form python, loaded
  * by parsing a URDF file or something else.
  */
-struct RigidBodyInfo {
+class RigidBodyInfo {
+ public:
+  RigidBodyInfo() {}
+  RigidBodyInfo(const RigidBodyInfo& m) { *this = m; }
   std::string name;
   std::string joint_name;
   uint32_t joint_type;
@@ -168,8 +171,17 @@ struct RigidBodyInfo {
 class KinematicChain {
  public:
   KinematicChain() {
-    base_ = Eigen::Affine3d::Identity();
+    base_ = Eigen::Isometry3d::Identity();
     rigid_bodies_.clear();
+  }
+
+  KinematicChain(const std::vector<RigidBodyInfo>& rigid_bodies_info,
+                 const Eigen::Isometry3d& base = Eigen::Isometry3d::Identity())
+      : base_(base) {
+    rigid_bodies_.clear();
+    for (const auto& info : rigid_bodies_info) {
+      AddRigidBodyFromInfo(info);
+    }
   }
 
   void AddRigidBodyFromInfo(const RigidBodyInfo& info) {
@@ -293,7 +305,7 @@ class KinematicChain {
  protected:
   std::vector<std::shared_ptr<RigidBody>> rigid_bodies_;
   std::vector<std::shared_ptr<RigidBody>> active_dofs_;
-  Eigen::Affine3d base_;
+  Eigen::Isometry3d base_;
 };
 
 }  // namespace bewego
