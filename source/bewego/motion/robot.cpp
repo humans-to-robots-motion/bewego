@@ -55,6 +55,10 @@ Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
 // Robot implementation.
 //-----------------------------------------------------------------------------
 
+Robot::Robot(std::shared_ptr<KinematicChain> kinematic_chain,
+             const std::vector<std::pair<std::string, double>>& keypoints)
+    : kinematic_chain_(kinematic_chain), keypoints_(keypoints) {}
+
 Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
              const std::vector<std::pair<std::string, double>>& keypoints)
     : kinematic_chain_(std::make_shared<KinematicChain>()),

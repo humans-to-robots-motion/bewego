@@ -33,6 +33,7 @@ namespace bewego {
  * !\brief Differentiable wrapper around kinematic chain
  */
 class KinematicMap : public DifferentiableMap {
+ public:
   KinematicMap() { PreAllocate(); }
 
   const std::string& name() const { return name_; }
@@ -57,6 +58,10 @@ class KinematicMap : public DifferentiableMap {
  * !\brief TODO Add TaskMaps (keypoints) here.
  */
 class Robot {
+ public:
+  Robot(std::shared_ptr<KinematicChain> kinematic_chain,
+        const std::vector<std::pair<std::string, double>>& keypoints);
+
   Robot(const std::vector<RigidBodyInfo>& bodies,
         const std::vector<std::pair<std::string, double>>& keypoints);
 

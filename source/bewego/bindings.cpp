@@ -27,6 +27,7 @@
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/motion/forward_kinematics.h>
 #include <bewego/motion/freeflyers.h>
+#include <bewego/motion/hardcoded_robots.h>
 #include <bewego/motion/objective.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/planning/planar_grid.h>
@@ -138,7 +139,13 @@ PYBIND11_MODULE(_pybewego, m) {
         Returns a Freeflyer
     )pbdoc");
 
-  py::class_<bewego::KinematicChain>(m, "KinematicChain")
+  m.def("create_planar_robot", &bewego::CreateThreeDofPlanarManipulator,
+        R"pbdoc(
+        Returns a Planar robot
+    )pbdoc");
+
+  py::class_<bewego::KinematicChain, std::shared_ptr<bewego::KinematicChain>>(
+      m, "KinematicChain")
       .def(py::init<>())
       .def("add_rigid_body", &bewego::KinematicChain::AddRigidBody)
       .def("set_base_transform", &bewego::KinematicChain::set_base_transform)

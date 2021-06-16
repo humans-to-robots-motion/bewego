@@ -30,9 +30,9 @@
 namespace bewego {
 
 inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
-  std::vector<RigidBodyInfo> bodies(3);
+  std::vector<RigidBodyInfo> bodies(4);
 
-  // parent : base
+  // - parent : base
   bodies[0].name = "link1";
   bodies[0].joint_name = "base_to_link1";
   bodies[0].joint_type = 0;
@@ -44,7 +44,7 @@ inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
   bodies[0].local_in_prev.row(3) << 0., 0., 0., 1.;
   bodies[0].joint_axis_in_local << 0., 0., 1.;
 
-  // parent : link1
+  // - parent : link1
   bodies[1].name = "link2";
   bodies[1].joint_name = "link1_to_link2";
   bodies[1].joint_type = 0;
@@ -56,7 +56,7 @@ inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
   bodies[1].local_in_prev.row(3) << 0., 0., 0., 1.;
   bodies[1].joint_axis_in_local << 0., 0., 1.;
 
-  // parent : link2
+  // - parent : link2
   bodies[2].name = "link3";
   bodies[2].joint_name = "link2_to_link3";
   bodies[2].joint_type = 0;
@@ -68,7 +68,7 @@ inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
   bodies[2].local_in_prev.row(3) << 0., 0., 0., 1.;
   bodies[2].joint_axis_in_local << 0., 0., 1.;
 
-  // parent : link3
+  // - parent : link3
   bodies[3].name = "end";
   bodies[3].joint_name = "link3_to_end";
   bodies[3].joint_type = 0;

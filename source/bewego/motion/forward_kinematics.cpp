@@ -64,6 +64,8 @@ RigidBody::RigidBody(const std::string& name, const std::string& joint_name,
 // KinematicChain function implementation.
 //-----------------------------------------------------------------------------
 
+KinematicChain::~KinematicChain() {}
+
 Eigen::MatrixXd KinematicChain::JacobianPosition(int link_index) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, rigid_bodies_.size());
   auto x = rigid_bodies_[link_index]->joint_origin_in_base();

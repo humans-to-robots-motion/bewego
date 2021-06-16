@@ -150,7 +150,7 @@ class Kinematics:
 
     def print_kinematics_info(self):
         for idx, name in enumerate(self.joints):
-            print("body ({}) ->\n{}".format(idx, self.joints[name]))
+            print("body ({})({})->\n{}".format(idx, name, self.joints[name]))
 
     def create_robot(self, active_bodies):
         kinematic_chain = KinematicChain()

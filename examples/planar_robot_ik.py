@@ -60,7 +60,7 @@ dofs = [0, 1, 2]
 np.random.seed(0)
 positions = np.random.uniform(low=-3, high=3, size=(100, 2))
 
-eta = .03
+eta = .05
 
 for i, y_goal in enumerate(positions):
 
@@ -81,7 +81,7 @@ for i, y_goal in enumerate(positions):
     dist = 1
 
     dq = q
-    
+
     while dist > .10 and np.linalg.norm(dq) > 1e-3:
 
         # get forward kinematics and jacobian

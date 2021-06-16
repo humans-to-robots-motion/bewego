@@ -238,7 +238,30 @@ def test_jacobian_baxter():
     assert_allclose(J1, J2, atol=1e-6)
 
 
-test_import_planar()
+def test_planar_robot():
+
+    urdf = "../data/r3_robot.urdf"
+    kinematics = Kinematics(urdf)
+    # kinematics.print_kinematics_info()
+    r1 = kinematics.create_robot(["link1", "link2", "link3", "end"])
+    r2 = create_planar_robot()
+    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
+
+    for q in configurations:
+
+        r1.set_and_update(q)
+        x1 = r1.transform(3)
+        J1 = r1.jacobian_pos(3)
+
+        r2.set_and_update(q)
+        x2 = r2.transform(3)
+        J2 = r2.jacobian_pos(3)
+
+        assert_allclose(x1, x2, atol=1e-6)
+        assert_allclose(J1, J2, atol=1e-6)
+
+
+# test_import_planar()
 # test_geometry()
 # test_parser()
 # test_pybullet_forward_kinematics()
@@ -248,3 +271,4 @@ test_import_planar()
 # test_forward_kinematics_baxter()
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
+test_planar_robot()

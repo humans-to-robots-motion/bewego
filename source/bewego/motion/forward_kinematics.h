@@ -173,16 +173,20 @@ class KinematicChain {
   KinematicChain() {
     base_ = Eigen::Isometry3d::Identity();
     rigid_bodies_.clear();
+    active_dofs_.clear();
   }
 
   KinematicChain(const std::vector<RigidBodyInfo>& rigid_bodies_info,
                  const Eigen::Isometry3d& base = Eigen::Isometry3d::Identity())
       : base_(base) {
     rigid_bodies_.clear();
+    active_dofs_.clear();
     for (const auto& info : rigid_bodies_info) {
       AddRigidBodyFromInfo(info);
     }
   }
+
+  virtual ~KinematicChain();
 
   void AddRigidBodyFromInfo(const RigidBodyInfo& info) {
     AddRigidBody(info.name,                // name of the RB
@@ -219,7 +223,9 @@ class KinematicChain {
 
   void SetConfiguration(const Eigen::VectorXd& q) {
     if (active_dofs_.size() != q.size()) {
-      throw std::runtime_error("KinematicChain : input dimension missmatch");
+      throw std::runtime_error("KinematicChain : input dimension missmatch " +
+                               std::to_string(active_dofs_.size()) + ", " +
+                               std::to_string(q.size()));
     }
     for (uint32_t i = 0; i < active_dofs_.size(); i++) {
       active_dofs_[i]->SetDoF(q[i]);
