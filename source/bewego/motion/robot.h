@@ -64,7 +64,10 @@ class KinematicMap : public DifferentiableMap {
 using KinematicMapPtr = std::shared_ptr<const KinematicMap>;
 
 /**
- * !\brief TODO Add TaskMaps (keypoints) here.
+ * !\brief Robot
+ *                  has forward kinematics integrated
+ *                  we only represent the geometry with spheres
+ *                  at specific keypoints
  */
 class Robot {
  public:
@@ -79,26 +82,21 @@ class Robot {
     return task_maps_.at(name);
   }
 
-  // Get Collision Points
-  VectorOfCollisionPoints GetCollisionPoints() const;
-
   // returns the position task map of each keypoint
-  std::vector<KinematicMapPtr> keypoint_task_maps() const {
-    std::vector<KinematicMapPtr> task_maps(keypoints_.size());
-    for (uint32_t i = 0; i < keypoints_.size(); i++) {
-      task_maps[i] = task_map(keypoints_[i].first);
-    }
-    return task_maps;
+  KinematicMapPtr keypoint_map(uint32_t i) const {
+    return task_map(keypoints_[i].first);
   }
 
   // returns the keypoints radii
-  std::vector<double> keypoint_radii() const {
-    std::vector<double> radii(keypoints_.size());
-    for (uint32_t i = 0; i < keypoints_.size(); i++) {
-      radii[i] = keypoints_[i].second;
-    }
-    return radii;
+  double keypoint_radius(uint32_t i) const { return keypoints_[i].second; }
+
+  // returns the keypoints used to describe the geometry
+  const std::vector<std::pair<std::string, double>>& keypoints() const {
+    return keypoints_;
   }
+
+  // Get Collision Points
+  VectorOfCollisionPoints GetCollisionPoints() const;
 
  protected:
   virtual void CreateTaskMaps();

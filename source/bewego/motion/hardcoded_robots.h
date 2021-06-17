@@ -29,7 +29,8 @@
 
 namespace bewego {
 
-inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
+inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator(
+    bool last_fixed = false) {
   std::vector<RigidBodyInfo> bodies(4);
 
   // - parent : base
@@ -71,7 +72,7 @@ inline std::shared_ptr<KinematicChain> CreateThreeDofPlanarManipulator() {
   // - parent : link3
   bodies[3].name = "end";
   bodies[3].joint_name = "link3_to_end";
-  bodies[3].joint_type = 0;
+  bodies[3].joint_type = last_fixed ? 4 : 0;  // 4 = FIXED
   bodies[3].dof_lower_limit = -3.15;
   bodies[3].dof_upper_limit = 3.15;
   bodies[3].local_in_prev.row(0) << 1., 0., 0., 1.;

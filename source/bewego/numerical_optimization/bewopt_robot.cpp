@@ -62,9 +62,7 @@ RobotOptimizer::RobotOptimizer(
     )
     : TrajectoryOptimizer(T, dt, n),
       robot_(robot),
-      keypoints_task_maps_(robot->keypoints_task_maps()),
-      keypoints_radii_(robot->keypoints_radii()),
-      workspace_dim_(robot_->n()),
+      workspace_dim_(3),
       workspace_bounds_(workspace_bounds),
       end_effector_id_(0),
       attractor_type_("euclidean"),
@@ -84,7 +82,7 @@ RobotOptimizer::RobotOptimizer(
         std::to_string(workspace_dim_) + " )");
   }
 
-  uint32_t c_space_dim = keypoints_task_maps_.front()->input_dimension();
+  uint32_t c_space_dim = robot_->task_map(0)->input_dimension();
   if (c_space_dim != n) {
     throw std::runtime_error("RobotOptimizer : cspace dimension missmatch ( " +
                              std::to_string(c_space_dim) + " , " +
@@ -95,8 +93,10 @@ RobotOptimizer::RobotOptimizer(
   geodesic_flow_ = DifferentiableMapPtr();
 
   // Initialize smooth collision constraint
-  auto collision_checker = std::make_shared<FreeFlyerCollisionConstraints>(
-      robot_, workspace_->ExtractSurfaceFunctions());
+  auto collision_checker = std::make_shared<SmoothCollisionPointsConstraint>(
+      robot_->GetCollisionPoints(),          // Robot keypoints surfaces
+      workspace_->ExtractSurfaceFunctions()  // Workspace obstacles surfaces
+  );
   smooth_collision_constraint_ = collision_checker->smooth_constraint();
 }
 
@@ -120,9 +120,8 @@ DifferentiableMapPtr RobotOptimizer::GetDistanceActivation() const {
     sdfs.push_back(sdf - r);
   }
   auto stack = std::make_shared<CombinedOutputMap>(sdfs);
-  auto smooth_min =
-      std::make_shared<NegLogSumExp>(sdfs.size(), freeflyer_gamma_);
-  return LogisticActivation(ComposedWith(smooth_min, stack), freeflyer_k_);
+  auto smooth_min = std::make_shared<NegLogSumExp>(sdfs.size(), robot_gamma_);
+  return LogisticActivation(ComposedWith(smooth_min, stack), robot_k_);
 }
 
 void RobotOptimizer::AddGeodesicFlowTerm(double scalar) {

@@ -83,8 +83,8 @@ class Freeflyer {
   virtual VectorOfCollisionPoints GetCollisionPoints() const;
 
   // Get a Collision checker For that FreeFlyer
-  std::shared_ptr<const DifferentiableMap> ConstructCollisionChecker(
-      const VectorOfMaps& surface_functions, double margin = 0);
+  // std::shared_ptr<const DifferentiableMap> ConstructCollisionChecker(
+  //     const VectorOfMaps& surface_functions, double margin = 0);
 
  protected:
   virtual void CreateTaskMaps(

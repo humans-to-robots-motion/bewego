@@ -39,3 +39,27 @@ TEST_F(DifferentialMapTest, robot_task_map) {
   RunAllTests();
   EXPECT_TRUE(phi0->type() == "KinematicMap");
 }
+
+TEST_F(DifferentialMapTest, robot_task_map_fixed) {
+  std::srand(SEED);
+  verbose_ = false;
+  gradient_precision_ = 1e-6;
+
+  std::vector<std::pair<std::string, double>> keypoints;
+  keypoints.push_back(std::make_pair("link1", 0.1));
+  keypoints.push_back(std::make_pair("link2", 0.1));
+  keypoints.push_back(std::make_pair("link3", 0.1));
+  keypoints.push_back(std::make_pair("end", 0.1));
+
+  auto kinematic_chain = CreateThreeDofPlanarManipulator(true);
+  auto robot = std::make_shared<Robot>(kinematic_chain, keypoints);
+
+  for (uint32_t i = 0; i < robot->keypoints().size(); i++) {
+    auto phi = robot->keypoint_map(i);
+    ASSERT_TRUE(phi->input_dimension() == 3);
+    ASSERT_TRUE(phi->type() == "KinematicMap");
+    AddRandomTests(phi, NB_TESTS);
+  }
+
+  RunAllTests();
+}

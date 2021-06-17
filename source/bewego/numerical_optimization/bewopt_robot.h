@@ -33,13 +33,13 @@
 namespace bewego {
 namespace numerical_optimization {
 
-class RobotOptimzer : public TrajectoryOptimizer {
+class RobotOptimizer : public TrajectoryOptimizer {
  public:
-  RobotOptimzer(uint32_t n,  // dim c-space
-                uint32_t T,  // number of cliques
-                double dt,   // time between configs
-                const std::vector<double>& workspace_bounds,  // bounds
-                std::shared_ptr<const Robot> robot            // kinematics
+  RobotOptimizer(uint32_t n,  // dim c-space
+                 uint32_t T,  // number of cliques
+                 double dt,   // time between configs
+                 const std::vector<double>& workspace_bounds,  // bounds
+                 std::shared_ptr<const Robot> robot            // kinematics
   );
 
   /** @brief Adds a geodesic flow object to the optimizer */
@@ -79,8 +79,6 @@ class RobotOptimzer : public TrajectoryOptimizer {
 
   // Robot
   std::shared_ptr<const Robot> robot_;
-  std::vector<KinematicMapPtr> keypoints_task_maps_;
-  std::vector<double> keypoints_radii_;
 
   // Workspace
   uint32_t workspace_dim_;                // Dimensionality of the workspace
@@ -104,8 +102,8 @@ class RobotOptimzer : public TrajectoryOptimizer {
   Eigen::VectorXd q_default_;
 
   // Parameters
-  double freeflyer_gamma_;
-  double freeflyer_k_;
+  double robot_gamma_;
+  double robot_k_;
   bool clique_collision_constraints_;
 };
 
