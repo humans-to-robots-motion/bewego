@@ -29,6 +29,7 @@
 #include <bewego/motion/differentiable_kinematics.h>
 #include <bewego/numerical_optimization/bewopt_freeflyer.h>
 #include <bewego/numerical_optimization/ipopt_optimizer.h>
+#include <bewego/workspace/collision_checking.h>
 
 // Exernal includes
 #include <Eigen/Cholesky>
@@ -95,8 +96,10 @@ FreeflyerOptimzer::FreeflyerOptimzer(
   geodesic_flow_ = DifferentiableMapPtr();
 
   // Initialize smooth collision constraint
-  auto collision_checker = std::make_shared<FreeFlyerCollisionConstraints>(
-      robot_, workspace_->ExtractSurfaceFunctions());
+  auto collision_checker = std::make_shared<SmoothCollisionPointsConstraint>(
+      robot_->GetCollisionPoints(),          // Collision points
+      workspace_->ExtractSurfaceFunctions()  // Workspace SDF
+  );
   smooth_collision_constraint_ = collision_checker->smooth_constraint();
 }
 

@@ -25,6 +25,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 #include <bewego/motion/cost_terms.h>
 #include <bewego/motion/objective.h>
+#include <bewego/workspace/collision_checking.h>
 
 using std::cerr;
 using std::cout;
@@ -119,7 +120,7 @@ void MotionObjective::ReconstructWorkspace() {
   auto surfaces = workspace_->ExtractSurfaceFunctions();
   smooth_sdf_.clear();
   for (uint32_t t = 0; t < function_network_->nb_cliques(); t++) {
-    smooth_sdf_.push_back(std::make_shared<SmoothCollisionConstraints>(
+    smooth_sdf_.push_back(std::make_shared<SmoothCollisionConstraint>(
         surfaces, gamma_, obstacle_margin_));
   }
 }

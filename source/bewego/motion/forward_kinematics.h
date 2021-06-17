@@ -190,6 +190,7 @@ class KinematicChain {
     for (const auto& info : rigid_bodies_info) {
       AddRigidBodyFromInfo(info);
     }
+    q_ = Eigen::VectorXd::Zero(active_dofs_.size());
   }
 
   virtual ~KinematicChain();
@@ -220,11 +221,14 @@ class KinematicChain {
     if (joint_type != RigidBody::JointType::FIXED) {
       active_dofs_.push_back(rigid_bodies_.back());
     }
+
+    rigid_bodies_.back()->SetDoF(0);
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
     SetConfiguration(q);
     ForwardKinematics();
+    q_ = q;  // Now the configuration is updated
   }
 
   void SetConfiguration(const Eigen::VectorXd& q) {
@@ -329,10 +333,14 @@ class KinematicChain {
   // Returns the number of active dofs in the chain
   uint32_t nb_active_dofs() const { return active_dofs_.size(); }
 
+  // Returns the configuration of the kinematic chain
+  const Eigen::VectorXd& configuration() const { return q_; }
+
  protected:
   std::vector<std::shared_ptr<RigidBody>> rigid_bodies_;
   std::vector<std::shared_ptr<RigidBody>> active_dofs_;
   Eigen::Isometry3d base_;
+  Eigen::VectorXd q_;
 };
 
 }  // namespace bewego

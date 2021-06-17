@@ -45,14 +45,26 @@ TEST_F(DifferentialMapTest, freeflyer_task_map) {
   EXPECT_TRUE(phi2->type() == "HomogeneousTransform2d");
 }
 
-class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
+TEST_F(DifferentialMapTest, freeflyer_translation) {
+  std::srand(SEED);
+  auto phi1 = std::make_shared<FreeFlyerTranslation>(3);
+  auto phi2 = std::make_shared<FreeFlyerTranslation>(2);
+  AddRandomTests(phi1, NB_TESTS);
+  AddRandomTests(phi2, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi1->type() == "FreeFlyerTranslation");
+  ASSERT_TRUE(phi2->type() == "FreeFlyerTranslation");
+}
+
+class SmoothCollisionPointsConstraintTest : public DifferentialMapTest {
  public:
   virtual void SetUp() {
     // 2D workspace
     workspace_ = CreateTestCircleWorkspace();
     freeflyer_ = MakeFreeflyer2D();
-    collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
-        freeflyer_, workspace_->ExtractSurfaceFunctions());
+    collision_checker_ = std::make_shared<SmoothCollisionPointsConstraint>(
+        freeflyer_->GetCollisionPoints(),
+        workspace_->ExtractSurfaceFunctions());
     constraint_ = collision_checker_->smooth_constraint();
     for (uint32_t i = 0; i < 10; ++i) {
       Eigen::VectorXd x = util::Random(constraint_->input_dimension());
@@ -62,8 +74,9 @@ class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
     // 3D workspace
     workspace_ = CreateTestSphereWorkspace();
     freeflyer_ = MakeFreeflyer3D();
-    collision_checker_ = std::make_shared<FreeFlyerCollisionConstraints>(
-        freeflyer_, workspace_->ExtractSurfaceFunctions());
+    collision_checker_ = std::make_shared<SmoothCollisionPointsConstraint>(
+        freeflyer_->GetCollisionPoints(),
+        workspace_->ExtractSurfaceFunctions());
     constraint_ = collision_checker_->smooth_constraint();
     for (uint32_t i = 0; i < 10; ++i) {
       Eigen::VectorXd x = util::Random(constraint_->input_dimension());
@@ -74,25 +87,14 @@ class FreeFlyerCollisionConstraintsTest : public DifferentialMapTest {
   std::shared_ptr<const Workspace> workspace_;
   std::string description_file_;
   std::shared_ptr<const Freeflyer> freeflyer_;
-  std::shared_ptr<const FreeFlyerCollisionConstraints> collision_checker_;
+  std::shared_ptr<const SmoothCollisionPointsConstraint> collision_checker_;
   std::shared_ptr<const DifferentiableMap> constraint_;
 };
 
-TEST_F(FreeFlyerCollisionConstraintsTest, Evaluation) {
+TEST_F(SmoothCollisionPointsConstraintTest, Evaluation) {
   set_verbose(false);
   // Here the hessian is approximated by pullback
   // so we don't expect a tight precision.
   set_precisions(1e-6, 1e-3);
   RunAllTests();
-}
-
-TEST_F(DifferentialMapTest, freeflyer_translation) {
-  std::srand(SEED);
-  auto phi1 = std::make_shared<FreeFlyerTranslation>(3);
-  auto phi2 = std::make_shared<FreeFlyerTranslation>(2);
-  AddRandomTests(phi1, NB_TESTS);
-  AddRandomTests(phi2, NB_TESTS);
-  RunAllTests();
-  ASSERT_TRUE(phi1->type() == "FreeFlyerTranslation");
-  ASSERT_TRUE(phi2->type() == "FreeFlyerTranslation");
 }

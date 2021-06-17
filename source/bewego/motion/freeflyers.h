@@ -27,32 +27,11 @@
 #pragma once
 
 #include <bewego/derivatives/differentiable_map.h>
+#include <bewego/workspace/collision_checking.h>
 
 #include <memory>
 
 namespace bewego {
-
-using TaskMap = std::shared_ptr<const DifferentiableMap>;
-
-struct Segment {
-  Eigen::VectorXd x1;
-  Eigen::VectorXd x2;
-  double length() const { return (x1 - x2).norm(); }
-  Eigen::VectorXd interpolate(double alpha) const {
-    return alpha * x1 + (1 - alpha) * x2;
-  }
-};
-
-struct CollisionPoint {
-  CollisionPoint() {}
-  CollisionPoint(const CollisionPoint& point)
-      : task_map(point.task_map), radius(point.radius) {}
-  CollisionPoint(TaskMap m, double r) : task_map(m), radius(r) {}
-  TaskMap task_map;
-  double radius;
-};
-
-using VectorOfCollisionPoints = std::vector<CollisionPoint>;
 
 /**
  * Interpolates the segments with keypoints given
@@ -80,7 +59,7 @@ class Freeflyer {
   const std::vector<Eigen::VectorXd>& keypoints() const { return keypoints_; }
 
   // Returns the kinematics map to a point on the structure
-  TaskMap keypoint_map(uint32_t i) const {
+  DifferentiableMapPtr keypoint_map(uint32_t i) const {
     assert(i < task_maps_.size());
     return task_maps_[i];
   }
@@ -114,7 +93,7 @@ class Freeflyer {
   std::string name_;
   std::vector<Eigen::VectorXd> keypoints_;
   std::vector<double> radii_;
-  std::vector<TaskMap> task_maps_;
+  std::vector<DifferentiableMapPtr> task_maps_;
 };
 
 /**
@@ -168,44 +147,6 @@ std::shared_ptr<Freeflyer> CreateFreeFlyer(
 
 std::shared_ptr<Freeflyer2D> MakeFreeflyer2D();
 std::shared_ptr<Freeflyer3D> MakeFreeflyer3D();
-
-/**
- * Collision constraint function that averages all collision points.
- * Also provides an interface for dissociating each constraint
- * The vector of collision points contains a pointer to each
- * foward kinematics map (task map).
- * to get the surfaces simply use workspace->ExtractSurfaceFunctions
- * there is a surface per object in the workspace
- */
-class FreeFlyerCollisionConstraints {
- public:
-  FreeFlyerCollisionConstraints(std::shared_ptr<const Freeflyer> freeflyer,
-                                const VectorOfMaps& surfaces,
-                                double gamma = 100.);
-  virtual ~FreeFlyerCollisionConstraints();
-
-  /**
-   * @brief constraints
-   * @return a vector of signed distance function defined over
-   * configuration space. One for each collsion point
-   */
-  const VectorOfMaps& constraints() const { return signed_distance_functions_; }
-
-  /**
-   * @brief smooth_constraint
-   * @return a softmin function of the constraint
-   */
-  DifferentiableMapPtr smooth_constraint() const { return f_; }
-
- protected:
-  VectorOfCollisionPoints collision_points_;
-  VectorOfMaps surfaces_;
-  double margin_;
-  VectorOfMaps signed_distance_functions_;
-  double gamma_;
-  DifferentiableMapPtr f_;
-  uint32_t n_;
-};
 
 /**
  * Gets the position from state

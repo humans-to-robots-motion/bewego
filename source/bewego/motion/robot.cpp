@@ -50,17 +50,17 @@ KinematicMap::KinematicMap(
 }
 
 Eigen::VectorXd KinematicMap::Forward(const Eigen::VectorXd& q) const {
-  if (q != q_) {
+  if (q != kinematics_->configuration()) {
     kinematics_->SetAndUpdate(q);
-    q_ = q;
   }
   return kinematics_->frame_part(id_dof_, id_frame_part_);
 }
 
 Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
-  if (q != q_) {
+  // TODO:  We should cash the jacobian inside the
+  //        kinematics_ if is shared by multiple task maps
+  if (q != kinematics_->configuration()) {
     kinematics_->SetAndUpdate(q);
-    q_ = q;
   }
   return kinematics_->JacobianFramePart(id_dof_, id_frame_part_);
 }
@@ -109,4 +109,14 @@ void Robot::CreateTaskMaps() {
     task_maps_[name] = std::make_shared<KinematicMap>(  // Z axis map
         name, kinematic_chain_, id_dof, 3);
   }
+}
+
+// Get Collision Points
+VectorOfCollisionPoints Robot::GetCollisionPoints() const {
+  VectorOfCollisionPoints collision_points;
+  for (uint32_t i = 0; i < task_maps_.size(); i++) {
+    CollisionPoint point(task_map(keypoints_[i].first), keypoints_[i].second);
+    collision_points.push_back(point);
+  }
+  return collision_points;
 }

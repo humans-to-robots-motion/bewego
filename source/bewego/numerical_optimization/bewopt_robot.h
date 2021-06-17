@@ -24,7 +24,7 @@
  */
 #pragma once
 
-#include <bewego/motion/forward_kinematics.h>
+#include <bewego/motion/robot.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/numerical_optimization/optimizer.h>
 #include <bewego/numerical_optimization/trajectory_optimization.h>
@@ -79,6 +79,8 @@ class RobotOptimzer : public TrajectoryOptimizer {
 
   // Robot
   std::shared_ptr<const Robot> robot_;
+  std::vector<KinematicMapPtr> keypoints_task_maps_;
+  std::vector<double> keypoints_radii_;
 
   // Workspace
   uint32_t workspace_dim_;                // Dimensionality of the workspace

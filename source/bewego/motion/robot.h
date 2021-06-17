@@ -26,6 +26,7 @@
 
 #include <bewego/derivatives/differentiable_map.h>
 #include <bewego/motion/forward_kinematics.h>
+#include <bewego/workspace/collision_checking.h>
 
 namespace bewego {
 
@@ -76,6 +77,27 @@ class Robot {
   // returns the task map
   KinematicMapPtr task_map(std::string name) const {
     return task_maps_.at(name);
+  }
+
+  // Get Collision Points
+  VectorOfCollisionPoints GetCollisionPoints() const;
+
+  // returns the position task map of each keypoint
+  std::vector<KinematicMapPtr> keypoint_task_maps() const {
+    std::vector<KinematicMapPtr> task_maps(keypoints_.size());
+    for (uint32_t i = 0; i < keypoints_.size(); i++) {
+      task_maps[i] = task_map(keypoints_[i].first);
+    }
+    return task_maps;
+  }
+
+  // returns the keypoints radii
+  std::vector<double> keypoint_radii() const {
+    std::vector<double> radii(keypoints_.size());
+    for (uint32_t i = 0; i < keypoints_.size(); i++) {
+      radii[i] = keypoints_[i].second;
+    }
+    return radii;
   }
 
  protected:

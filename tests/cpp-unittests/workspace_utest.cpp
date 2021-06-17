@@ -2,6 +2,7 @@
 // author: Jim Mainprice, mainprice@gmail.com
 
 #include <bewego/util/misc.h>
+#include <bewego/workspace/collision_checking.h>
 #include <bewego/workspace/pixelmap.h>
 #include <bewego/workspace/softmax_primitive_workspace.h>
 #include <bewego/workspace/workspace.h>
@@ -24,16 +25,16 @@ std::shared_ptr<Workspace> CreateTestWorkspace() {
   return std::make_shared<Workspace>(objects);
 }
 
-TEST_F(DifferentialMapTest, smooth_collision_constraints) {
+TEST_F(DifferentialMapTest, smooth_collision_constraint) {
   std::srand(SEED);
   verbose_ = false;
   // gradient_precision_ = 1e-3;
   // hessian_precision_ = 1e-2;
   auto surfaces = CreateTestWorkspace()->ExtractSurfaceFunctions();
-  auto phi = std::make_shared<SmoothCollisionConstraints>(surfaces, 10);
+  auto phi = std::make_shared<SmoothCollisionConstraint>(surfaces, 10);
   AddRandomTests(phi, NB_TESTS);
   RunAllTests();
-  ASSERT_TRUE(phi->type() == "SmoothCollisionConstraints");
+  ASSERT_TRUE(phi->type() == "SmoothCollisionConstraint");
 }
 
 TEST_F(DifferentialMapTest, soft_sphere_distance) {

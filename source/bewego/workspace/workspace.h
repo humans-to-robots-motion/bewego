@@ -195,48 +195,4 @@ class Sphere : public WorkspaceObject {
   double radius_;
 };
 
-/**
- Collision constraint function that averages all collision points.
- Also provides an interface for dissociating each constraint
- The vector of collision points contains a pointer to each
- foward kinematics map (task map).
- to get the surfaces simply use workspace->ExtractSurfaceFunctions
- there is a surface per object in the workspace
- */
-class SmoothCollisionConstraints : public CachedDifferentiableMap {
- public:
-  SmoothCollisionConstraints(const VectorOfMaps& surfaces, double gamma,
-                             double margin = 0);
-
-  /**
-   * @brief constraints
-   * @return a vector of signed distance function defined over
-   * configuration space. One for each collsion point
-   */
-
-  uint32_t output_dimension() const { return 1; }
-  uint32_t input_dimension() const { return f_->input_dimension(); }
-
-  Eigen::VectorXd Forward_(const Eigen::VectorXd& x) const {
-    return f_->Forward(x);
-  }
-  Eigen::MatrixXd Jacobian_(const Eigen::VectorXd& x) const {
-    return f_->Jacobian(x);
-  }
-  Eigen::MatrixXd Hessian_(const Eigen::VectorXd& x) const {
-    return f_->Hessian(x);
-  }
-
-  virtual VectorOfMaps nested_operators() const { return VectorOfMaps({f_}); }
-
-  VectorOfMaps constraints() const { return signed_distance_functions_; }
-
- protected:
-  DifferentiableMapPtr ConstructSmoothConstraint();
-  double margin_;
-  VectorOfMaps signed_distance_functions_;
-  double gamma_;
-  DifferentiableMapPtr f_;
-};
-
 }  // namespace bewego

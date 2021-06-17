@@ -62,6 +62,8 @@ RobotOptimizer::RobotOptimizer(
     )
     : TrajectoryOptimizer(T, dt, n),
       robot_(robot),
+      keypoints_task_maps_(robot->keypoints_task_maps()),
+      keypoints_radii_(robot->keypoints_radii()),
       workspace_dim_(robot_->n()),
       workspace_bounds_(workspace_bounds),
       end_effector_id_(0),
@@ -76,13 +78,13 @@ RobotOptimizer::RobotOptimizer(
                              std::to_string(T_) + " )");
   }
 
-  if (workspace_dim_ != 2 && workspace_dim_ != 2) {
+  if (workspace_dim_ != 2 && workspace_dim_ != 3) {
     throw std::runtime_error(
         "RobotOptimizer : ws dimension missmatch (should be 2 or 3) ( " +
         std::to_string(workspace_dim_) + " )");
   }
 
-  uint32_t c_space_dim = robot_->keypoint_map(0)->input_dimension();
+  uint32_t c_space_dim = keypoints_task_maps_.front()->input_dimension();
   if (c_space_dim != n) {
     throw std::runtime_error("RobotOptimizer : cspace dimension missmatch ( " +
                              std::to_string(c_space_dim) + " , " +

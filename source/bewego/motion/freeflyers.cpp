@@ -144,21 +144,6 @@ VectorOfCollisionPoints Freeflyer::GetCollisionPoints() const {
   return collision_points;
 }
 
-// Creates a collision checker for a robot and a workspace
-DifferentiableMapPtr Freeflyer::ConstructCollisionChecker(
-    const VectorOfMaps& surface_functions, double margin) {
-  const VectorOfCollisionPoints& collision_points = GetCollisionPoints();
-  VectorOfMaps signed_distance_functions;
-  for (auto& surface : surface_functions) {
-    for (auto& sphere : collision_points) {
-      double offset = sphere.radius + margin;
-      signed_distance_functions.push_back(
-          ComposedWith(sphere.task_map, surface - offset));
-    }
-  }
-  return std::make_shared<Min>(signed_distance_functions);
-}
-
 //-----------------------------------------------------------------------------
 // Freeflyer2D function implementation.
 //-----------------------------------------------------------------------------
@@ -184,45 +169,5 @@ void Freeflyer3D::CreateTaskMaps(
     task_maps_[i] = std::make_shared<HomogeneousTransform3d>(keypoints[i]);
   }
 }
-
-//-----------------------------------------------------------------------------
-// FreeFlyerCollisionConstraints function implementation.
-//-----------------------------------------------------------------------------
-
-FreeFlyerCollisionConstraints::FreeFlyerCollisionConstraints(
-    std::shared_ptr<const Freeflyer> freeflyer, const VectorOfMaps& surfaces,
-    double gamma)
-    : collision_points_(freeflyer->GetCollisionPoints()),
-      surfaces_(surfaces),
-      margin_(0.),
-      gamma_(gamma) {
-  // Check input dimensions
-  assert(collision_points_.size() > 0);
-  auto task_map = collision_points_.back().task_map;
-  assert(task_map.get() != nullptr);
-  n_ = task_map->input_dimension();
-  for (auto& sphere : collision_points_) {
-    assert(n_ == sphere.task_map->input_dimension());
-  }
-
-  // First interate through all the surfaces in the environment
-  // Add a constraint per keypoint on the freeflyer.
-  // TODO have a different model for the robot (with capsules or ellipsoids)
-  VectorOfMaps maps;
-  for (auto& surface : surfaces_) {
-    for (auto& sphere : collision_points_) {
-      auto task_space =
-          ComposedWith(surface - (sphere.radius + margin_), sphere.task_map);
-      signed_distance_functions_.push_back(task_space);
-      maps.push_back(task_space);
-    }
-  }
-  auto smooth_min = std::make_shared<NegLogSumExp>(maps.size(), gamma_);
-  auto stack = std::make_shared<CombinedOutputMap>(maps);
-  f_ = ComposedWith(smooth_min, stack);
-}
-
-// Destructor.
-FreeFlyerCollisionConstraints::~FreeFlyerCollisionConstraints() {}
 
 }  // namespace bewego
