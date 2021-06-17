@@ -29,6 +29,7 @@
 #include <bewego/motion/freeflyers.h>
 #include <bewego/motion/hardcoded_robots.h>
 #include <bewego/motion/objective.h>
+#include <bewego/motion/robot.h>
 #include <bewego/motion/trajectory.h>
 #include <bewego/planning/planar_grid.h>
 #include <bewego/planning/value_iteration.h>
@@ -218,8 +219,12 @@ PYBIND11_MODULE(_pybewego, m) {
       m, "Freeflyer2D")
       .def("keypoint_map", &bewego::Freeflyer::keypoint_map)
       .def("keypoint_radius", &bewego::Freeflyer::keypoint_radius)
-      .def("name", &bewego::Freeflyer::name)
       .def("n", &bewego::Freeflyer::n);
+
+  py::class_<bewego::Robot, std::shared_ptr<bewego::Robot>>(m, "Robot")
+      .def("task_map", &bewego::Robot::task_map)
+      .def("keypoint_map", &bewego::Robot::keypoint_map)
+      .def("keypoint_radius", &bewego::Robot::keypoint_radius);
 
   py::class_<bewego::TrajectoryObjectiveFunction,
              std::shared_ptr<bewego::TrajectoryObjectiveFunction>>(
