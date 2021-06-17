@@ -168,6 +168,11 @@ class RigidBodyInfo {
 
 /**
  * !\brief Represents a chain of rigid bodies
+ *
+ * TODO:
+ *      - extend beyond chain to handle trees by combing chains.
+ *      - If we then derive from a single Kinematic class chains and trees
+ *        we should be able to integrate trees seamlessly
  */
 class KinematicChain {
  public:

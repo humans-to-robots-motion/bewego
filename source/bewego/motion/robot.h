@@ -30,7 +30,7 @@
 namespace bewego {
 
 /**
- * !\brief Differentiable wrapper around kinematic chain
+ * !\brief Differentiable wrapper around a kinematic chain
  */
 class KinematicMap : public DifferentiableMap {
  public:
