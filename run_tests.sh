@@ -6,7 +6,7 @@ cd ${SCRIPT_DIR}/build
 make test
 
 # Run python tests
-read -p "Exacute python test? press enter or n : " RUN_PYTHON_TEST
+read -p "Execute python tests? press [Enter] or [n] : " RUN_PYTHON_TEST
 if [[ -z $RUN_PYTHON_TEST ]]; then
     clear
     cd ${SCRIPT_DIR}/tests
