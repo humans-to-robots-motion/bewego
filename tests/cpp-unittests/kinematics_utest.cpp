@@ -17,27 +17,21 @@ TEST_F(DifferentialMapTest, robot_task_map) {
   verbose_ = false;
   gradient_precision_ = 1e-6;
 
+  // Add a single keypoint
   std::vector<std::pair<std::string, double>> keypoints;
-  keypoints.push_back(std::make_pair("link1", 0.1));
-  keypoints.push_back(std::make_pair("link2", 0.1));
-  keypoints.push_back(std::make_pair("link3", 0.1));
   keypoints.push_back(std::make_pair("end", 0.1));
 
-  auto kinematic_chain = CreateThreeDofPlanarManipulator();
-  auto robot = std::make_shared<Robot>(kinematic_chain, keypoints);
+  auto robot =
+      std::make_shared<Robot>(CreateThreeDofPlanarManipulator(), keypoints);
 
-  auto phi0 = robot->task_map("end");
-  auto phi1 = robot->task_map("end_x");
-  auto phi2 = robot->task_map("end_y");
-  auto phi3 = robot->task_map("end_z");
-
-  AddRandomTests(phi0, NB_TESTS);
-  AddRandomTests(phi1, NB_TESTS);
-  AddRandomTests(phi2, NB_TESTS);
-  AddRandomTests(phi3, NB_TESTS);
-
+  // Test all maps for that keypoint
+  for (auto n : std::vector<std::string>({"end", "end_x", "end_y", "end_z"})) {
+    auto phi = robot->task_map(n);
+    ASSERT_TRUE(phi->input_dimension() == 4);
+    ASSERT_TRUE(phi->type() == "KinematicMap");
+    AddRandomTests(phi, NB_TESTS);
+  }
   RunAllTests();
-  EXPECT_TRUE(phi0->type() == "KinematicMap");
 }
 
 TEST_F(DifferentialMapTest, robot_task_map_fixed) {
@@ -45,15 +39,17 @@ TEST_F(DifferentialMapTest, robot_task_map_fixed) {
   verbose_ = false;
   gradient_precision_ = 1e-6;
 
+  // Add all keypoints
   std::vector<std::pair<std::string, double>> keypoints;
-  keypoints.push_back(std::make_pair("link1", 0.1));
-  keypoints.push_back(std::make_pair("link2", 0.1));
-  keypoints.push_back(std::make_pair("link3", 0.1));
-  keypoints.push_back(std::make_pair("end", 0.1));
+  for (auto n : std::vector<std::string>({"link1", "link2", "link3", "end"})) {
+    keypoints.push_back(std::make_pair(n, 0.1));
+  }
 
-  auto kinematic_chain = CreateThreeDofPlanarManipulator(true);
+  bool with_fixed_end_link = true;
+  auto kinematic_chain = CreateThreeDofPlanarManipulator(with_fixed_end_link);
   auto robot = std::make_shared<Robot>(kinematic_chain, keypoints);
 
+  // Test position map for all keypoints
   for (uint32_t i = 0; i < robot->keypoints().size(); i++) {
     auto phi = robot->keypoint_map(i);
     ASSERT_TRUE(phi->input_dimension() == 3);
