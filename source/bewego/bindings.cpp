@@ -140,6 +140,7 @@ PYBIND11_MODULE(_pybewego, m) {
     )pbdoc");
 
   m.def("create_planar_robot", &bewego::CreateThreeDofPlanarManipulator,
+        py::arg("last_fixed") = false,
         R"pbdoc(
         Returns a Planar robot
     )pbdoc");
