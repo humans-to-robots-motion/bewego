@@ -34,25 +34,33 @@ namespace bewego {
  */
 class KinematicMap : public DifferentiableMap {
  public:
-  KinematicMap() { PreAllocate(); }
+  KinematicMap() {
+    type_ = "KinematicMap";
+    PreAllocate();
+  }
+  KinematicMap(const std::string& name,                          // name
+               std::shared_ptr<KinematicChain> kinematic_chain,  // kinematiscs
+               uint32_t id_dof,                                  // id in kin.
+               uint32_t id_frame_part                            // frame part
+  );
 
   const std::string& name() const { return name_; }
 
   Eigen::VectorXd Forward(const Eigen::VectorXd& q) const;
   Eigen::MatrixXd Jacobian(const Eigen::VectorXd& q) const;
 
-  uint32_t input_dimension() const {
-    return kinematic_chain_->nb_active_dofs();
-  }
+  uint32_t input_dimension() const { return kinematics_->nb_active_dofs(); }
   uint32_t output_dimension() const { return 3; }
 
  protected:
   std::string name_;
   uint32_t id_dof_;
   uint32_t id_frame_part_;
-  std::shared_ptr<KinematicChain> kinematic_chain_;
+  std::shared_ptr<KinematicChain> kinematics_;
   mutable Eigen::VectorXd q_;
 };
+
+using KinematicMapPtr = std::shared_ptr<const KinematicMap>;
 
 /**
  * !\brief TODO Add TaskMaps (keypoints) here.
@@ -65,12 +73,18 @@ class Robot {
   Robot(const std::vector<RigidBodyInfo>& bodies,
         const std::vector<std::pair<std::string, double>>& keypoints);
 
+  // returns the task map
+  KinematicMapPtr task_map(std::string name) const {
+    return task_maps_.at(name);
+  }
+
  protected:
-  void CreateTaskMaps();
+  virtual void CreateTaskMaps();
 
   std::shared_ptr<KinematicChain> kinematic_chain_;        // FK
-  std::map<std::string, DifferentiableMapPtr> task_maps_;  // element. taskmaps
+  std::map<std::string, KinematicMapPtr> task_maps_;       // element. taskmaps
   std::vector<std::pair<std::string, double>> keypoints_;  // keypoints
+  std::map<std::string, double> keypoints_radii_;          // radii
 };
 
 }  // namespace bewego

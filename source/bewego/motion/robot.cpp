@@ -35,20 +35,34 @@ using std::endl;
 // KinematicMap implementation.
 //-----------------------------------------------------------------------------
 
+KinematicMap::KinematicMap(
+    const std::string& name,                          // name
+    std::shared_ptr<KinematicChain> kinematic_chain,  // kinematiscs
+    uint32_t id_dof,                                  // id in kin.
+    uint32_t id_frame_part                            // frame part
+    )
+    : name_(name),
+      kinematics_(kinematic_chain),
+      id_dof_(id_dof),
+      id_frame_part_(id_frame_part) {
+  type_ = "KinematicMap";
+  PreAllocate();
+}
+
 Eigen::VectorXd KinematicMap::Forward(const Eigen::VectorXd& q) const {
   if (q != q_) {
-    kinematic_chain_->SetAndUpdate(q);
+    kinematics_->SetAndUpdate(q);
     q_ = q;
   }
-  return kinematic_chain_->frame_part(id_dof_, id_frame_part_);
+  return kinematics_->frame_part(id_dof_, id_frame_part_);
 }
 
 Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
   if (q != q_) {
-    kinematic_chain_->SetAndUpdate(q);
+    kinematics_->SetAndUpdate(q);
     q_ = q;
   }
-  return kinematic_chain_->JacobianFramePart(id_dof_, id_frame_part_);
+  return kinematics_->JacobianFramePart(id_dof_, id_frame_part_);
 }
 
 //-----------------------------------------------------------------------------
@@ -57,7 +71,9 @@ Eigen::MatrixXd KinematicMap::Jacobian(const Eigen::VectorXd& q) const {
 
 Robot::Robot(std::shared_ptr<KinematicChain> kinematic_chain,
              const std::vector<std::pair<std::string, double>>& keypoints)
-    : kinematic_chain_(kinematic_chain), keypoints_(keypoints) {}
+    : kinematic_chain_(kinematic_chain), keypoints_(keypoints) {
+  CreateTaskMaps();
+}
 
 Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
              const std::vector<std::pair<std::string, double>>& keypoints)
@@ -65,5 +81,32 @@ Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
       keypoints_(keypoints) {
   for (const auto& body : bodies) {
     kinematic_chain_->AddRigidBodyFromInfo(body);
+  }
+  CreateTaskMaps();
+}
+
+void Robot::CreateTaskMaps() {
+  task_maps_.clear();
+  keypoints_radii_.clear();
+  std::string name;
+  for (const auto& keypoint : keypoints_) {
+    uint32_t id_dof = kinematic_chain_->rigid_body_id(keypoint.first);
+    keypoints_radii_[keypoint.first] = keypoint.second;
+
+    name = keypoint.first;
+    task_maps_[name] = std::make_shared<KinematicMap>(  // Position map
+        name, kinematic_chain_, id_dof, 0);
+
+    name = keypoint.first + "_x";
+    task_maps_[name] = std::make_shared<KinematicMap>(  // X axis map
+        name, kinematic_chain_, id_dof, 1);
+
+    name = keypoint.first + "_y";
+    task_maps_[name] = std::make_shared<KinematicMap>(  // Y axis map
+        name, kinematic_chain_, id_dof, 2);
+
+    name = keypoint.first + "_z";
+    task_maps_[name] = std::make_shared<KinematicMap>(  // Z axis map
+        name, kinematic_chain_, id_dof, 3);
   }
 }

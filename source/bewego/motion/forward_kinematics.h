@@ -121,6 +121,7 @@ class RigidBody {
 
   /*!\brief Frame accessor.
    */
+  const std::string& name() const { return name_; }
   const std::string& joint_name() const { return joint_name_; }
   const Eigen::Affine3d& frame_in_base() const { return frame_in_base_; }
   const Eigen::Affine3d& local_in_prev() const { return local_in_prev_; }
@@ -235,6 +236,10 @@ class KinematicChain {
   // Sets the transform from base
   void set_base_transform(const Eigen::Matrix4d& t) { base_.matrix() = t; }
 
+  /**
+   * Performs forward kinematics by propagating
+   * the affine transformations through the chain
+   */
   void ForwardKinematics() {
     rigid_bodies_[0]->Propagate(base_);
     for (uint32_t i = 1; i < rigid_bodies_.size(); i++) {
@@ -303,6 +308,17 @@ class KinematicChain {
   Eigen::Vector3d frame_part(uint32_t idx, uint32_t id_part) const {
     CheckConsistentQuerry(idx, id_part);
     return id_part == 0 ? position(idx) : axis(idx, id_part - 1);
+  }
+
+  // Returns the body ID in the chain
+  uint32_t rigid_body_id(std::string name) const {
+    for (uint32_t i = 0; i < rigid_bodies_.size(); i++) {
+      if (rigid_bodies_[i]->name() == name) {
+        return i;
+      }
+    }
+    throw std::runtime_error("KinematicChain : body name not found");
+    return 0;
   }
 
   // Returns the number of active dofs in the chain
