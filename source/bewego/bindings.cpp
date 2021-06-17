@@ -42,6 +42,7 @@
 #ifdef WITH_IPOPT
 #include <bewego/numerical_optimization/bewopt_freeflyer.h>
 #include <bewego/numerical_optimization/bewopt_planar.h>
+#include <bewego/numerical_optimization/bewopt_robot.h>
 #endif
 
 #include <iostream>
@@ -362,6 +363,48 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_end_effector", &opt::FreeflyerOptimzer::set_end_effector)
       .def("set_clique_collision_constraints",
            &opt::FreeflyerOptimzer::set_clique_collision_constraints);
+
+  py::class_<opt::RobotOptimizer>(m, "RobotOptimizer")
+      .def(py::init<uint32_t, uint32_t, double, const std::vector<double>&,
+                    std::shared_ptr<const bewego::Robot>>())
+
+      // Main
+      .def("optimize", &opt::RobotOptimizer::Optimize)
+
+      // Constraints
+      .def("add_keypoints_surface_constraints",
+           &opt::RobotOptimizer::AddKeyPointsSurfaceConstraints)
+      .def("add_smooth_keypoints_surface_constraints",
+           &opt::RobotOptimizer::AddKeyPointsSurfaceConstraints)
+      .def("add_goal_constraint", &opt::RobotOptimizer::AddGoalConstraint)
+      .def("add_waypoint_constraint",
+           &opt::RobotOptimizer::AddWayPointConstraint)
+
+      // Objectives
+      .def("add_smoothness_terms", &opt::RobotOptimizer::AddSmoothnessTerms)
+      .def("add_obstacle_terms", &opt::RobotOptimizer::AddObstacleTerms)
+      .def("add_terminal_potential_terms",
+           &opt::RobotOptimizer::AddTerminalPotentialTerms)
+      .def("add_waypoint_terms", &opt::RobotOptimizer::AddWayPointTerms)
+
+      // Workspace
+      .def("add_sphere", &opt::RobotOptimizer::AddSphere)
+      .def("add_box", &opt::RobotOptimizer::AddBox)
+      .def("clear_workspace", &opt::RobotOptimizer::ClearWorkspace)
+      .def("set_sdf_gamma", &opt::RobotOptimizer::SetSDFGamma)
+      .def("set_sdf_margin", &opt::RobotOptimizer::SetSDFMargin)
+
+      // Functions
+      .def("set_trajectory_publisher",
+           &opt::RobotOptimizer::set_trajectory_publisher)
+      .def("objective", &opt::RobotOptimizer::objective)
+      .def("obstacle_potential", &opt::RobotOptimizer::obstacle_potential)
+
+      // Options
+      .def("set_q_default", &opt::RobotOptimizer::set_q_default)
+      .def("set_end_effector", &opt::RobotOptimizer::set_end_effector)
+      .def("set_clique_collision_constraints",
+           &opt::RobotOptimizer::set_clique_collision_constraints);
 #endif
 
   m.attr("__version__") = "0.0.1";

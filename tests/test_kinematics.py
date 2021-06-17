@@ -261,6 +261,18 @@ def test_planar_robot():
         assert_allclose(J1, J2, atol=1e-6)
 
 
+def optimizer_construction():
+    """ 
+    TODO move elsewhere 
+
+        - I need to create a robot using the bodies info
+        - check if I can do that for Baxter using the python inteface
+        - First do it for the 3DOF planar robot.
+    """
+    robot = create_planar_robot(True)  # with fixed end
+    optimizer = RobotOptimizer(3, 30, .1, [0., 1., 0., 1., 0., 1.], robot)
+
+
 # test_import_planar()
 # test_geometry()
 # test_parser()
@@ -271,4 +283,4 @@ def test_planar_robot():
 # test_forward_kinematics_baxter()
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
-test_planar_robot()
+# optimizer_construction()
