@@ -103,7 +103,7 @@ class PybulletRobot:
                     np.asarray(info[15]))
                 self.rigid_bodies.append(rigid_body)
 
-    def create_robot(self):
+    def create_kinematics(self):
         """ Creates a Bewego robot kinematics object """
         robot = KinematicChain()
         for body in self.rigid_bodies:

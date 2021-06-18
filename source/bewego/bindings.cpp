@@ -141,24 +141,11 @@ PYBIND11_MODULE(_pybewego, m) {
         Returns a Freeflyer
     )pbdoc");
 
-  m.def("create_planar_robot", &bewego::CreateThreeDofPlanarManipulator,
-        py::arg("last_fixed") = false,
+  m.def("create_planar_robot_kinematics",
+        &bewego::CreateThreeDofPlanarManipulator, py::arg("last_fixed") = false,
         R"pbdoc(
         Returns a Planar robot
     )pbdoc");
-
-  py::class_<bewego::KinematicChain, std::shared_ptr<bewego::KinematicChain>>(
-      m, "KinematicChain")
-      .def(py::init<>())
-      .def("add_rigid_body", &bewego::KinematicChain::AddRigidBody)
-      .def("set_base_transform", &bewego::KinematicChain::set_base_transform)
-      .def("set_and_update", &bewego::KinematicChain::SetAndUpdate)
-      .def("position", &bewego::KinematicChain::position)
-      .def("rotation", &bewego::KinematicChain::rotation)
-      .def("transform", &bewego::KinematicChain::transform)
-      .def("jacobian_pos", &bewego::KinematicChain::JacobianPosition)
-      .def("jacobian_axis", &bewego::KinematicChain::JacobianAxis)
-      .def("jacobian_frame", &bewego::KinematicChain::JacobianFrame);
 
   py::class_<bewego::AStarGrid>(m, "AStarGrid")
       .def(py::init<>())
@@ -222,7 +209,43 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("keypoint_radius", &bewego::Freeflyer::keypoint_radius)
       .def("n", &bewego::Freeflyer::n);
 
+  py::class_<bewego::RigidBodyInfo>(m, "RigidBodyInfo")
+      .def(py::init<>())
+      .def_readwrite("name", &bewego::RigidBodyInfo::name)
+      .def_readwrite("joint_name", &bewego::RigidBodyInfo::joint_name)
+      .def_readwrite("joint_type", &bewego::RigidBodyInfo::joint_type)
+      .def_readwrite("dof_lower_limit", &bewego::RigidBodyInfo::dof_lower_limit)
+      .def_readwrite("dof_upper_limit", &bewego::RigidBodyInfo::dof_upper_limit)
+      .def_readwrite("local_in_prev", &bewego::RigidBodyInfo::local_in_prev)
+      .def_readwrite("joint_axis_in_local",
+                     &bewego::RigidBodyInfo::joint_axis_in_local);
+
+  py::class_<bewego::KinematicChain, std::shared_ptr<bewego::KinematicChain>>(
+      m, "KinematicChain")
+      .def(py::init<>())
+      .def("add_rigid_body", &bewego::KinematicChain::AddRigidBody)
+      .def("set_base_transform", &bewego::KinematicChain::set_base_transform)
+      .def("set_and_update", &bewego::KinematicChain::SetAndUpdate)
+      .def("position", &bewego::KinematicChain::position)
+      .def("rotation", &bewego::KinematicChain::rotation)
+      .def("transform", &bewego::KinematicChain::transform)
+      .def("jacobian_pos", &bewego::KinematicChain::JacobianPosition)
+      .def("jacobian_axis", &bewego::KinematicChain::JacobianAxis)
+      .def("jacobian_frame", &bewego::KinematicChain::JacobianFrame);
+
+  py::class_<bewego::KinematicMap, std::shared_ptr<bewego::KinematicMap>>(
+      m, "KinematicMap")
+      .def("input_dimension", &bewego::KinematicMap::input_dimension)
+      .def("output_dimension", &bewego::KinematicMap::output_dimension)
+      .def("name", &bewego::KinematicMap::name)
+      .def("forward", &bewego::KinematicMap::Forward)
+      .def("jacobian", &bewego::KinematicMap::Jacobian)
+      .def("__call__", &bewego::KinematicMap::Forward, py::arg("e") = nullptr,
+           py::is_operator());
+
   py::class_<bewego::Robot, std::shared_ptr<bewego::Robot>>(m, "Robot")
+      .def(py::init<const std::vector<bewego::RigidBodyInfo>&,
+                    const std::vector<std::pair<std::string, double>>&>())
       .def("task_map", &bewego::Robot::task_map)
       .def("keypoint_map", &bewego::Robot::keypoint_map)
       .def("keypoint_radius", &bewego::Robot::keypoint_radius);

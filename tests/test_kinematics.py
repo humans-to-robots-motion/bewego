@@ -71,7 +71,7 @@ def test_pybullet_forward_kinematics():
 
 
 def test_bewego_forward_kinematics():
-    robot = PybulletRobot("../data/r2_robot.urdf").create_robot()
+    robot = PybulletRobot("../data/r2_robot.urdf").create_kinematics()
     q = [np.pi / 2, np.pi / 2, 0]
     robot.set_and_update(q)
     p = robot.position(2)
@@ -83,7 +83,7 @@ def test_random_forward_kinematics():
     np.random.seed(0)
     configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
     r1 = PybulletRobot("../data/r3_robot.urdf")
-    r2 = r1.create_robot()
+    r2 = r1.create_kinematics()
     for q in configurations:
         r1.set_and_update(q)
         p1 = r1.position(3)
@@ -109,7 +109,7 @@ def test_random_forward_kinematics():
 
 def test_jacobian():
     r1 = PybulletRobot("../data/r2_robot.urdf")
-    r2 = r1.create_robot()
+    r2 = r1.create_kinematics()
 
     q = [1, 2, 0]
 
@@ -150,7 +150,7 @@ def test_forward_kinematics_baxter():
     base = r1.transform(r1.config.base_joint_id)
 
     kinematics = Kinematics(urdf)
-    r2 = kinematics.create_robot(r1.config.active_joint_names)
+    r2 = kinematics.create_kinematics(r1.config.active_joint_names)
     r2.set_base_transform(base)
 
     configurations = [None] * 100
@@ -183,7 +183,7 @@ def test_differentiable_jacobian():
     urdf = DATADIR + "baxter_common/baxter_description/urdf/toms_baxter.urdf"
     config = RobotConfig("baxter_right_arm.json")
     kinematics = Kinematics(urdf)
-    robot = kinematics.create_robot(config.active_joint_names)
+    robot = kinematics.create_kinematics(config.active_joint_names)
     robot.set_base_transform(np.eye(4))
     output_options = ["position", "axis", "frame"]
     for o in output_options:
@@ -214,7 +214,7 @@ def test_jacobian_baxter():
     base = r1.transform(r1.config.base_joint_id)
 
     kinematics = Kinematics(urdf)
-    r2 = kinematics.create_robot(r1.config.active_joint_names)
+    r2 = kinematics.create_kinematics(r1.config.active_joint_names)
     r2.set_base_transform(base)
 
     np.set_printoptions(suppress=True)
@@ -243,8 +243,8 @@ def test_planar_robot():
     urdf = "../data/r3_robot.urdf"
     kinematics = Kinematics(urdf)
     # kinematics.print_kinematics_info()
-    r1 = kinematics.create_robot(["link1", "link2", "link3", "end"])
-    r2 = create_planar_robot()
+    r1 = kinematics.create_kinematics(["link1", "link2", "link3", "end"])
+    r2 = create_planar_robot_kinematics()
     configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
 
     for q in configurations:
@@ -261,6 +261,18 @@ def test_planar_robot():
         assert_allclose(J1, J2, atol=1e-6)
 
 
+def test_create_robot():
+    urdf = "../data/r3_robot.urdf"
+    kinematics = Kinematics(urdf)
+    active_dofs = ["link1", "link2", "link3", "end"]
+    keypoints = [("end", .01)]
+    robot = kinematics.create_robot(active_dofs, keypoints)
+
+    configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
+    for q in configurations:
+        print("x : ", robot.keypoint_map(0)(q))
+
+
 def optimizer_construction():
     """ 
     TODO move elsewhere 
@@ -269,7 +281,7 @@ def optimizer_construction():
         - check if I can do that for Baxter using the python inteface
         - First do it for the 3DOF planar robot.
     """
-    robot = create_planar_robot(True)  # with fixed end
+    robot = create_planar_robot_kinematics(True)  # with fixed end
     optimizer = RobotOptimizer(3, 30, .1, [0., 1., 0., 1., 0., 1.], robot)
 
 
@@ -284,3 +296,4 @@ def optimizer_construction():
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
 # optimizer_construction()
+test_create_robot()

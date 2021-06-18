@@ -157,6 +157,7 @@ class RigidBodyInfo {
  public:
   RigidBodyInfo() {}
   RigidBodyInfo(const RigidBodyInfo& m) { *this = m; }
+  virtual ~RigidBodyInfo();
   std::string name;
   std::string joint_name;
   uint32_t joint_type;

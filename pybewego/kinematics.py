@@ -20,6 +20,8 @@
 from pybewego import quaternion_to_matrix
 from pybewego import euler_to_quaternion
 from pybewego import KinematicChain
+from pybewego import RigidBodyInfo
+from pybewego import Robot
 
 from pyrieef.geometry.differentiable_geometry import *
 
@@ -152,7 +154,7 @@ class Kinematics:
         for idx, name in enumerate(self.joints):
             print("body ({})({})->\n{}".format(idx, name, self.joints[name]))
 
-    def create_robot(self, active_bodies):
+    def create_kinematics(self, active_bodies):
         kinematic_chain = KinematicChain()
         for name in active_bodies:
             body = self.joints[name]
@@ -165,6 +167,22 @@ class Kinematics:
                 body.local_in_prev,
                 body.joint_axis_in_local)
         return kinematic_chain
+
+    def create_robot(self, active_bodies, keypoints):
+        kinematic_structure_info = []
+        body_info = RigidBodyInfo()
+        for name in active_bodies:
+            body = self.joints[name]
+            body_info.name = body.name
+            body_info.joint_name = body.joint_name
+            body_info.joint_type = body.type
+            body_info.dof_lower_limit = body.joint_bounds.low
+            body_info.dof_upper_limit = body.joint_bounds.high
+            body_info.local_in_prev = body.local_in_prev
+            body_info.joint_axis_in_local = body.joint_axis_in_local
+            kinematic_structure_info.append(body_info)
+        return Robot(kinematic_structure_info, keypoints)
+
 
 
 class RobotConfig:
