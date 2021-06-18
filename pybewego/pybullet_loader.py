@@ -23,6 +23,7 @@ import pybullet
 import numpy as np
 from pybewego.kinematics import *
 from pybewego import KinematicChain
+from pybewego import Robot
 import os
 
 
@@ -104,7 +105,7 @@ class PybulletRobot:
                 self.rigid_bodies.append(rigid_body)
 
     def create_kinematics(self):
-        """ Creates a Bewego robot kinematics object """
+        """ Creates a Bewego kinematics object """
         robot = KinematicChain()
         for body in self.rigid_bodies:
             robot.add_rigid_body(
@@ -116,6 +117,22 @@ class PybulletRobot:
                 body.local_in_prev,
                 body.joint_axis_in_local)
         return robot
+
+    def create_robot(self, keypoints):
+        """ Creates a Bewego robot object (which includes task maps) """
+        kinematic_structure_info = []
+        for name in active_bodies:
+            body = self.rigid_bodies
+            body_info = RigidBodyInfo()
+            body_info.name = body.name
+            body_info.joint_name = body.joint_name
+            body_info.joint_type = body.type
+            body_info.dof_lower_limit = body.joint_bounds.low
+            body_info.dof_upper_limit = body.joint_bounds.high
+            body_info.local_in_prev = body.local_in_prev
+            body_info.joint_axis_in_local = body.joint_axis_in_local
+            kinematic_structure_info.append(body_info)
+        return Robot(kinematic_structure_info, keypoints)
 
     def sample_config(self):
         """ Samples a configuration in dof bounds for the active DoFs """

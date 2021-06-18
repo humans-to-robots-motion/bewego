@@ -42,12 +42,33 @@ DifferentiableMapPtr Circle::ConstraintFunction() const {
 }
 
 //------------------------------------------------------------------------------
+// Sphere implementation.
+//------------------------------------------------------------------------------
+
+Sphere::~Sphere() {}
+
+DifferentiableMapPtr Sphere::ConstraintFunction() const {
+  return std::make_shared<SphereDistance>(center_, radius_);
+}
+
+//------------------------------------------------------------------------------
 // Rectangle implementation.
 //------------------------------------------------------------------------------
 
 Rectangle::~Rectangle() {}
 
 DifferentiableMapPtr Rectangle::ConstraintFunction() const {
+  return std::make_shared<BoxDistance>(center_, dimensions_, orientation_,
+                                       1e-2);
+}
+
+//------------------------------------------------------------------------------
+// Box implementation.
+//------------------------------------------------------------------------------
+
+Box::~Box() {}
+
+DifferentiableMapPtr Box::ConstraintFunction() const {
   return std::make_shared<BoxDistance>(center_, dimensions_, orientation_,
                                        1e-2);
 }

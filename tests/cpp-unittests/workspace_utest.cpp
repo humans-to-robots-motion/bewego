@@ -18,10 +18,19 @@ const double resolution = 0.01;
 static const uint32_t NB_TESTS = 10;
 static const unsigned int SEED = 0;
 
-std::shared_ptr<Workspace> CreateTestWorkspace() {
+std::shared_ptr<Workspace> CreateTest2DWorkspace() {
   std::vector<WorkspaceObjectPtr> objects;
   objects.push_back(std::make_shared<Circle>(Eigen::Vector2d(.5, .5), .2));
   objects.push_back(std::make_shared<Circle>(Eigen::Vector2d(0., 0.), .1));
+  return std::make_shared<Workspace>(objects);
+}
+
+std::shared_ptr<Workspace> CreateTest3DWorkspace() {
+  std::vector<WorkspaceObjectPtr> objects;
+  objects.push_back(std::make_shared<Sphere>(Eigen::Vector3d(.5, .5, .5), .2));
+  objects.push_back(std::make_shared<Box>(Eigen::Vector3d(.1, .1, .1),
+                                          Eigen::Vector3d(.2, .2, .2),
+                                          Eigen::Matrix3d::Identity()));
   return std::make_shared<Workspace>(objects);
 }
 
@@ -30,11 +39,17 @@ TEST_F(DifferentialMapTest, smooth_collision_constraint) {
   verbose_ = false;
   // gradient_precision_ = 1e-3;
   // hessian_precision_ = 1e-2;
-  auto surfaces = CreateTestWorkspace()->ExtractSurfaceFunctions();
-  auto phi = std::make_shared<SmoothCollisionConstraint>(surfaces, 10);
-  AddRandomTests(phi, NB_TESTS);
+  auto surfaces2d = CreateTest2DWorkspace()->ExtractSurfaceFunctions();
+  auto phi2d = std::make_shared<SmoothCollisionConstraint>(surfaces2d, 10);
+  AddRandomTests(phi2d, NB_TESTS);
   RunAllTests();
-  ASSERT_TRUE(phi->type() == "SmoothCollisionConstraint");
+  ASSERT_TRUE(phi2d->type() == "SmoothCollisionConstraint");
+
+  auto surfaces3d = CreateTest3DWorkspace()->ExtractSurfaceFunctions();
+  auto phi3d = std::make_shared<SmoothCollisionConstraint>(surfaces3d, 10);
+  AddRandomTests(phi3d, NB_TESTS);
+  RunAllTests();
+  ASSERT_TRUE(phi3d->type() == "SmoothCollisionConstraint");
 }
 
 TEST_F(DifferentialMapTest, soft_sphere_distance) {

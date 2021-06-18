@@ -20,6 +20,7 @@
 from pybewego import MotionObjective
 try:
     from pybewego import PlanarOptimizer
+    from pybewego import RobotOptimizer
     WITH_IPOPT = True
 except ImportError:
     WITH_IPOPT = False
@@ -188,7 +189,7 @@ class MotionOptimization:
 # ------------------------------------------------------------------------------
 if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
-    class NavigationOptimization(MotionOptimization):
+    class IpoptMotionOptimization(MotionOptimization):
 
         """
         Navigation Optimization
@@ -209,29 +210,23 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 np.array, [x_min, x_max, y_min, y_max]
         """
 
-        def __init__(self, workspace, trajectory, dt, q_goal, goal_radius=0.1,
-                     q_waypoint=None,
+        def __init__(self, workspace, trajectory, dt, q_goal,
                      bounds=[0., 1., 0., 1.]):
+
             MotionOptimization.__init__(
                 self, workspace, trajectory, dt, q_goal)
-            assert len(q_goal) == 2
-            assert len(bounds) == 4
+
             self.bounds = bounds
             self.with_goal_constraint = False
             self.with_goal_manifold_constraint = True
             self.with_smooth_obstale_constraint = True
             self.with_waypoint_constraint = True
-            self.q_waypoint = q_waypoint
-            self.goal_manifold = Circle(origin=q_goal, radius=goal_radius)
-
-        def _problem(self):
-            """ This version of the problem uses constraints """
-            return PlanarOptimizer(self.T, self.dt, self.bounds)
 
         def initialize_objective(self, scalars):
             """
             Initialize the motion optimization problem
             based on the scalars given as input
+            These are common terms shared across the different problems
 
             Parameters
             ----------
@@ -241,7 +236,8 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             """
             self._initialize_problem()
 
-            # Objective Terms --------------------------------------------
+            # Objective Terms -------------------------------------------------
+
             if scalars.s_velocity_norm > 0:
                 print("-- add velocity norm ({})".format(
                     scalars.s_velocity_norm))
@@ -270,15 +266,87 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.problem.add_terminal_potential_terms(
                     self.q_goal, scalars.s_terminal_potential)
 
-            # Constraints Terms ------------------------------------------
+            # Constraints Terms -----------------------------------------------
+
             if self.with_goal_constraint and scalars.s_terminal_potential > 0:
                 print("-- add goal constraint ({})".format(
                     scalars.s_terminal_potential))
                 self.problem.add_goal_constraint(
                     self.q_goal, scalars.s_terminal_potential)
 
-            elif (self.with_goal_manifold_constraint and
-                  scalars.s_terminal_potential > 0):
+            if scalars.s_obstacle_constraint > 0:
+                print("-- add keypoints surface constraint ({})".format(
+                    scalars.s_obstacle_constraint))
+                if self.with_smooth_obstale_constraint:
+                    self.problem.add_smooth_keypoints_surface_constraints(
+                        scalars.s_obstacle_constraint)
+                else:
+                    self.problem.add_keypoints_surface_constraints(
+                        scalars.s_obstacle_margin,
+                        scalars.s_obstacle_constraint)
+
+        def create_objective_functions(self):
+            self.objective = self.problem.objective(self.q_init)
+            self.obstacle_potential = self.problem.obstacle_potential()  # TODO
+            self.problem.set_trajectory_publisher(False, 100000)
+
+    class NavigationOptimization(IpoptMotionOptimization):
+
+        """
+        Navigation Optimization
+
+            This class allows plan 2D trajectories using IPOPT
+
+        Parameters
+        ----------
+            workspace : 
+                Workspace object
+            trajectory : 
+                Trajectory object it is theinitial trajectory
+            dt : 
+                Float, time between each configuration in the trajectory
+            q_goal :
+                np.array, configuration at the goal
+            bounds :
+                np.array, [x_min, x_max, y_min, y_max]
+        """
+
+        def __init__(self, workspace, trajectory, dt, q_goal, goal_radius=0.1,
+                     q_waypoint=None,
+                     bounds=[0., 1., 0., 1.]):
+            IpoptMotionOptimization.__init__(
+                self, workspace, trajectory, dt, q_goal, bounds)
+            assert len(q_goal) == 2
+            assert len(bounds) == 4
+            self.bounds = bounds
+            self.with_goal_constraint = False
+            self.with_goal_manifold_constraint = True
+            self.with_smooth_obstale_constraint = True
+            self.with_waypoint_constraint = True
+            self.q_waypoint = q_waypoint
+            self.goal_manifold = Circle(origin=q_goal, radius=goal_radius)
+
+        def _problem(self):
+            """ This version of the problem uses constraints """
+            return PlanarOptimizer(self.T, self.dt, self.bounds)
+
+        def initialize_objective(self, scalars):
+            """
+            Initialize the motion optimization problem
+            based on the scalars given as input
+
+            Parameters
+            ----------
+            scalars :
+                CostFunctionParameters contains scalars that define the
+                motion optimization objective
+            """
+            IpoptMotionOptimization.initialize_objective(self, scalars)
+
+            # Mainfold and waypoints terms
+
+            if (self.with_goal_manifold_constraint and
+                    scalars.s_terminal_potential > 0):
                 print("-- add goal manifold constraint ({})".format(
                     scalars.s_terminal_potential))
                 self.problem.add_goal_manifold_constraint(
@@ -294,21 +362,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 self.problem.add_waypoint_constraint(
                     self.q_waypoint, 15, scalars.s_waypoint_constraint)
 
-            if scalars.s_obstacle_constraint > 0:
-                print("-- add keypoints surface constraint ({})".format(
-                    scalars.s_obstacle_constraint))
-                if self.with_smooth_obstale_constraint:
-                    self.problem.add_smooth_keypoints_surface_constraints(
-                        scalars.s_obstacle_constraint)
-                else:
-                    self.problem.add_keypoints_surface_constraints(
-                        scalars.s_obstacle_margin,
-                        scalars.s_obstacle_constraint)
-
-            # Create objective functions
-            self.objective = self.problem.objective(self.q_init)
-            self.obstacle_potential = self.problem.obstacle_potential()  # TODO
-            self.problem.set_trajectory_publisher(False, 100000)
+            self.create_objective_functions()
 
         def optimize(self,
                      scalars,
@@ -363,3 +417,56 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             return FreeflyerOptimizer(
                 3, self.T, self.dt, self.bounds,
                 "freeflyer_2d")
+
+    class RobotMotionOptimization(IpoptMotionOptimization):
+
+        """
+        Robot Optimization
+
+            This class allows plan N dimensional trajectories using IPOPT
+
+        Parameters
+        ----------
+            robot :
+                A bewego robot (i.e., defines task maps)
+            workspace : 
+                Workspace object
+            trajectory : 
+                Trajectory object it is theinitial trajectory
+            dt : 
+                Float, time between each configuration in the trajectory
+            q_goal :
+                np.array, configuration at the goal
+            bounds :
+                np.array, [x_min, x_max, y_min, y_max]
+        """
+
+        def __init__(self, robot, workspace, trajectory, dt, x_goal,
+                     bounds=[0., 1., 0., 1., 0., 1.]):
+            IpoptMotionOptimization.__init__(
+                workspace, trajectory, dt, x_goal,
+                bounds=bounds)
+
+            assert robot.keypoint_map(0).input_dimension() == self.n
+            assert len(bounds) == 6
+
+            self.robot = robot
+
+        def _problem(self):
+            """ This version of the problem uses constraints """
+            return RobotOptimizer(
+                self.n, self.T, self.dt, self.bounds, self.robot)
+
+        def initialize_objective(self, scalars):
+            """
+            Initialize the motion optimization problem
+            based on the scalars given as input
+
+            Parameters
+            ----------
+            scalars :
+                CostFunctionParameters contains scalars that define the
+                motion optimization objective
+            """
+            IpoptMotionOptimization.initialize_objective(self, scalars)
+            self.create_objective_functions()

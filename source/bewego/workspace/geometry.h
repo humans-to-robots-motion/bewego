@@ -145,7 +145,7 @@ class BoxDistance : public DifferentiableMap {
   // Creates a distance function to the point x0. The dimensionality of x0
   // defines the dimensionality of this function.
   BoxDistance(const Eigen::VectorXd& center, const Eigen::VectorXd& dimension,
-              const Eigen::MatrixXd orientation,
+              const Eigen::MatrixXd& orientation,
               double dist_cutoff = std::numeric_limits<double>::max()) {
     dim_ = uint32_t(center.size());
     center_ = center;

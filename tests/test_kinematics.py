@@ -285,7 +285,7 @@ def test_create_robot():
             assert_allclose(x1, x2, atol=1e-6)
 
 
-def optimizer_construction():
+def test_optimizer_construction():
     """
     TODO move elsewhere 
 
@@ -311,4 +311,4 @@ def optimizer_construction():
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
 # test_create_robot()
-optimizer_construction()
+test_optimizer_construction()

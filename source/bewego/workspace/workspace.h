@@ -142,8 +142,10 @@ class Rectangle : public WorkspaceObject {
     dimensions_ = dimensions;
     orientation_ = orientation;
   }
+  /* TODO
   Rectangle(const Eigen::Vector2d& top_left,
             const Eigen::Vector2d& bottom_right);
+            */
   Rectangle(const Rectangle& other)
       : center_(other.center_),
         dimensions_(other.dimensions_),
@@ -183,9 +185,9 @@ class Sphere : public WorkspaceObject {
   Sphere(const Sphere& other)
       : center_(other.center_), radius_(other.radius_) {}
 
-  DifferentiableMapPtr ConstraintFunction() const {
-    return std::make_shared<SphereDistance>(center_, radius_);
-  }
+  virtual ~Sphere();
+
+  DifferentiableMapPtr ConstraintFunction() const;
 
   const Eigen::Vector3d& center() const { return center_; }
   double radius() const { return radius_; }
@@ -193,6 +195,51 @@ class Sphere : public WorkspaceObject {
  protected:
   Eigen::Vector3d center_;
   double radius_;
+};
+
+/**
+ * \brief Represents basic box on the plane
+ */
+class Box : public WorkspaceObject {
+ public:
+  Box(const Eigen::Vector3d& center, const Eigen::Vector3d& dimensions,
+      const Eigen::Matrix3d& orientation) {
+    center_ = center;
+    dimensions_ = dimensions;
+    orientation_ = orientation;
+  }
+  /* TODO
+  Box(const Eigen::Vector3d& top_left, const Eigen::Vector3d& bottom_right);
+  */
+  Box(const Box& other)
+      : center_(other.center_),
+        dimensions_(other.dimensions_),
+        orientation_(other.orientation_) {}
+  Box& operator=(const Box& rhs) {
+    center_ = rhs.center_;
+    dimensions_ = rhs.dimensions_;
+    orientation_ = rhs.orientation_;
+    return *this;
+  }
+  virtual ~Box();
+  DifferentiableMapPtr ConstraintFunction() const;
+  const Eigen::Vector3d& center() const { return center_; }
+  const Eigen::Vector3d& dimensions() const { return dimensions_; }
+  const Eigen::Matrix3d& orientation() const { return orientation_; }
+
+  ExtentBox extent() const {
+    double half_dim_x = dimensions_.x() / 2.;
+    double half_dim_y = dimensions_.y() / 2.;
+    double half_dim_z = dimensions_.z() / 2.;
+    return ExtentBox(center_.x() - half_dim_x, center_.x() + half_dim_x,
+                     center_.y() - half_dim_y, center_.y() + half_dim_y,
+                     center_.z() - half_dim_z, center_.z() + half_dim_z);
+  }
+
+ protected:
+  Eigen::Vector3d center_;
+  Eigen::Vector3d dimensions_;
+  Eigen::Matrix3d orientation_;
 };
 
 }  // namespace bewego
