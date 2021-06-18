@@ -30,6 +30,7 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include <memory>
 
 using std::cout;
 using std::endl;
