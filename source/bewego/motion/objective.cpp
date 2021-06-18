@@ -101,14 +101,52 @@ void MotionObjective::AddWayPointTerms(const Eigen::VectorXd& q_waypoint,
 }
 
 void MotionObjective::AddSphere(const Eigen::VectorXd& center, double radius) {
-  workspace_objects_.push_back(std::make_shared<Circle>(center, radius));
+  if (center.size() != 2 && center.size() != 3) {
+    throw std::runtime_error(
+        "MotionObjective : sphere center is not 2 or 3 dim");
+  }
+  WorkspaceObjectPtr object;
+  if (center.size() == 2) {
+    object = std::make_shared<Circle>(center, radius);
+  } else {
+    object = std::make_shared<Sphere>(center, radius);
+  }
+  workspace_objects_.push_back(object);
   ReconstructWorkspace();
 }
 
-void MotionObjective::AddBox(const Eigen::VectorXd& center,
-                             const Eigen::VectorXd& dimension) {
-  workspace_objects_.push_back(
-      std::make_shared<Rectangle>(center, dimension, 0));
+void MotionObjective::AddBox(const Eigen::VectorXd& dimension,
+                             const Eigen::VectorXd& center) {
+  uint32_t n = center.size();
+  AddOrientedBox(dimension, center, Eigen::MatrixXd::Identity(n, n));
+}
+
+void MotionObjective::AddOrientedBox(const Eigen::VectorXd& dimension,
+                                     const Eigen::VectorXd& center,
+                                     const Eigen::MatrixXd& orientation) {
+  if (center.size() != 2 && center.size() != 3) {
+    throw std::runtime_error(
+        "MotionObjective (AddOrientedBox) : square center is not 2 or 3 dim");
+  }
+  if (orientation.rows() != orientation.cols()) {
+    throw std::runtime_error(
+        "MotionObjective (AddOrientedBox) : orientation matrix is not square");
+  }
+  if (orientation.rows() != center.size()) {
+    throw std::runtime_error(
+        "MotionObjective (AddOrientedBox) : orientation matrix is not "
+        "compatible with dimension of the box");
+  }
+  WorkspaceObjectPtr object;
+  if (center.size() == 2) {
+    double cos_theta = orientation(0, 0);
+    double sin_theta = orientation(1, 0);
+    double angle = std::atan2(sin_theta, cos_theta);
+    object = std::make_shared<Rectangle>(center, dimension, angle);
+  } else {
+    object = std::make_shared<Box>(center, dimension, orientation);
+  }
+  workspace_objects_.push_back(object);
   ReconstructWorkspace();
 }
 

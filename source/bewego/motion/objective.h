@@ -75,11 +75,17 @@ class MotionObjective {
   void AddWayPointTerms(const Eigen::VectorXd& q_waypoint, uint32_t t,
                         double scalar);
 
-  /** Add Sphere to Workspace (2D for now) */
+  /** Add Sphere to Workspace */
   void AddSphere(const Eigen::VectorXd& center, double radius);
 
-  /** Add Box to Workspace (2D for now) */
+  /** Add Box to Workspace */
   void AddBox(const Eigen::VectorXd& center, const Eigen::VectorXd& dimension);
+
+  /** Add Box to Workspace */
+  void AddOrientedBox(const Eigen::VectorXd& center,      // center of the box
+                      const Eigen::VectorXd& dimension,   // dimension
+                      const Eigen::MatrixXd& orientation  // rotation matrix
+  );
 
   /** Reconstruct Workspace and Obstacle fields **/
   void ReconstructWorkspace();
@@ -124,7 +130,7 @@ class MotionObjective {
   double obstacle_margin_;  // Margin parameter of the SDF
   std::shared_ptr<CliquesFunctionNetwork> function_network_;
   std::shared_ptr<Workspace> workspace_;
-  std::vector<std::shared_ptr<const WorkspaceObject>> workspace_objects_;
+  std::vector<WorkspaceObjectPtr> workspace_objects_;
   std::shared_ptr<ObstaclePotential> obstacle_potential_;
   std::vector<DifferentiableMapPtr> smooth_sdf_;
 };

@@ -115,6 +115,8 @@ class MotionOptimization:
                 self.problem.add_sphere(o.origin, o.radius)
             elif hasattr(o, '_is_box'):
                 self.problem.add_box(o.origin, o.dim)
+            elif hasattr(o, '_is_oriented_box'):
+                self.problem.add_oriented_box(o.origin, o.dim, o.orientation)
             else:
                 print("Shape {} not supported by bewego".format(type(o)))
 

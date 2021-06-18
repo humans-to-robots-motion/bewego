@@ -274,6 +274,7 @@ PYBIND11_MODULE(_pybewego, m) {
 
       .def("add_sphere", &bewego::MotionObjective::AddSphere)
       .def("add_box", &bewego::MotionObjective::AddBox)
+      .def("add_oriented_box", &bewego::MotionObjective::AddOrientedBox)
       .def("clear_workspace", &bewego::MotionObjective::ClearWorkspace)
       .def("set_sdf_gamma", &bewego::MotionObjective::SetSDFGamma)
       .def("set_sdf_margin", &bewego::MotionObjective::SetSDFMargin)
@@ -334,6 +335,7 @@ PYBIND11_MODULE(_pybewego, m) {
       // Workspace
       .def("add_sphere", &opt::PlanarOptimizer::AddSphere)
       .def("add_box", &opt::PlanarOptimizer::AddBox)
+      .def("add_oriented_box", &bewego::MotionObjective::AddOrientedBox)
       .def("clear_workspace", &opt::PlanarOptimizer::ClearWorkspace)
       .def("set_sdf_gamma", &opt::PlanarOptimizer::SetSDFGamma)
       .def("set_sdf_margin", &opt::PlanarOptimizer::SetSDFMargin)
@@ -371,6 +373,7 @@ PYBIND11_MODULE(_pybewego, m) {
       // Workspace
       .def("add_sphere", &opt::FreeflyerOptimzer::AddSphere)
       .def("add_box", &opt::FreeflyerOptimzer::AddBox)
+      .def("add_oriented_box", &bewego::MotionObjective::AddOrientedBox)
       .def("clear_workspace", &opt::FreeflyerOptimzer::ClearWorkspace)
       .def("set_sdf_gamma", &opt::FreeflyerOptimzer::SetSDFGamma)
       .def("set_sdf_margin", &opt::FreeflyerOptimzer::SetSDFMargin)
@@ -413,6 +416,7 @@ PYBIND11_MODULE(_pybewego, m) {
       // Workspace
       .def("add_sphere", &opt::RobotOptimizer::AddSphere)
       .def("add_box", &opt::RobotOptimizer::AddBox)
+      .def("add_oriented_box", &bewego::MotionObjective::AddOrientedBox)
       .def("clear_workspace", &opt::RobotOptimizer::ClearWorkspace)
       .def("set_sdf_gamma", &opt::RobotOptimizer::SetSDFGamma)
       .def("set_sdf_margin", &opt::RobotOptimizer::SetSDFMargin)
