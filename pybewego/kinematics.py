@@ -170,9 +170,9 @@ class Kinematics:
 
     def create_robot(self, active_bodies, keypoints):
         kinematic_structure_info = []
-        body_info = RigidBodyInfo()
         for name in active_bodies:
             body = self.joints[name]
+            body_info = RigidBodyInfo()
             body_info.name = body.name
             body_info.joint_name = body.joint_name
             body_info.joint_type = body.type

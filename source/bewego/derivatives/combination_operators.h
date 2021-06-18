@@ -521,13 +521,17 @@ class SoftDist : public CombinationOperator {
 class CombinedOutputMap : public CombinationOperator {
  public:
   CombinedOutputMap(const VectorOfMaps& maps) : maps_(maps), m_(0) {
-    uint32_t n = maps_.front()->input_dimension();
-    for (auto m : maps) {
-      m_ += m->output_dimension();
-      assert(n == m->input_dimension());
+    if (maps.empty()) {
+      throw std::runtime_error("CombinedOutputMap : maps is empty");
+    } else {
+      uint32_t n = maps_.front()->input_dimension();
+      for (auto m : maps) {
+        m_ += m->output_dimension();
+        assert(n == m->input_dimension());
+      }
+      PreAllocate();
+      type_ = "CombinedOutputMap";
     }
-    PreAllocate();
-    type_ = "CombinedOutputMap";
   }
 
   uint32_t output_dimension() const { return m_; }

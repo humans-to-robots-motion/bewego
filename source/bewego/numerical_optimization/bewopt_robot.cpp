@@ -70,10 +70,12 @@ RobotOptimizer::RobotOptimizer(
       attractor_interval_(.02),
       attractor_value_geodesic_(true),
       attractor_make_smooth_(true),
-      clique_collision_constraints_(false) {
-  if (T_ > 2) {
-    throw std::runtime_error("RobotOptimizer : T (should be 2 at least) ( " +
-                             std::to_string(T_) + " )");
+      clique_collision_constraints_(false),
+      geodesic_flow_(DifferentiableMapPtr()) {
+  if (T_ < 2) {
+    throw std::runtime_error(
+        "RobotOptimizer : T should be 2 at least, got -> (" +
+        std::to_string(T_) + ")");
   }
 
   if (workspace_dim_ != 2 && workspace_dim_ != 3) {
@@ -82,21 +84,29 @@ RobotOptimizer::RobotOptimizer(
         std::to_string(workspace_dim_) + " )");
   }
 
-  uint32_t c_space_dim = robot_->task_map(0)->input_dimension();
+  if (robot_.get() == nullptr) {
+    throw std::runtime_error("RobotOptimizer : robot not initialized");
+  }
+
+  uint32_t c_space_dim = robot_->keypoint_map(0)->input_dimension();
   if (c_space_dim != n) {
     throw std::runtime_error("RobotOptimizer : cspace dimension missmatch ( " +
                              std::to_string(c_space_dim) + " , " +
                              std::to_string(n) + " )");
   }
 
-  // Initialize to NULL
-  geodesic_flow_ = DifferentiableMapPtr();
+  if (workspace_.get() == nullptr) {
+    throw std::runtime_error("RobotOptimizer : workspace not initialized");
+  }
 
+  cout << " -- create collision constraint" << endl;
   // Initialize smooth collision constraint
   auto collision_checker = std::make_shared<SmoothCollisionPointsConstraint>(
       robot_->GetCollisionPoints(),          // Robot keypoints surfaces
       workspace_->ExtractSurfaceFunctions()  // Workspace obstacles surfaces
   );
+
+  cout << " -- get smooth constraint" << endl;
   smooth_collision_constraint_ = collision_checker->smooth_constraint();
 }
 

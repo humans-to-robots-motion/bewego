@@ -191,7 +191,6 @@ class KinematicChain {
     for (const auto& info : rigid_bodies_info) {
       AddRigidBodyFromInfo(info);
     }
-    q_ = Eigen::VectorXd::Zero(active_dofs_.size());
   }
 
   virtual ~KinematicChain();
@@ -223,13 +222,13 @@ class KinematicChain {
       active_dofs_.push_back(rigid_bodies_.back());
     }
 
-    rigid_bodies_.back()->SetDoF(0);
+    // Reset configuration after adding link
+    SetConfiguration(Eigen::VectorXd::Zero(active_dofs_.size()));
   }
 
   void SetAndUpdate(const Eigen::VectorXd& q) {
     SetConfiguration(q);
     ForwardKinematics();
-    q_ = q;  // Now the configuration is updated
   }
 
   void SetConfiguration(const Eigen::VectorXd& q) {
@@ -241,6 +240,7 @@ class KinematicChain {
     for (uint32_t i = 0; i < active_dofs_.size(); i++) {
       active_dofs_[i]->SetDoF(q[i]);
     }
+    q_ = q;  // Now the configuration is cached here
   }
 
   // Sets the transform from base

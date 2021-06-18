@@ -262,26 +262,41 @@ def test_planar_robot():
 
 
 def test_create_robot():
-    urdf = "../data/r3_robot.urdf"
-    kinematics = Kinematics(urdf)
+
+    kinematics = Kinematics(urdf_file="../data/r3_robot.urdf")
     active_dofs = ["link1", "link2", "link3", "end"]
-    keypoints = [("end", .01)]
-    robot = kinematics.create_robot(active_dofs, keypoints)
+    keypoints = [("link1", .01), ("link2", .01), ("link3", .01), ("end", .01)]
+
+    robot1 = kinematics.create_robot(active_dofs, keypoints)
+    robot2 = kinematics.create_kinematics(active_dofs)
 
     configurations = np.random.uniform(low=-3.14, high=3.14, size=(100, 4))
     for q in configurations:
-        print("x : ", robot.keypoint_map(0)(q))
+
+        for i in range(len(active_dofs)):
+
+            # Differential model
+            x1 = robot1.keypoint_map(i).forward(q)
+
+            # Kinematics map model
+            robot2.set_and_update(q)
+            x2 = robot2.position(i)
+
+            assert_allclose(x1, x2, atol=1e-6)
 
 
 def optimizer_construction():
-    """ 
+    """
     TODO move elsewhere 
 
         - I need to create a robot using the bodies info
         - check if I can do that for Baxter using the python inteface
         - First do it for the 3DOF planar robot.
     """
-    robot = create_planar_robot_kinematics(True)  # with fixed end
+    kinematics = Kinematics(urdf_file="../data/r3_robot.urdf")
+    active_dofs = ["link1", "link2", "link3"]
+    keypoints = [("link3", .01)]
+    robot = kinematics.create_robot(active_dofs, keypoints)
     optimizer = RobotOptimizer(3, 30, .1, [0., 1., 0., 1., 0., 1.], robot)
 
 
@@ -295,5 +310,5 @@ def optimizer_construction():
 # test_forward_kinematics_baxter()
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
-# optimizer_construction()
-test_create_robot()
+# test_create_robot()
+optimizer_construction()

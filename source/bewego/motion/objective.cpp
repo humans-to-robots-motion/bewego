@@ -42,10 +42,9 @@ MotionObjective::MotionObjective(uint32_t T, double dt,
   cout << "T_ in MotionObjective : " << T_ << endl;
   function_network_ =
       std::make_shared<CliquesFunctionNetwork>((T_ + 2) * n_, n_);
-  workspace_objects_.clear();
-  workspace_ = std::make_shared<Workspace>(workspace_objects_);
   gamma_ = 40;
   obstacle_margin_ = 0;
+  cout << "Clear workspace..." << endl;
   ClearWorkspace();
 }
 

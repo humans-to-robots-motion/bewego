@@ -81,9 +81,10 @@ class RobotOptimizer : public TrajectoryOptimizer {
   std::shared_ptr<const Robot> robot_;
 
   // Workspace
-  uint32_t workspace_dim_;                // Dimensionality of the workspace
-  ExtentBox workspace_bounds_;            // Bounds of the workspace
-  std::shared_ptr<Workspace> workspace_;  // Workspace geometry
+  uint32_t workspace_dim_;      // Dimensionality of the workspace
+  ExtentBox workspace_bounds_;  // Bounds of the workspace
+
+  // C-space obstacles (f : q -> bool)
   DifferentiableMapPtr smooth_collision_constraint_;
 
   // GeodesicFlow & Attractors

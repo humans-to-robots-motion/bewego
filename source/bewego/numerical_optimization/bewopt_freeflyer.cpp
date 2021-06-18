@@ -74,7 +74,7 @@ FreeflyerOptimzer::FreeflyerOptimzer(
       attractor_value_geodesic_(true),
       attractor_make_smooth_(true),
       clique_collision_constraints_(false) {
-  if (T_ > 2) {
+  if (T_ < 2) {
     throw std::runtime_error("FreeflyerOptimzer : T (should be 2 at least) ( " +
                              std::to_string(T_) + " )");
   }

@@ -95,7 +95,7 @@ SmoothCollisionPointsConstraint::SmoothCollisionPointsConstraint(
   }
 
   // First interate through all the surfaces in the environment
-  // Add a constraint per keypoint on the freeflyer.
+  // Add a constraint per keypoint.
   // TODO have a different model for the robot (with capsules or ellipsoids)
   VectorOfMaps maps;
   for (auto& surface : surfaces_) {
@@ -106,9 +106,11 @@ SmoothCollisionPointsConstraint::SmoothCollisionPointsConstraint(
       maps.push_back(task_space);
     }
   }
-  auto smooth_min = std::make_shared<NegLogSumExp>(maps.size(), gamma_);
-  auto stack = std::make_shared<CombinedOutputMap>(maps);
-  f_ = ComposedWith(smooth_min, stack);
+  if (!maps.empty()) {
+    auto smooth_min = std::make_shared<NegLogSumExp>(maps.size(), gamma_);
+    auto stack = std::make_shared<CombinedOutputMap>(maps);
+    f_ = ComposedWith(smooth_min, stack);
+  }
 }
 
 // Destructor.

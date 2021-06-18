@@ -84,6 +84,7 @@ class Robot {
 
   // returns the position task map of each keypoint
   KinematicMapPtr keypoint_map(uint32_t i) const {
+    std::cout << "get task map : " << keypoints_[i].first << std::endl;
     return task_map(keypoints_[i].first);
   }
 
@@ -93,6 +94,12 @@ class Robot {
   // returns the keypoints used to describe the geometry
   const std::vector<std::pair<std::string, double>>& keypoints() const {
     return keypoints_;
+  }
+
+  // returns the available task maps
+  // NOTE: Not thread safe to give acess to this as const..
+  const std::map<std::string, KinematicMapPtr>& task_maps() const {
+    return task_maps_;
   }
 
   // Get Collision Points

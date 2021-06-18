@@ -50,6 +50,9 @@ KinematicMap::KinematicMap(
 }
 
 Eigen::VectorXd KinematicMap::Forward(const Eigen::VectorXd& q) const {
+  // cout << "forward:" << endl;
+  // cout << " - q1 : " << q.transpose() << endl;
+  // cout << " - q2 : " << kinematics_->configuration().transpose() << endl;
   if (q != kinematics_->configuration()) {
     kinematics_->SetAndUpdate(q);
   }
@@ -77,11 +80,8 @@ Robot::Robot(std::shared_ptr<KinematicChain> kinematic_chain,
 
 Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
              const std::vector<std::pair<std::string, double>>& keypoints)
-    : kinematic_chain_(std::make_shared<KinematicChain>()),
+    : kinematic_chain_(std::make_shared<KinematicChain>(bodies)),
       keypoints_(keypoints) {
-  for (const auto& body : bodies) {
-    kinematic_chain_->AddRigidBodyFromInfo(body);
-  }
   CreateTaskMaps();
 }
 
@@ -92,6 +92,8 @@ void Robot::CreateTaskMaps() {
   for (const auto& keypoint : keypoints_) {
     uint32_t id_dof = kinematic_chain_->rigid_body_id(keypoint.first);
     keypoints_radii_[keypoint.first] = keypoint.second;
+
+    cout << "create task map (" << keypoint.first << ")" << endl;
 
     name = keypoint.first;
     task_maps_[name] = std::make_shared<KinematicMap>(  // Position map
@@ -111,10 +113,9 @@ void Robot::CreateTaskMaps() {
   }
 }
 
-// Get Collision Points
 VectorOfCollisionPoints Robot::GetCollisionPoints() const {
   VectorOfCollisionPoints collision_points;
-  for (uint32_t i = 0; i < task_maps_.size(); i++) {
+  for (uint32_t i = 0; i < keypoints_.size(); i++) {
     CollisionPoint point(task_map(keypoints_[i].first), keypoints_[i].second);
     collision_points.push_back(point);
   }
