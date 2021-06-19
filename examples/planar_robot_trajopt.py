@@ -41,7 +41,7 @@ workspace_bounds = [-1, 1, -1, 1, -1, 1]
 robot = PybulletRobot("../data/r3_robot.urdf", with_gui=True)
 
 # pybullet world and create floor
-world = PybulletWorld(robot, workspace)
+world = PybulletWorld(robot)
 
 # end-effector idx & arm dofs
 eff_idx = 3

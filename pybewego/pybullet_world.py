@@ -20,6 +20,7 @@
 import pybullet
 from pyrieef.geometry.workspace import *
 
+
 class PybulletWorld:
 
     """
@@ -27,29 +28,23 @@ class PybulletWorld:
     based on pybullet rendering
     """
 
-    def __init__(self, robot, workspace):
+    def __init__(self, robot):
 
         self._p = robot._p
 
+        # create basic environment end setup camera
         self._p.setAdditionalSearchPath(pybullet_data.getDataPath())
         self._p.loadURDF("plane.urdf")
         self._p.resetDebugVisualizerCamera(3.7, -38, -69, [0, 0, 0])
 
-        # create red sphere
-        self.sphere_r = self._p.createVisualShape(pybullet.GEOM_SPHERE,
-                                           radius=.1, rgbaColor=[1, 0, 0, 1])
-        self.sphere_g = self._p.createVisualShape(pybullet.GEOM_SPHERE,
-                                           radius=.1, rgbaColor=[0, .8, .8, 1])
-        goal = _p.createMultiBody(baseVisualShapeIndex=sphere_r)
-
-
-    def create_sphere(p, radius):
-        b = self._p.createMultiBody(baseVisualShapeIndex=sphere_g)
+    def create_sphere(center, radius):
+        sphere = self._p.createVisualShape(
+            pybullet.GEOM_SPHERE, radius=.1, rgbaColor=[1, 0, 0, 1])
+        b = self._p.createMultiBody(baseVisualShapeIndex=sphere)
         self._p.resetBasePositionAndOrientation(  # position red sphere
-            b, p + [0.], [0., 0., 0, 1])
+            b, center + [0.], [0., 0., 0, 1])
         trajectory_spheres.append(b)
 
-    def create_box():
-        # TODO
-
-
+    def create_box(center, dim, orientation=np.identity(3)):
+        box = self._p.createVisualShape(
+            pybullet.GEOM_BOX, halfExtents=[.5, .5, .5], rgbaColor=[0, .8, .8, 1])
