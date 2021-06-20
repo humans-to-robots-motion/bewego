@@ -21,20 +21,26 @@ import demos_common_imports
 import numpy as np
 import time
 from pybewego.pybullet_loader import PybulletRobot
-from pybewego.pybullet_world import PybulletRobot
+from pybewego.pybullet_world import PybulletWorld
 from pybewego.kinematics import Kinematics
 from pybewego import RobotOptimizer
+from pyrieef.geometry.workspace import *
 import pybullet
 import pybullet_data
+from scipy.spatial.transform import Rotation
 
 trajectory_spheres = []
-sphere_g = None
-sphere_r = None
+color_j = [.3, .3, .3, 1]
 
 # specify the workspace
 workspace = Workspace()
 workspace.obstacles.append(
-    OrientedBox(dim=[.2, .5, .1], orienation=np.identity(3)))
+    OrientedBox(origin=[1, 2, .0], dim=[1, 1, .7],
+                orientation=np.identity(3)))
+workspace.obstacles.append(
+    OrientedBox(
+        origin=[1.5, -.5, .0], dim=[1, 2, .7],
+        orientation=Rotation.from_euler('z', [45]).as_matrix()[0]))
 workspace_bounds = [-1, 1, -1, 1, -1, 1]
 
 # load robot
@@ -42,10 +48,17 @@ robot = PybulletRobot("../data/r3_robot.urdf", with_gui=True)
 
 # pybullet world and create floor
 world = PybulletWorld(robot)
+world._p.resetDebugVisualizerCamera(
+    cameraTargetPosition=[.86, .66, -.22],
+    cameraDistance=3.52,
+    cameraYaw=-60,
+    cameraPitch=-70)
+world.add_sphere([2.2, .0, .0], .05)  # Add goal
+world.add_workspace_obstacles(workspace, color=color_j)
 
 # end-effector idx & arm dofs
 eff_idx = 3
-dofs = [0, 1, 2]
+dofs = [0, 1, 2, 4]
 
 # Sample goal positions
 np.random.seed(0)
@@ -56,24 +69,33 @@ T = 30
 n = len(dofs)
 dt = 0.1
 
-keypoints = [("link3", .01)]
+keypoints = [("link1", .01), ("link2", .01), ("link3", .01), ("end", .01)]
 kinematics = robot.create_robot(keypoints)
+
+print("Optimization problem:")
+print("T : ", T)
+print("n : ", n)
+print("dt : ", dt)
 
 # for t in range(T):
 #     create_sphere([0, 0, 0], .03)
 
-problem = RobotMotionOptimization(
-    kinematics, workspace, trajectory, dt, x_goal, workspace_bounds)
-problem.verbose = False
+# problem = RobotMotionOptimization(
+#     kinematics, workspace, trajectory, dt, x_goal, workspace_bounds)
+# problem.verbose = False
 
-p = CostFunctionParameters()
-p.s_velocity_norm = 0
-p.s_acceleration_norm = 10
-p.s_obstacles = 1e+3
-p.s_obstacle_alpha = 7
-p.s_obstacle_gamma = 60
-p.s_obstacle_margin = 0
-p.s_obstacle_constraint = 1
-p.s_terminal_potential = 1e+4
+# p = CostFunctionParameters()
+# p.s_velocity_norm = 0
+# p.s_acceleration_norm = 10
+# p.s_obstacles = 1e+3
+# p.s_obstacle_alpha = 7
+# p.s_obstacle_gamma = 60
+# p.s_obstacle_margin = 0
+# p.s_obstacle_constraint = 1
+# p.s_terminal_potential = 1e+4
 
-problem.initialize_objective(p)
+# problem.initialize_objective(p)
+
+while True:
+    robot._p.stepSimulation()
+    pass

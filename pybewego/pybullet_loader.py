@@ -121,8 +121,7 @@ class PybulletRobot:
     def create_robot(self, keypoints):
         """ Creates a Bewego robot object (which includes task maps) """
         kinematic_structure_info = []
-        for name in active_bodies:
-            body = self.rigid_bodies
+        for body in self.rigid_bodies:
             body_info = RigidBodyInfo()
             body_info.name = body.name
             body_info.joint_name = body.joint_name

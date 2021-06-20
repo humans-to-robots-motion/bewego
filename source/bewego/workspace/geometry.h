@@ -45,9 +45,10 @@ inline Eigen::Matrix3d QuaternionToMatrix(const Eigen::VectorXd& q) {
 }
 
 /**
- *   This is supposed to be the URDF convention
- *   tested against pybullet. If it's correct there it
- *   it should be ok.
+ * This is supposed to be the URDF convention
+ *  - tested against pybullet.
+ *  - tested against scipy (see test_kinematics.py)
+ * If it's correct there it it should be ok.
  */
 inline Eigen::Vector4d EulerToQuaternion(const Eigen::VectorXd& rpy) {
   assert(rpy.size() == 3);

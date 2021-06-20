@@ -27,6 +27,7 @@ from pybewego.kinematics import *
 from pyrieef.geometry.differentiable_geometry import *
 from numpy.testing import assert_allclose
 import time
+from scipy.spatial.transform import Rotation
 
 
 directory = os.path.abspath(os.path.dirname(__file__))
@@ -46,6 +47,13 @@ def test_geometry():
     robot = PybulletRobot("../data/r2_robot.urdf")
     rpy = np.random.random(3)
     q1 = robot._p.getQuaternionFromEuler(rpy)
+    q2 = euler_to_quaternion(rpy)
+    assert_allclose(q1, q2, atol=1e-6)
+
+
+def test_geometry_scipy():
+    rpy = np.random.random(3)
+    q1 = Rotation.from_euler('xyz', rpy).as_quat()
     q2 = euler_to_quaternion(rpy)
     assert_allclose(q1, q2, atol=1e-6)
 
@@ -311,4 +319,5 @@ def test_optimizer_construction():
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
 # test_create_robot()
-test_optimizer_construction()
+# test_optimizer_construction()
+test_geometry_scipy()
