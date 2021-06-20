@@ -293,21 +293,6 @@ def test_create_robot():
             assert_allclose(x1, x2, atol=1e-6)
 
 
-def test_optimizer_construction():
-    """
-    TODO move elsewhere 
-
-        - I need to create a robot using the bodies info
-        - check if I can do that for Baxter using the python inteface
-        - First do it for the 3DOF planar robot.
-    """
-    kinematics = Kinematics(urdf_file="../data/r3_robot.urdf")
-    active_dofs = ["link1", "link2", "link3"]
-    keypoints = [("link3", .01)]
-    robot = kinematics.create_robot(active_dofs, keypoints)
-    optimizer = RobotOptimizer(3, 30, .1, [0., 1., 0., 1., 0., 1.], robot)
-
-
 # test_import_planar()
 # test_geometry()
 # test_parser()
@@ -319,5 +304,4 @@ def test_optimizer_construction():
 # test_differentiable_jacobian()
 # test_jacobian_baxter()
 # test_create_robot()
-# test_optimizer_construction()
-test_geometry_scipy()
+# test_geometry_scipy()

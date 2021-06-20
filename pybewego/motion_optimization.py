@@ -407,11 +407,11 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
         def __init__(self, workspace, trajectory, dt, q_goal, goal_radius=0.1,
                      q_waypoint=None,
                      bounds=[0., 1., 0., 1.]):
-            NavigationOptimization.__init__(
-                workspace, trajectory, dt, q_goal,
-                goal_radius=goal_radius,
-                q_waypoint=q_waypoint,
-                bounds=bounds)
+            NavigationOptimization.__init__(self,
+                                            workspace, trajectory, dt, q_goal,
+                                            goal_radius=goal_radius,
+                                            q_waypoint=q_waypoint,
+                                            bounds=bounds)
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -445,9 +445,12 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
         def __init__(self, robot, workspace, trajectory, dt, x_goal,
                      bounds=[0., 1., 0., 1., 0., 1.]):
+
+            # def __init__(self, workspace, trajectory, dt, q_goal,
+            #              bounds=[0., 1., 0., 1.]):
+
             IpoptMotionOptimization.__init__(
-                workspace, trajectory, dt, x_goal,
-                bounds=bounds)
+                self, workspace,  trajectory,  dt,  x_goal, bounds)
 
             assert robot.keypoint_map(0).input_dimension() == self.n
             assert len(bounds) == 6

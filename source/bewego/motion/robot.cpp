@@ -85,6 +85,14 @@ Robot::Robot(const std::vector<RigidBodyInfo>& bodies,
   CreateTaskMaps();
 }
 
+KinematicMapPtr Robot::task_map(std::string name) const {
+  return task_maps_.at(name);
+}
+
+KinematicMapPtr Robot::keypoint_map(uint32_t i) const {
+  return task_map(keypoints_[i].first);
+}
+
 void Robot::CreateTaskMaps() {
   task_maps_.clear();
   keypoints_radii_.clear();

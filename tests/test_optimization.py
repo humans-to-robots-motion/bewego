@@ -24,6 +24,8 @@ import cvxopt
 import numpy as np
 from numpy.testing import assert_allclose
 from pybewego import test_motion_optimization
+from pybewego import RobotOptimizer
+from pybewego.kinematics import *
 
 
 def load_qp():
@@ -85,6 +87,19 @@ def test_many_optimization():
 
     for _ in range(100):
         assert test_motion_optimization()
+
+
+def test_optimizer_construction():
+    """
+        - I need to create a robot using the bodies info
+        - check if I can do that for Baxter using the python inteface
+        - First do it for the 3DOF planar robot.
+    """
+    kinematics = Kinematics(urdf_file="../data/r3_robot.urdf")
+    active_dofs = ["link1", "link2", "link3"]
+    keypoints = [("link3", .01)]
+    robot = kinematics.create_robot(active_dofs, keypoints)
+    optimizer = RobotOptimizer(3, 30, .1, [0., 1., 0., 1., 0., 1.], robot)
 
 # test_cvox()
 test_many_optimization()

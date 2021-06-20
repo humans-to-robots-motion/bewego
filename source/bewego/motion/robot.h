@@ -78,15 +78,10 @@ class Robot {
         const std::vector<std::pair<std::string, double>>& keypoints);
 
   // returns the task map
-  KinematicMapPtr task_map(std::string name) const {
-    return task_maps_.at(name);
-  }
+  KinematicMapPtr task_map(std::string name) const;
 
   // returns the position task map of each keypoint
-  KinematicMapPtr keypoint_map(uint32_t i) const {
-    std::cout << "get task map : " << keypoints_[i].first << std::endl;
-    return task_map(keypoints_[i].first);
-  }
+  KinematicMapPtr keypoint_map(uint32_t i) const;
 
   // returns the keypoints radii
   double keypoint_radius(uint32_t i) const { return keypoints_[i].second; }

@@ -213,8 +213,7 @@ void FreeflyerOptimzer::AddGeodesicTerm(double scalar) {
   }
 }
 
-void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double margin,
-                                                       double scalar) {
+void FreeflyerOptimzer::AddKeyPointsSurfaceConstraints(double scalar) {
   if (scalar <= 0.) return;
   uint32_t dim = function_network_->input_dimension();
   if (clique_collision_constraints_) {

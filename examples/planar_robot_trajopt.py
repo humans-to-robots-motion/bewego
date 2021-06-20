@@ -18,13 +18,22 @@
 #                                               Jim Mainprice Fri June 18 2021
 
 import demos_common_imports
-import numpy as np
-import time
+
+# pybewego
+from pybewego.motion_optimization import RobotMotionOptimization
+from pybewego.motion_optimization import CostFunctionParameters
 from pybewego.pybullet_loader import PybulletRobot
 from pybewego.pybullet_world import PybulletWorld
 from pybewego.kinematics import Kinematics
 from pybewego import RobotOptimizer
+
+# pyrieef
 from pyrieef.geometry.workspace import *
+from pyrieef.motion.trajectory import *
+
+# External dependencies
+import numpy as np
+import time
 import pybullet
 import pybullet_data
 from scipy.spatial.transform import Rotation
@@ -46,16 +55,6 @@ workspace_bounds = [-1, 1, -1, 1, -1, 1]
 # load robot
 robot = PybulletRobot("../data/r3_robot.urdf", with_gui=True)
 
-# pybullet world and create floor
-world = PybulletWorld(robot)
-world._p.resetDebugVisualizerCamera(
-    cameraTargetPosition=[.86, .66, -.22],
-    cameraDistance=3.52,
-    cameraYaw=-60,
-    cameraPitch=-70)
-world.add_sphere([2.2, .0, .0], .05)  # Add goal
-world.add_workspace_obstacles(workspace, color=color_j)
-
 # end-effector idx & arm dofs
 eff_idx = 3
 dofs = [0, 1, 2, 4]
@@ -64,37 +63,54 @@ dofs = [0, 1, 2, 4]
 np.random.seed(0)
 positions = np.random.uniform(low=-3, high=3, size=(100, 2))
 
+# Goal position
+x_goal = np.array([2.2, .0, .0])
+
+# Initial configuration
+q_init = np.array([np.pi / 2, 0, 0, 0])
+robot.set_and_update(q_init)
+
 # Trajectory parameters
 T = 30
 n = len(dofs)
 dt = 0.1
 
-keypoints = [("link1", .01), ("link2", .01), ("link3", .01), ("end", .01)]
+keypoints = [("link1", .1), ("link2", .1), ("link3", .1), ("end", .1)]
 kinematics = robot.create_robot(keypoints)
+
+# Initalize trajectory
+trajectory = no_motion_trajectory(q_init, T)
 
 print("Optimization problem:")
 print("T : ", T)
 print("n : ", n)
 print("dt : ", dt)
 
-# for t in range(T):
-#     create_sphere([0, 0, 0], .03)
+problem = RobotMotionOptimization(
+    kinematics, workspace, trajectory, dt, x_goal, workspace_bounds)
+problem.verbose = False
 
-# problem = RobotMotionOptimization(
-#     kinematics, workspace, trajectory, dt, x_goal, workspace_bounds)
-# problem.verbose = False
+p = CostFunctionParameters()
+p.s_velocity_norm = 0
+p.s_acceleration_norm = 10
+p.s_obstacles = 1e+3
+p.s_obstacle_alpha = 7
+p.s_obstacle_gamma = 60
+p.s_obstacle_margin = 0
+p.s_obstacle_constraint = 1
+p.s_terminal_potential = 1e+4
 
-# p = CostFunctionParameters()
-# p.s_velocity_norm = 0
-# p.s_acceleration_norm = 10
-# p.s_obstacles = 1e+3
-# p.s_obstacle_alpha = 7
-# p.s_obstacle_gamma = 60
-# p.s_obstacle_margin = 0
-# p.s_obstacle_constraint = 1
-# p.s_terminal_potential = 1e+4
+problem.initialize_objective(p)
 
-# problem.initialize_objective(p)
+# pybullet world and create floor
+world = PybulletWorld(robot)
+world._p.resetDebugVisualizerCamera(
+    cameraTargetPosition=[.86, .66, -.22],
+    cameraDistance=3.52,
+    cameraYaw=-60,
+    cameraPitch=-70)
+world.add_sphere(x_goal, .05)  # Add goal
+world.add_workspace_obstacles(workspace, color=color_j)
 
 while True:
     robot._p.stepSimulation()

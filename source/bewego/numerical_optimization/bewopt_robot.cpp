@@ -219,13 +219,12 @@ void RobotOptimizer::AddGeodesicTerm(double scalar) {
   }
 }
 
-void RobotOptimizer::AddKeyPointsSurfaceConstraints(double margin,
-                                                    double scalar) {
+void RobotOptimizer::AddKeyPointsSurfaceConstraints(double scalar) {
   if (scalar <= 0.) return;
   uint32_t dim = function_network_->input_dimension();
   if (clique_collision_constraints_) {
     // Set up surface constraints for key points.
-    for (uint32_t t = 0; t < T_; t++) {
+    for (uint32_t t = 0; t < T_; ++t) {
       auto network = std::make_shared<FunctionNetwork>(dim, n_);
       auto center_clique = function_network_->CenterOfCliqueMap();
       auto phi = ComposedWith(smooth_sdf_[t], center_clique);
@@ -234,7 +233,7 @@ void RobotOptimizer::AddKeyPointsSurfaceConstraints(double margin,
     }
   } else {
     // Set up surface constraints for key points.
-    for (uint32_t t = 1; t <= T_; ++t) {
+    for (uint32_t t = 0; t < T_; ++t) {
       for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
         auto p = robot_->keypoint_map(i);
         auto r = robot_->keypoint_radius(i);
