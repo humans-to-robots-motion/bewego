@@ -61,7 +61,7 @@ class RobotOptimizer : public TrajectoryOptimizer {
   }
 
   void AddGeodesicFlowTerm(double scalar);
-  void AddGeodesicTerm(double scalar);
+  void AddGeodesicTerms(double scalar, double alpha);
   void AddKeyPointsSurfaceConstraints(double scalar);
   void AddJointLimitConstraints(double scalar);
   void AddTerminalEndeffectorPotentialTerms(const Eigen::VectorXd& x_goal,

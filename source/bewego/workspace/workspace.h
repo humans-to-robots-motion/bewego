@@ -43,8 +43,8 @@ using VectorOfWorkpaceObjects = std::vector<WorkspaceObjectPtr>;
 
 class Workspace {
  public:
-  Workspace(const VectorOfWorkpaceObjects& objects)
-      : objects_(objects), dimension_(2) {}
+  Workspace(const VectorOfWorkpaceObjects& objects, uint32_t dimension = 2)
+      : objects_(objects), dimension_(dimension) {}
 
   VectorOfMaps ExtractSurfaceFunctions() const {
     VectorOfMaps signed_distance_functions;
@@ -70,6 +70,9 @@ class Workspace {
    rectangles and circles to the 3D case
   */
   uint32_t dimension() const { return dimension_; }
+
+  // Returns the objects
+  const std::vector<WorkspaceObjectPtr>& objects() const { return objects_; }
 
   /* Evaluate wether a given point is inside the sphere worlds */
   bool InCollision(const Eigen::VectorXd& p) const {
@@ -104,7 +107,7 @@ class Workspace {
 
  protected:
   uint32_t dimension_;
-  std::vector<std::shared_ptr<const WorkspaceObject>> objects_;
+  std::vector<WorkspaceObjectPtr> objects_;
 };
 
 /**

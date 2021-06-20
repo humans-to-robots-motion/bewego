@@ -411,7 +411,7 @@ PYBIND11_MODULE(_pybewego, m) {
 
       // Objectives
       .def("add_smoothness_terms", &opt::RobotOptimizer::AddSmoothnessTerms)
-      .def("add_obstacle_terms", &opt::RobotOptimizer::AddObstacleTerms)
+      .def("add_obstacle_terms", &opt::RobotOptimizer::AddGeodesicTerms)
       .def("add_terminal_potential_terms",
            &opt::RobotOptimizer::AddTerminalPotentialTerms)
       .def("add_terminal_endeffector_potential_terms",

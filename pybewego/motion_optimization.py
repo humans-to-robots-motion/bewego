@@ -122,7 +122,7 @@ class MotionOptimization:
                 print("Shape {} not supported by bewego".format(type(o)))
 
         if self.verbose:
-                self.problem.set_verbose(True)
+            self.problem.set_verbose(True)
 
     def initialize_objective(self, scalars):
         """
@@ -449,7 +449,9 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
         """
 
         def __init__(self, robot, workspace, trajectory, dt, x_goal,
-                     q_goal=None, bounds=[0., 1., 0., 1., 0., 1.]):
+                     q_goal=None,
+                     end_effector_id=0,
+                     bounds=[0., 1., 0., 1., 0., 1.]):
 
             # def __init__(self, workspace, trajectory, dt, q_goal,
             #              bounds=[0., 1., 0., 1.]):
@@ -462,6 +464,7 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
             self.robot = robot
             self.x_goal = x_goal
+            self.end_effector_id = end_effector_id
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -482,11 +485,12 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             IpoptMotionOptimization.initialize_objective(self, scalars)
             # self.create_objective_functions()
 
+            print("-- set end effector id : ", self.end_effector_id)
+            self.problem.set_end_effector(self.end_effector_id)
+
             if (scalars.s_terminal_endeffector_potential > 0 and
                     self.x_goal is not None):
                 print("-- add end-effector terminal potential ({})".format(
                     scalars.s_terminal_endeffector_potential))
                 self.problem.add_terminal_endeffector_potential_terms(
                     self.x_goal, scalars.s_terminal_endeffector_potential)
-
-

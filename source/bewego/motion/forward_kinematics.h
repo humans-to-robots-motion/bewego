@@ -30,7 +30,6 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
-#include <memory>
 
 using std::cout;
 using std::endl;
@@ -192,6 +191,9 @@ class KinematicChain {
     for (const auto& info : rigid_bodies_info) {
       AddRigidBodyFromInfo(info);
     }
+    // Setup the kinematic chain in a known state
+    auto q_zero = Eigen::VectorXd::Zero(nb_active_dofs());
+    SetAndUpdate(q_zero);
   }
 
   virtual ~KinematicChain();

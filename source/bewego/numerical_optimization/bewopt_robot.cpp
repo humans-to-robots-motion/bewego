@@ -187,11 +187,23 @@ void RobotOptimizer::AddGeodesicFlowTerm(double scalar) {
   }
 }
 
-void RobotOptimizer::AddGeodesicTerm(double scalar) {
+void RobotOptimizer::AddGeodesicTerms(double scalar, double alpha) {
   // Penalize all dimensions equally, because the scaling of the dimensions
   // should already be handled by the workspace geometry map, itself.
+
+  /**
+
+    TODO Debug this.
+
+   */
+
   if (scalar <= 0.) return;
-  auto phi = workspace_->WorkspaceGeometryMap();
+  auto workspace_potential = std::make_shared<WorkspacePotentalPrimitive>(
+      workspace_->objects(), alpha);
+  auto phi = workspace_potential->WorkspaceGeometryMap();
+  auto ws_dim = robot_->keypoint_map(0)->output_dimension();
+  auto ws_map_dim = phi->output_dimension();
+
   Eigen::VectorXd regularizers = Eigen::VectorXd::Ones(phi->output_dimension());
 
   for (uint32_t i = 0; i < robot_->keypoints().size(); i++) {
@@ -202,16 +214,28 @@ void RobotOptimizer::AddGeodesicTerm(double scalar) {
       //        1/2 | d phi(q)|^2 = 1/2 | J_phi dx |^2
 
       auto potential = ComposedWith(
-          std::make_shared<SquaredNorm>(n_),
-          ComposedWith(
-              std::make_shared<RangeSubspaceMap>(2 * n_, range(n_, 2 * n_)),
-              std::make_shared<PosVelDifferentiableMap>(phi)));
+          std::make_shared<SquaredNorm>(ws_map_dim),
+          ComposedWith(std::make_shared<RangeSubspaceMap>(
+                           2 * ws_map_dim, range(ws_map_dim, 2 * ws_map_dim)),
+                       std::make_shared<PosVelDifferentiableMap>(phi)));
 
       // Calculate PosVel of FK(q)
-      auto positions = std::make_shared<MultiEvalMap>(
-          robot_->keypoint_map(i), function_network_->nb_clique_elements());
-      auto posvel = std::make_shared<FiniteDifferencesPosVel>(n_, dt_);
-      auto f = ComposedWith(potential, ComposedWith(posvel, positions));
+      auto fk = std::make_shared<MultiEvalMap>(robot_->keypoint_map(i), 2);
+      auto positions = ComposedWith(fk, function_network_->LeftOfCliqueMap());
+      auto posvel = ComposedWith(
+          std::make_shared<FiniteDifferencesPosVel>(ws_dim, dt_), positions);
+
+      // cout << "posvel_from_pos->input_dimension() : "
+      //      << posvel->input_dimension() << endl;
+      // cout << "positions->output_dimension() : "
+      //      << positions->output_dimension() << endl;
+
+      // auto f = ComposedWith(potential, pos_vel);
+
+      // TEST
+      auto f = ComposedWith(potential, posvel);
+
+      // auto phi = std::make_shared<SquaredNorm>(3 * n_);
 
       // Scale and register
       function_network_->RegisterFunctionForClique(t, dt_ * scalar * f);
@@ -286,11 +310,12 @@ void RobotOptimizer::AddTerminalEndeffectorPotentialTerms(
         "RobotOptimizer (AddTerminalEndeffectorPotentialTerms)"
         ": x_goal.size() != 3");
   }
-  auto center_clique = function_network_->CenterOfCliqueMap();
   auto square_dist = std::make_shared<SquaredNorm>(x_goal);
   auto end_effector_pos = robot_->keypoint_map(end_effector_id_);
   auto terminal_potential = ComposedWith(square_dist, end_effector_pos);
-  function_network_->RegisterFunctionForLastClique(scalar * terminal_potential);
+  auto center_clique = function_network_->CenterOfCliqueMap();
+  auto phi = ComposedWith(terminal_potential, center_clique);
+  function_network_->RegisterFunctionForLastClique(scalar * phi);
 }
 
 void RobotOptimizer::AddGoalConstraint(const Eigen::VectorXd& x_goal,

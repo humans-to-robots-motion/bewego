@@ -60,7 +60,9 @@ class Compose : public CombinationOperator {
  public:
   Compose(DifferentiableMapPtr f, DifferentiableMapPtr g) {
     // Make sure the composition makes sense
-    assert(g->output_dimension() == f->input_dimension());
+    if (g->output_dimension() != f->input_dimension()) {
+      throw std::runtime_error("Compose : maps dimension missmatch");
+    }
     f_ = f;
     g_ = g;
     type_ = "Compose";

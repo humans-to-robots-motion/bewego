@@ -130,6 +130,9 @@ class PybulletRobot:
             body_info.dof_upper_limit = body.joint_bounds.high
             body_info.local_in_prev = body.local_in_prev
             body_info.joint_axis_in_local = body.joint_axis_in_local
+            print(body.joint_name)
+            print(body.type)
+            print(body.local_in_prev)
             kinematic_structure_info.append(body_info)
         return Robot(kinematic_structure_info, keypoints)
 

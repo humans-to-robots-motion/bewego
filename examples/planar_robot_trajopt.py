@@ -57,8 +57,12 @@ workspace_bounds = [-1, 1, -1, 1, -1, 1]
 robot = PybulletRobot("../data/r3_robot.urdf", with_gui=True)
 
 # end-effector idx & arm dofs
-eff_idx = 3
 dofs = [0, 1, 2, 4]
+keypoints = [("link1", .1), ("link2", .1), ("link3", .1), ("end", .1)]
+keypoints = [("link3", .01), ("end", .01)]
+# keypoints = [("end", .01)]
+eff_idx = len(keypoints) - 1
+kinematics = robot.create_robot(keypoints)
 
 # Sample goal positions
 np.random.seed(0)
@@ -71,14 +75,13 @@ x_goal = np.array([2.2, .0, .0])
 q_init = np.array([np.pi / 2, 0, 0, 0])
 q_goal = np.array([0, -np.pi / 4, -np.pi / 4, 0])
 robot.set_and_update(q_init)
+robot.set_and_update([0, 0, 0, 0])
 
 # Trajectory parameters
 T = 30
 n = len(dofs)
 dt = 0.1
 
-keypoints = [("link1", .1), ("link2", .1), ("link3", .1), ("end", .1)]
-kinematics = robot.create_robot(keypoints)
 
 # Initalize trajectory
 trajectory = no_motion_trajectory(q_init, T)
@@ -90,29 +93,33 @@ print("n : ", n)
 print("dt : ", dt)
 
 problem = RobotMotionOptimization(
-    kinematics, workspace, trajectory, dt, x_goal, q_goal, workspace_bounds)
+    kinematics, workspace, trajectory, dt,
+    x_goal, q_goal,
+    eff_idx,
+    workspace_bounds
+)
 problem.verbose = True
 
 p = CostFunctionParameters()
-p.s_velocity_norm = 0
-p.s_acceleration_norm = 1
-p.s_obstacles = 0
+p.s_velocity_norm = 1
+p.s_acceleration_norm = 5
+p.s_obstacles = 10
 p.s_obstacle_alpha = 7
 p.s_obstacle_gamma = 60
 p.s_obstacle_margin = 0
-p.s_obstacle_constraint = 0
-p.s_terminal_potential = 1e+4
-p.s_terminal_endeffector_potential = 0
+p.s_obstacle_constraint = 1
+p.s_terminal_potential = 0
+p.s_terminal_endeffector_potential = 1e+5
 
 # Ipopt Options
 options = {}
-# options["tol"] = 1e-2
-# options["acceptable_tol"] = 5e-3
-# options["acceptable_constr_viol_tol"] = 5e-1
-# options["constr_viol_tol"] = 5e-2
-# options["max_iter"] = 200
-# # options["bound_relax_factor"] = 0
-# options["obj_scaling_factor"] = 1e+2
+options["tol"] = 1e-2
+options["acceptable_tol"] = 5e-3
+options["acceptable_constr_viol_tol"] = 5e-1
+options["constr_viol_tol"] = 5e-2
+options["max_iter"] = 200
+# options["bound_relax_factor"] = 0
+options["obj_scaling_factor"] = 1e+2
 
 # Optimize
 problem.optimize(p, options)
@@ -124,7 +131,7 @@ world._p.resetDebugVisualizerCamera(
     cameraDistance=3.52,
     cameraYaw=-60,
     cameraPitch=-70)
-world.add_sphere(x_goal, .05)  # Add goal
+world.add_sphere(x_goal, .15)  # Add goal
 world.add_workspace_obstacles(workspace, color=color_j)
 world._p.stepSimulation()
 
@@ -133,4 +140,4 @@ while True:
     for q in problem.trajectory.list_configurations():
         robot.set_and_update(q)
         time.sleep(.1)
-    time.sleep(1)
+    time.sleep(.1)
