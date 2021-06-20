@@ -37,6 +37,7 @@ import time
 import pybullet
 import pybullet_data
 from scipy.spatial.transform import Rotation
+import time
 
 trajectory_spheres = []
 color_j = [.3, .3, .3, 1]
@@ -68,6 +69,7 @@ x_goal = np.array([2.2, .0, .0])
 
 # Initial configuration
 q_init = np.array([np.pi / 2, 0, 0, 0])
+q_goal = np.array([0, -np.pi / 4, -np.pi / 4, 0])
 robot.set_and_update(q_init)
 
 # Trajectory parameters
@@ -81,26 +83,39 @@ kinematics = robot.create_robot(keypoints)
 # Initalize trajectory
 trajectory = no_motion_trajectory(q_init, T)
 
+# Setup optimizer
 print("Optimization problem:")
 print("T : ", T)
 print("n : ", n)
 print("dt : ", dt)
 
 problem = RobotMotionOptimization(
-    kinematics, workspace, trajectory, dt, x_goal, workspace_bounds)
-problem.verbose = False
+    kinematics, workspace, trajectory, dt, x_goal, q_goal, workspace_bounds)
+problem.verbose = True
 
 p = CostFunctionParameters()
 p.s_velocity_norm = 0
-p.s_acceleration_norm = 10
-p.s_obstacles = 1e+3
+p.s_acceleration_norm = 1
+p.s_obstacles = 0
 p.s_obstacle_alpha = 7
 p.s_obstacle_gamma = 60
 p.s_obstacle_margin = 0
-p.s_obstacle_constraint = 1
+p.s_obstacle_constraint = 0
 p.s_terminal_potential = 1e+4
+p.s_terminal_endeffector_potential = 0
 
-problem.initialize_objective(p)
+# Ipopt Options
+options = {}
+# options["tol"] = 1e-2
+# options["acceptable_tol"] = 5e-3
+# options["acceptable_constr_viol_tol"] = 5e-1
+# options["constr_viol_tol"] = 5e-2
+# options["max_iter"] = 200
+# # options["bound_relax_factor"] = 0
+# options["obj_scaling_factor"] = 1e+2
+
+# Optimize
+problem.optimize(p, options)
 
 # pybullet world and create floor
 world = PybulletWorld(robot)
@@ -111,7 +126,11 @@ world._p.resetDebugVisualizerCamera(
     cameraPitch=-70)
 world.add_sphere(x_goal, .05)  # Add goal
 world.add_workspace_obstacles(workspace, color=color_j)
+world._p.stepSimulation()
 
 while True:
     robot._p.stepSimulation()
-    pass
+    for q in problem.trajectory.list_configurations():
+        robot.set_and_update(q)
+        time.sleep(.1)
+    time.sleep(1)

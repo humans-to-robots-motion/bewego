@@ -280,7 +280,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_sdf_margin", &bewego::MotionObjective::SetSDFMargin)
 
       .def("objective", &bewego::MotionObjective::objective)
-      .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential);
+      .def("obstacle_potential", &bewego::MotionObjective::obstacle_potential)
+      .def("set_verbose", &bewego::MotionObjective::set_verbose);
 
 #ifdef WITH_IPOPT
 
@@ -344,7 +345,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_trajectory_publisher",
            &opt::PlanarOptimizer::set_trajectory_publisher)
       .def("objective", &opt::PlanarOptimizer::objective)
-      .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential);
+      .def("obstacle_potential", &opt::PlanarOptimizer::obstacle_potential)
+      .def("set_verbose", &opt::PlanarOptimizer::set_verbose);
 
   py::class_<opt::FreeflyerOptimzer>(m, "FreeflyerOptimzer")
       .def(py::init<uint32_t, uint32_t, double, const std::vector<double>&,
@@ -388,7 +390,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_q_default", &opt::FreeflyerOptimzer::set_q_default)
       .def("set_end_effector", &opt::FreeflyerOptimzer::set_end_effector)
       .def("set_clique_collision_constraints",
-           &opt::FreeflyerOptimzer::set_clique_collision_constraints);
+           &opt::FreeflyerOptimzer::set_clique_collision_constraints)
+      .def("set_verbose", &opt::FreeflyerOptimzer::set_verbose);
 
   py::class_<opt::RobotOptimizer>(m, "RobotOptimizer")
       .def(py::init<uint32_t, uint32_t, double, const std::vector<double>&,
@@ -411,6 +414,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("add_obstacle_terms", &opt::RobotOptimizer::AddObstacleTerms)
       .def("add_terminal_potential_terms",
            &opt::RobotOptimizer::AddTerminalPotentialTerms)
+      .def("add_terminal_endeffector_potential_terms",
+           &opt::RobotOptimizer::AddTerminalEndeffectorPotentialTerms)
       .def("add_waypoint_terms", &opt::RobotOptimizer::AddWayPointTerms)
 
       // Workspace
@@ -431,7 +436,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def("set_q_default", &opt::RobotOptimizer::set_q_default)
       .def("set_end_effector", &opt::RobotOptimizer::set_end_effector)
       .def("set_clique_collision_constraints",
-           &opt::RobotOptimizer::set_clique_collision_constraints);
+           &opt::RobotOptimizer::set_clique_collision_constraints)
+      .def("set_verbose", &opt::RobotOptimizer::set_verbose);
 #endif
 
   m.attr("__version__") = "0.0.1";

@@ -49,6 +49,7 @@ class CostFunctionParameters:
         self.s_obstacle_constraint = 0
         self.s_waypoint_constraint = 0
         self.s_terminal_potential = 1e+5
+        self.s_terminal_endeffector_potential = 0
 
     def __str__(self):
         msg = str()
@@ -92,7 +93,7 @@ class MotionOptimization:
         self.q_waypoint = None
         self.workspace = workspace
         self.trajectory = trajectory
-        self.verbose = False
+        self.verbose = True
         self.problem = None
 
     def _problem(self):
@@ -114,11 +115,14 @@ class MotionOptimization:
             if hasattr(o, '_is_circle'):
                 self.problem.add_sphere(o.origin, o.radius)
             elif hasattr(o, '_is_box'):
-                self.problem.add_box(o.origin, o.dim)
+                self.problem.add_box(o.dim, o.origin)
             elif hasattr(o, '_is_oriented_box'):
-                self.problem.add_oriented_box(o.origin, o.dim, o.orientation)
+                self.problem.add_oriented_box(o.dim, o.origin, o.orientation)
             else:
                 print("Shape {} not supported by bewego".format(type(o)))
+
+        if self.verbose:
+                self.problem.set_verbose(True)
 
     def initialize_objective(self, scalars):
         """
@@ -292,6 +296,24 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
             self.obstacle_potential = self.problem.obstacle_potential()  # TODO
             self.problem.set_trajectory_publisher(False, 100000)
 
+        def optimize(self,
+                     scalars,
+                     ipopt_options={}):
+            self.initialize_objective(scalars)
+
+            res = self.problem.optimize(
+                self.trajectory.x(),
+                ipopt_options
+            )
+            self.trajectory.active_segment()[:] = res.x
+            dist = float('inf')
+            if self.q_goal is not None:
+                dist = np.linalg.norm(
+                    self.trajectory.final_configuration() - self.q_goal)
+            if self.verbose:
+                print(("gradient norm : ", np.linalg.norm(res.jac)))
+            return [dist < 1.e-3, self.trajectory]
+
     class NavigationOptimization(IpoptMotionOptimization):
 
         """
@@ -366,23 +388,6 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
 
             self.create_objective_functions()
 
-        def optimize(self,
-                     scalars,
-                     ipopt_options={}):
-            self.initialize_objective(scalars)
-
-            res = self.problem.optimize(
-                self.trajectory.x(),
-                self.q_goal,
-                ipopt_options
-            )
-            self.trajectory.active_segment()[:] = res.x
-            dist = np.linalg.norm(
-                self.trajectory.final_configuration() - self.q_goal)
-            if self.verbose:
-                print(("gradient norm : ", np.linalg.norm(res.jac)))
-            return [dist < 1.e-3, self.trajectory]
-
     class FreeflyerOptimization(NavigationOptimization):
 
         """
@@ -444,18 +449,19 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
         """
 
         def __init__(self, robot, workspace, trajectory, dt, x_goal,
-                     bounds=[0., 1., 0., 1., 0., 1.]):
+                     q_goal=None, bounds=[0., 1., 0., 1., 0., 1.]):
 
             # def __init__(self, workspace, trajectory, dt, q_goal,
             #              bounds=[0., 1., 0., 1.]):
 
             IpoptMotionOptimization.__init__(
-                self, workspace,  trajectory,  dt,  x_goal, bounds)
+                self, workspace,  trajectory,  dt, q_goal, bounds)
 
             assert robot.keypoint_map(0).input_dimension() == self.n
             assert len(bounds) == 6
 
             self.robot = robot
+            self.x_goal = x_goal
 
         def _problem(self):
             """ This version of the problem uses constraints """
@@ -474,4 +480,13 @@ if WITH_IPOPT:  # only define class if bewego is compiled with IPOPT
                 motion optimization objective
             """
             IpoptMotionOptimization.initialize_objective(self, scalars)
-            self.create_objective_functions()
+            # self.create_objective_functions()
+
+            if (scalars.s_terminal_endeffector_potential > 0 and
+                    self.x_goal is not None):
+                print("-- add end-effector terminal potential ({})".format(
+                    scalars.s_terminal_endeffector_potential))
+                self.problem.add_terminal_endeffector_potential_terms(
+                    self.x_goal, scalars.s_terminal_endeffector_potential)
+
+

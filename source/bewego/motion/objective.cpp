@@ -87,6 +87,10 @@ void MotionObjective::AddObstacleTerms(double scalar, double alpha) {
 
 void MotionObjective::AddTerminalPotentialTerms(const Eigen::VectorXd& q_goal,
                                                 double scalar) {
+  if (q_goal.size() != n_) {
+    throw std::runtime_error(
+        "MotionObjective (AddTerminalPotentialTerms) : q_goal.size() != n_");
+  }
   auto terminal_potential =
       ComposedWith(std::make_shared<SquaredNorm>(q_goal),
                    function_network_->CenterOfCliqueMap());
@@ -144,6 +148,7 @@ void MotionObjective::AddOrientedBox(const Eigen::VectorXd& dimension,
     double angle = std::atan2(sin_theta, cos_theta);
     object = std::make_shared<Rectangle>(center, dimension, angle);
   } else {
+    cout << "Add oriented box to workspace : " << center.transpose() << endl;
     object = std::make_shared<Box>(center, dimension, orientation);
   }
   workspace_objects_.push_back(object);

@@ -69,7 +69,6 @@ class TrajectoryOptimizer : public MotionObjective {
   /** @brief Optimize a given trajectory */
   OptimizeResult Optimize(
       const Eigen::VectorXd& initial_traj,          // entire trajectory
-      const Eigen::VectorXd& x_goal,                // goal configuration
       const std::map<std::string, double>& options  // optimizer options
   ) const;
 

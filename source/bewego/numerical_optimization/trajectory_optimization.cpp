@@ -83,7 +83,7 @@ TrajectoryOptimizer::TrajectoryOptimizer(uint32_t T, double dt, uint32_t n)
     : MotionObjective(T, dt, n),
       with_rotation_(false),
       with_attractor_constraint_(false),
-      ipopt_with_bounds_(true),
+      ipopt_with_bounds_(false),
       ipopt_hessian_approximation_("limited-memory"),
       visualize_inner_loop_(false),
       visualize_slow_down_(false),
@@ -101,7 +101,10 @@ std::vector<Bounds> TrajectoryOptimizer::TrajectoryDofBounds() const {
   // the extension of the current optimizer should not be too hard
   // For now we use the case without rotations, where the configuration
   // dimension matches the workspace dimension
-  assert(n_ == 2);  // TODO make that work in the general case
+  if (n_ != 2) {
+    // TODO make that work in the general case
+    throw std::runtime_error("TrajectoryOptimizer : n_ != 2");
+  }
   assert(n_ == workspace_->dimension());
   auto bounds = DofsBounds();
   std::vector<Bounds> dof_bounds(bounds.size() * (T_ + 1));
@@ -211,7 +214,7 @@ TrajectoryOptimizer::SetupIpoptOptimizer(
 }
 
 OptimizeResult TrajectoryOptimizer::Optimize(
-    const Eigen::VectorXd& initial_traj_vect, const Eigen::VectorXd& x_goal,
+    const Eigen::VectorXd& initial_traj_vect,
     const std::map<std::string, double>& options) const {
   // 1) Get input data
   uint32_t dim = initial_traj_vect.size();

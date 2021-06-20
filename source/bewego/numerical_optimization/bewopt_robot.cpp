@@ -279,6 +279,20 @@ void RobotOptimizer::AddPosturalTerms(double scalar) {
   }
 }
 
+void RobotOptimizer::AddTerminalEndeffectorPotentialTerms(
+    const Eigen::VectorXd& x_goal, double scalar) {
+  if (x_goal.size() != 3) {
+    throw std::runtime_error(
+        "RobotOptimizer (AddTerminalEndeffectorPotentialTerms)"
+        ": x_goal.size() != 3");
+  }
+  auto center_clique = function_network_->CenterOfCliqueMap();
+  auto square_dist = std::make_shared<SquaredNorm>(x_goal);
+  auto end_effector_pos = robot_->keypoint_map(end_effector_id_);
+  auto terminal_potential = ComposedWith(square_dist, end_effector_pos);
+  function_network_->RegisterFunctionForLastClique(scalar * terminal_potential);
+}
+
 void RobotOptimizer::AddGoalConstraint(const Eigen::VectorXd& x_goal,
                                        double scalar) {
   if (scalar <= 0) return;
