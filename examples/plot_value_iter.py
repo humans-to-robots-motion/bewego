@@ -19,10 +19,7 @@
 
 import os
 import sys
-driectory = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, driectory)
-sys.path.insert(0, driectory + os.sep + "../python")
-sys.path.insert(0, driectory + os.sep + "../../pyrieef")
+import demos_common_imports
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -37,7 +34,7 @@ from pybewego import ValueIteration
 
 show_result = True
 radius = .1
-nb_points = 10
+nb_points = 30
 average_cost = False
 
 
@@ -49,15 +46,15 @@ def trajectory(pixel_map, path):
 
 
 workspace = Workspace()
-# workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
-# workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
+workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
+workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
 phi = CostGridPotential2D(SignedDistanceWorkspaceMap(workspace), 10., .1, 10.)
 costmap = phi(workspace.box.stacked_meshgrid(nb_points))
-# print(costmap)
+print(costmap)
 
 pixel_map = workspace.pixel_map(nb_points)
 np.random.seed(2)
-for i in range(100):
+for i in range(2):
     s_w = sample_collision_free(workspace)
     t_w = sample_collision_free(workspace)
     s = pixel_map.world_to_grid(s_w)
@@ -73,12 +70,12 @@ for i in range(100):
     print("s : ", s)
     print("t : ", t)
     viter = ValueIteration()
-    viter.set_max_iterations(100)
+    viter.set_max_iterations(300)
     C = np.ones(costmap.shape)
     C[t[0], t[1]] = 0
-    Vt = viter.run(C, t)
-    V = np.ones(costmap.shape) * Vt.min()
-    V[1:-1, 1:-1] = Vt[1:-1, 1:-1]
+    Vt = viter.run(C.T, t)
+    # V = np.ones(costmap.shape) * Vt.min()
+    # V[1:-1, 1:-1] = Vt[1:-1, 1:-1]
     # path = viter.solve(s, t, costmap)
     print("4) took t : {} sec.".format(time.time() - time_0))
 
@@ -88,7 +85,8 @@ for i in range(100):
             rows=1, cols=1, workspace=workspace, wait_for_keyboard=True)
 
         viewer.set_drawing_axis(0)
-        viewer.draw_ws_img(V, interpolate="none")
+        viewer.draw_ws_img(Vt, interpolate="none")
+        # viewer.draw_ws_img(costmap.T, interpolate="none")
         viewer.draw_ws_obstacles()
         # viewer.draw_ws_line(trajectory(pixel_map, path))
         # viewer.draw_ws_point(s_w)
@@ -102,4 +100,4 @@ for i in range(100):
 
         viewer.show_once()
 
-print(path)
+# print(path)

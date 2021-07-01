@@ -31,6 +31,9 @@
 #include <limits>
 #include <vector>
 
+using std::cout;
+using std::endl;
+
 // 1: Procedure Value_Iteration(S,A,P,R,θ)
 // 2:           Inputs
 // 3:                     S is the set of all states
@@ -63,44 +66,53 @@ std::vector<int> X = {1, -1, 0, 0, 1, -1, -1, 1};
 std::vector<int> Y = {0, 0, 1, -1, 1, -1, 1, -1};
 
 void ValueEightConnected(Eigen::VectorXd &neighbor_V, const Eigen::MatrixXd &V,
-                         const Eigen::MatrixXd &cost, uint32_t i, uint32_t j) {
-  neighbor_V[0] = V(i + X[0], j + Y[0]) + cost(i + X[0], j + Y[0]);
-  neighbor_V[1] = V(i + X[1], j + Y[1]) + cost(i + X[1], j + Y[1]);
-  neighbor_V[2] = V(i + X[2], j + Y[2]) + cost(i + X[2], j + Y[2]);
-  neighbor_V[3] = V(i + X[3], j + Y[3]) + cost(i + X[3], j + Y[3]);
-  neighbor_V[4] = V(i + X[4], j + Y[4]) + cost(i + X[4], j + Y[4]) * SQRT2;
-  neighbor_V[5] = V(i + X[5], j + Y[5]) + cost(i + X[5], j + Y[5]) * SQRT2;
-  neighbor_V[6] = V(i + X[6], j + Y[6]) + cost(i + X[6], j + Y[6]) * SQRT2;
-  neighbor_V[7] = V(i + X[7], j + Y[7]) + cost(i + X[7], j + Y[7]) * SQRT2;
-  neighbor_V /= 8;
+                         const Eigen::MatrixXd &cost, double gamma, uint32_t i,
+                         uint32_t j) {
+  // N, E, S, W
+  for (uint32_t k = 0; k < 4; k++) {
+    uint32_t x = i + X[k];
+    uint32_t y = j + Y[k];
+    neighbor_V[k] = cost(x, y) + gamma * V(x, y);
+  }
+  for (uint32_t k = 4; k < 8; k++) {
+    uint32_t x = i + X[k];
+    uint32_t y = j + Y[k];
+    neighbor_V[k] = cost(x, y) * SQRT2 + gamma * V(x, y);
+  }
 }
 
-Eigen::MatrixXd ValueIteration::Run(
-    const Eigen::MatrixXd &costmap,
-    const Eigen::Vector2i &goal) const {
-  uint32_t m = costmap.rows();
-  uint32_t n = costmap.cols();
+Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
+                                    const Eigen::Vector2i &goal) const {
+  uint32_t m = costmap.rows() + 1;
+  uint32_t n = costmap.cols() + 1;
   Eigen::MatrixXd V_t = Eigen::MatrixXd::Zero(m, n);
   Eigen::MatrixXd V_0 = Eigen::MatrixXd::Zero(m, n);
-  
-  V_0.row(0) = 1000000 * Eigen::VectorXd::Ones(n);
-  V_0.row(m-1) = 1000000 * Eigen::VectorXd::Ones(n);
-  V_0.col(0) = 1000000 * Eigen::VectorXd::Ones(m);
-  V_0.col(n-1) = 1000000 * Eigen::VectorXd::Ones(m);
+
+  V_0.row(0) = max_value_ * Eigen::VectorXd::Ones(n);
+  V_0.row(m - 1) = max_value_ * Eigen::VectorXd::Ones(n);
+  V_0.col(0) = max_value_ * Eigen::VectorXd::Ones(m);
+  V_0.col(n - 1) = max_value_ * Eigen::VectorXd::Ones(m);
 
   Eigen::VectorXd neighbor_costs(8);
   double diff = 0;
   for (uint32_t k = 0; k < max_iterations_; k++) {
     diff = 0;
-    for (uint32_t i = 1; i < m - 1 ; i++) {
-      for (uint32_t j = 1; j < n - 1 ; j++) {
-        if(i == goal.x() && j == goal.y()) {
-            V_t(i, j) = costmap(i, j);
-        }
-        else {
-            ValueEightConnected(neighbor_costs, V_0, costmap, i, j);
-            V_t(i, j) = neighbor_costs.minCoeff();
-            diff = std::max(std::abs(V_t(i, j) - V_0(i, j)), diff);
+    // for each state
+    for (uint32_t i = 1; i < m - 1; i++) {
+      for (uint32_t j = 1; j < n - 1; j++) {
+        if (i == goal.x() && j == goal.y()) {
+          V_t(i, j) = costmap(i, j);
+        } else {
+          ValueEightConnected(neighbor_costs, V_0, costmap, gamma_, i, j);
+          V_t(i, j) = neighbor_costs.minCoeff();
+          double update = std::fabs(V_t(i, j) - V_0(i, j));
+          if (i == 10 && j == 10) {
+            cout << "neighbor_costs : " << neighbor_costs.transpose() << endl;
+            cout << "V_t(i, j) : " << V_t(i, j) << endl;
+            cout << "V_0(i, j) : " << V_0(i, j) << endl;
+            cout << "update : " << update << endl;
+          }
+          diff = std::max(update, diff);
         }
       }
     }
@@ -111,7 +123,7 @@ Eigen::MatrixXd ValueIteration::Run(
     }
   }
   std::cout << " -- max difference : " << diff << std::endl;
-  return V_0;
+  return V_0.block(1, 1, m - 1, n - 1);
 }
 
 Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
@@ -133,8 +145,8 @@ Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
 Eigen::MatrixXi ValueIteration::solve(const Eigen::Vector2i &init,
                                       const Eigen::Vector2i &goal,
                                       const Eigen::MatrixXd &costmap) const {
-  Eigen::MatrixXd costmap2 = Eigen::MatrixXd::Zero(
-    costmap.rows(), costmap.cols());
+  Eigen::MatrixXd costmap2 =
+      Eigen::MatrixXd::Zero(costmap.rows(), costmap.cols());
   costmap2(goal.x(), goal.y()) = -1e+3;
   Eigen::MatrixXd V = Run(costmap2, goal);
   std::vector<Eigen::Vector2i> path = {init};
