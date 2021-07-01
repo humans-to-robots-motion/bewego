@@ -17,24 +17,30 @@
 #
 #                                        Jim Mainprice on Sunday June 13 2018
 
-import os
-import sys
 import demos_common_imports
 
-import numpy as np
-from numpy.testing import assert_allclose
+# pybewego
+from pybewego import AStarGrid
+from pybewego import ValueIteration
+
+# pyrieef
 from pyrieef.graph.shortest_path import *
 from pyrieef.geometry.workspace import *
 from pyrieef.motion.cost_terms import *
 import pyrieef.rendering.workspace_planar as render
+
+# Standards
+import os
+import sys
+import numpy as np
+from numpy.testing import assert_allclose
 from utils import timer
 import time
-from pybewego import AStarGrid
-from pybewego import ValueIteration
+import matplotlib.pyplot as plt 
 
 show_result = True
 radius = .1
-nb_points = 30
+nb_points = 100
 average_cost = False
 
 
@@ -50,11 +56,17 @@ workspace.obstacles.append(Circle(np.array([0.1, 0.1]), radius))
 workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
 phi = CostGridPotential2D(SignedDistanceWorkspaceMap(workspace), 10., .1, 10.)
 costmap = phi(workspace.box.stacked_meshgrid(nb_points))
-print(costmap)
+# print(costmap)
+
+if show_result:
+    viewer = render.WorkspaceDrawer(
+        rows=1, cols=1, workspace=workspace,
+        wait_for_keyboard=True)
+    viewer.set_drawing_axis(0)
 
 pixel_map = workspace.pixel_map(nb_points)
 np.random.seed(2)
-for i in range(2):
+for i in range(10):
     s_w = sample_collision_free(workspace)
     t_w = sample_collision_free(workspace)
     s = pixel_map.world_to_grid(s_w)
@@ -73,7 +85,7 @@ for i in range(2):
     viter.set_max_iterations(300)
     C = np.ones(costmap.shape)
     C[t[0], t[1]] = 0
-    Vt = viter.run(C.T, t)
+    Vt = viter.run(costmap.T, t)
     # V = np.ones(costmap.shape) * Vt.min()
     # V[1:-1, 1:-1] = Vt[1:-1, 1:-1]
     # path = viter.solve(s, t, costmap)
@@ -81,11 +93,8 @@ for i in range(2):
 
     if show_result:
 
-        viewer = render.WorkspaceDrawer(
-            rows=1, cols=1, workspace=workspace, wait_for_keyboard=True)
-
-        viewer.set_drawing_axis(0)
-        viewer.draw_ws_img(Vt, interpolate="none")
+        viewer._ax.clear()
+        viewer.draw_ws_img(Vt, interpolate="none", color_style=plt.cm.hsv)
         # viewer.draw_ws_img(costmap.T, interpolate="none")
         viewer.draw_ws_obstacles()
         # viewer.draw_ws_line(trajectory(pixel_map, path))
@@ -98,6 +107,6 @@ for i in range(2):
         # # viewer.draw_ws_point(s_w)
         # viewer.draw_ws_point(t_w, "r")
 
-        viewer.show_once()
+        viewer.show_once(close_window=False)
 
 # print(path)

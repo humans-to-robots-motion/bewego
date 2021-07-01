@@ -83,15 +83,21 @@ void ValueEightConnected(Eigen::VectorXd &neighbor_V, const Eigen::MatrixXd &V,
 
 Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
                                     const Eigen::Vector2i &goal) const {
-  uint32_t m = costmap.rows() + 1;
-  uint32_t n = costmap.cols() + 1;
+  uint32_t m = costmap.rows() + 2;
+  uint32_t n = costmap.cols() + 2;
+  Eigen::MatrixXd cost = Eigen::MatrixXd::Zero(m, n);
+  cost.block(1, 1, m - 2, n - 2) = costmap;
+
   Eigen::MatrixXd V_t = Eigen::MatrixXd::Zero(m, n);
   Eigen::MatrixXd V_0 = Eigen::MatrixXd::Zero(m, n);
 
+  // Pad with +inf cost
   V_0.row(0) = max_value_ * Eigen::VectorXd::Ones(n);
   V_0.row(m - 1) = max_value_ * Eigen::VectorXd::Ones(n);
   V_0.col(0) = max_value_ * Eigen::VectorXd::Ones(m);
   V_0.col(n - 1) = max_value_ * Eigen::VectorXd::Ones(m);
+
+  V_t = V_0;
 
   Eigen::VectorXd neighbor_costs(8);
   double diff = 0;
@@ -100,18 +106,18 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
     // for each state
     for (uint32_t i = 1; i < m - 1; i++) {
       for (uint32_t j = 1; j < n - 1; j++) {
-        if (i == goal.x() && j == goal.y()) {
-          V_t(i, j) = costmap(i, j);
+        if (i == goal.x() + 1 && j == goal.y() + 1) {
+          V_t(i, j) = cost(i, j);
         } else {
-          ValueEightConnected(neighbor_costs, V_0, costmap, gamma_, i, j);
+          ValueEightConnected(neighbor_costs, V_0, cost, gamma_, i, j);
           V_t(i, j) = neighbor_costs.minCoeff();
           double update = std::fabs(V_t(i, j) - V_0(i, j));
-          if (i == 10 && j == 10) {
-            cout << "neighbor_costs : " << neighbor_costs.transpose() << endl;
-            cout << "V_t(i, j) : " << V_t(i, j) << endl;
-            cout << "V_0(i, j) : " << V_0(i, j) << endl;
-            cout << "update : " << update << endl;
-          }
+          // if (i == 1 && j == 10) {
+          //   cout << "neighbor_costs : " << neighbor_costs.transpose() <<
+          //   endl; cout << "V_t(i, j) : " << V_t(i, j) << endl; cout <<
+          //   "V_0(i, j) : " << V_0(i, j) << endl; cout << "update : " <<
+          //   update << endl;
+          // }
           diff = std::max(update, diff);
         }
       }
@@ -123,7 +129,7 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
     }
   }
   std::cout << " -- max difference : " << diff << std::endl;
-  return V_0.block(1, 1, m - 1, n - 1);
+  return V_0.block(1, 1, m - 2, n - 2);
 }
 
 Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
