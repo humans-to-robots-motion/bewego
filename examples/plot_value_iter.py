@@ -57,6 +57,7 @@ workspace.obstacles.append(Circle(np.array([-.1, 0.1]), radius))
 phi = CostGridPotential2D(SignedDistanceWorkspaceMap(workspace), 10., .1, 10.)
 costmap = phi(workspace.box.stacked_meshgrid(nb_points))
 # print(costmap)
+# occupancy = occupancy_map(nb_points, workspace)
 
 if show_result:
     viewer = render.WorkspaceDrawer(
@@ -82,7 +83,8 @@ for i in range(10):
     print("s : ", s)
     print("t : ", t)
     viter = ValueIteration()
-    viter.set_max_iterations(300)
+    viter.set_max_iterations(1000)
+    viter.set_theta(1e-6)
     C = np.ones(costmap.shape)
     C[t[0], t[1]] = 0
     Vt = viter.run(costmap.T, t)

@@ -101,7 +101,8 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
 
   Eigen::VectorXd neighbor_costs(8);
   double diff = 0;
-  for (uint32_t k = 0; k < max_iterations_; k++) {
+  uint32_t k = 0;
+  for (k = 0; k < max_iterations_; k++) {
     diff = 0;
     // for each state
     for (uint32_t i = 1; i < m - 1; i++) {
@@ -124,11 +125,11 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
     }
     V_0 = V_t;
     if (diff < theta_) {
-      std::cout << " -- iterations : " << k << std::endl;
       break;
     }
   }
-  std::cout << " -- max difference : " << diff << std::endl;
+  cout << " -- iterations : " << k << endl;
+  cout << " -- max difference : " << diff << endl;
   return V_0.block(1, 1, m - 2, n - 2);
 }
 
