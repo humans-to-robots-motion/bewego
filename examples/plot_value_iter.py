@@ -83,8 +83,10 @@ for i in range(10):
     print("s : ", s)
     print("t : ", t)
     viter = ValueIteration()
-    viter.set_max_iterations(1000)
+    viter.set_max_iterations(300)
     viter.set_theta(1e-6)
+    viter.set_with_softmin(False)
+    viter.set_softmin_alpha(1e-5)
     C = np.ones(costmap.shape)
     C[t[0], t[1]] = 0
     Vt = viter.run(costmap.T, t)

@@ -60,65 +60,123 @@ using std::endl;
 
 namespace bewego {
 
+double SoftUpdate(const Eigen::VectorXd &q, double alpha = 1) {
+  double q_softmax = 0;
+  double Z = (alpha * q).array().exp().sum();
+  Z = std::max(1e-20, Z);  // make sure we can still devide by Z.
+  for (uint32_t k = 0; k < q.size(); k++) {
+    q_softmax += q[k] * exp(alpha * q[k]) / Z;
+  }
+  return q_softmax;
+}
+
+double SoftMax(const Eigen::VectorXd &x, double alpha = 1) {
+  double Z = (alpha * x).array().exp().sum();
+  return (1. / alpha) * std::log(Z);
+}
+
+double SoftMin(const Eigen::VectorXd &x, double alpha = 1) {
+  return SoftMax(x, -1 * alpha);
+}
+
+Eigen::VectorXd ValidIndicies(const Eigen::VectorXd &x,
+                              const std::vector<bool> &valid_indices) {
+  std::vector<double> a;
+  for (uint32_t k = 0; k < valid_indices.size(); k++) {
+    if (valid_indices[k]) {
+      a.push_back(x[k]);
+    }
+  }
+  return Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(a.data(), a.size());
+}
+
 #define SQRT2 1.4142135623730951
 
 std::vector<int> X = {1, -1, 0, 0, 1, -1, -1, 1};
 std::vector<int> Y = {0, 0, 1, -1, 1, -1, 1, -1};
 
-void ValueEightConnected(Eigen::VectorXd &neighbor_V, const Eigen::MatrixXd &V,
-                         const Eigen::MatrixXd &cost, double gamma, uint32_t i,
-                         uint32_t j) {
+bool SetValidAction(uint32_t k, int x, int y, int rows, int cols,
+                    std::vector<bool> &valid_actions) {
+  valid_actions[k] = x >= 0 && x < rows && y >= 0 && y < cols;
+  return valid_actions[k];
+}
+
+bool ValueEightConnected(Eigen::VectorXd &Q_values,
+                         std::vector<bool> &valid_actions,
+                         const Eigen::MatrixXd &V, const Eigen::MatrixXd &cost,
+                         double gamma, uint32_t i, uint32_t j) {
+  bool contains_invalid = false;
   // N, E, S, W
   for (uint32_t k = 0; k < 4; k++) {
-    uint32_t x = i + X[k];
-    uint32_t y = j + Y[k];
-    neighbor_V[k] = cost(x, y) + gamma * V(x, y);
+    int x = i + X[k];
+    int y = j + Y[k];
+    if (SetValidAction(k, x, y, cost.rows(), cost.cols(), valid_actions)) {
+      Q_values[k] = cost(x, y) + gamma * V(x, y);
+    } else {
+      contains_invalid = true;
+    }
   }
   for (uint32_t k = 4; k < 8; k++) {
     uint32_t x = i + X[k];
     uint32_t y = j + Y[k];
-    neighbor_V[k] = cost(x, y) * SQRT2 + gamma * V(x, y);
+    if (SetValidAction(k, x, y, cost.rows(), cost.cols(), valid_actions)) {
+      Q_values[k] = cost(x, y) * SQRT2 + gamma * V(x, y);
+    } else {
+      contains_invalid = true;
+    }
   }
+  return contains_invalid;
 }
 
 Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
                                     const Eigen::Vector2i &goal) const {
-  uint32_t m = costmap.rows() + 2;
-  uint32_t n = costmap.cols() + 2;
-  Eigen::MatrixXd cost = Eigen::MatrixXd::Zero(m, n);
-  cost.block(1, 1, m - 2, n - 2) = costmap;
+  uint32_t m = costmap.rows();
+  uint32_t n = costmap.cols();
+  Eigen::MatrixXd cost = costmap;
 
   Eigen::MatrixXd V_t = Eigen::MatrixXd::Zero(m, n);
   Eigen::MatrixXd V_0 = Eigen::MatrixXd::Zero(m, n);
 
-  // Pad with +inf cost
-  V_0.row(0) = max_value_ * Eigen::VectorXd::Ones(n);
-  V_0.row(m - 1) = max_value_ * Eigen::VectorXd::Ones(n);
-  V_0.col(0) = max_value_ * Eigen::VectorXd::Ones(m);
-  V_0.col(n - 1) = max_value_ * Eigen::VectorXd::Ones(m);
+  uint32_t Na = 8;
+  bool debug = false;
 
-  V_t = V_0;
+  cout << "alpha : " << alpha_ << endl;
 
-  Eigen::VectorXd neighbor_costs(8);
+  std::vector<bool> valid_actions(Na);
+  Eigen::VectorXd q_values(Na);
   double diff = 0;
   uint32_t k = 0;
   for (k = 0; k < max_iterations_; k++) {
     diff = 0;
     // for each state
-    for (uint32_t i = 1; i < m - 1; i++) {
-      for (uint32_t j = 1; j < n - 1; j++) {
-        if (i == goal.x() + 1 && j == goal.y() + 1) {
+    for (uint32_t i = 0; i < m; i++) {
+      for (uint32_t j = 0; j < n; j++) {
+        if (i == goal.x() && j == goal.y()) {
           V_t(i, j) = cost(i, j);
         } else {
-          ValueEightConnected(neighbor_costs, V_0, cost, gamma_, i, j);
-          V_t(i, j) = neighbor_costs.minCoeff();
+          // - 1) Calculate value for all actions
+          bool has_invalid = ValueEightConnected(q_values, valid_actions, V_0,
+                                                 cost, gamma_, i, j);
+          if (has_invalid) {
+            q_values = ValidIndicies(q_values, valid_actions);
+          }
+
+          // - 2) Take the min over actions
+          V_t(i, j) = with_softmin_ ? SoftUpdate(q_values, -1 * alpha_)
+                                    : q_values.minCoeff();
+          if (has_invalid) {
+            q_values.resize(Na);
+          }
+
+          // - 3) Compute magnitude of update
           double update = std::fabs(V_t(i, j) - V_0(i, j));
-          // if (i == 1 && j == 10) {
-          //   cout << "neighbor_costs : " << neighbor_costs.transpose() <<
-          //   endl; cout << "V_t(i, j) : " << V_t(i, j) << endl; cout <<
-          //   "V_0(i, j) : " << V_0(i, j) << endl; cout << "update : " <<
-          //   update << endl;
-          // }
+
+          if (debug && i == 40 && j == 40) {
+            cout << "q_values : " << q_values.transpose() << endl;
+            cout << "V_t(i, j) : " << V_t(i, j) << endl;
+            cout << "V_0(i, j) : " << V_0(i, j) << endl;
+            cout << "update : " << update << endl;
+          }
           diff = std::max(update, diff);
         }
       }
@@ -131,7 +189,7 @@ Eigen::MatrixXd ValueIteration::Run(const Eigen::MatrixXd &costmap,
   cout << " -- iterations : " << k << endl;
   cout << " -- max difference : " << diff << endl;
   return V_0.block(1, 1, m - 2, n - 2);
-}
+}  // namespace bewego
 
 Eigen::Vector2i MinNeighbor(const Eigen::MatrixXd &V,
                             const Eigen::Vector2i &coord) {
@@ -168,6 +226,29 @@ Eigen::MatrixXi ValueIteration::solve(const Eigen::Vector2i &init,
   }
 
   return path_m;
+}
+
+// -----------------------------------------------------------------------------
+// QTable implementation.
+// -----------------------------------------------------------------------------
+
+QTable::~QTable() {}
+
+// -----------------------------------------------------------------------------
+// SoftQIteration implementation.
+// -----------------------------------------------------------------------------
+
+std::shared_ptr<QTable> SoftQIteration::Run(const Eigen::MatrixXd &costmap,
+                                            const Eigen::Vector2i &goal) const {
+  auto Q_t = std::make_shared<QTable>(costmap.rows(), costmap.cols(), 8);
+
+  // 1) Calculate softvalue iteration
+  auto value_iteration = std::make_shared<ValueIteration>();
+  value_iteration->set_with_softmin(true);
+
+  // 2) Setup q-table
+
+  return Q_t;
 }
 
 }  // namespace bewego

@@ -160,6 +160,8 @@ PYBIND11_MODULE(_pybewego, m) {
       .def(py::init<>())
       .def("set_max_iterations", &bewego::ValueIteration::set_max_iterations)
       .def("set_theta", &bewego::ValueIteration::set_theta)
+      .def("set_with_softmin", &bewego::ValueIteration::set_with_softmin)
+      .def("set_softmin_alpha", &bewego::ValueIteration::set_softmin_alpha)
       .def("run", &bewego::ValueIteration::Run)
       .def("solve", &bewego::ValueIteration::solve);
 

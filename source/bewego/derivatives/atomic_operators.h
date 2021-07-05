@@ -718,7 +718,7 @@ class LogSumExp : public DifferentiableMap {
       : n_(n), alpha_(alpha), inv_alpha_(1. / alpha) {
     type_ = "LogSumExp";
   }
-  virtual ~LogSumExp() {}
+  virtual ~LogSumExp();
 
   uint32_t input_dimension() const override { return n_; }
   uint32_t output_dimension() const override { return 1; }

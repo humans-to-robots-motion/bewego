@@ -122,6 +122,8 @@ Eigen::MatrixXd SoftNorm::Hessian(const Eigen::VectorXd& x) const {
 // LogSumExp implementation.
 //-----------------------------------------------------------------------------
 
+LogSumExp::~LogSumExp() {}
+
 Eigen::VectorXd LogSumExp::Forward(const Eigen::VectorXd& x) const {
   CheckInputDimension(x);
   Eigen::VectorXd z = (alpha_ * x).array().exp();
