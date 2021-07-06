@@ -63,7 +63,7 @@ namespace bewego {
 double SoftUpdate(const Eigen::VectorXd &q, double alpha = 1) {
   double q_softmax = 0;
   double Z = (alpha * q).array().exp().sum();
-  Z = std::max(1e-20, Z);  // make sure we can still devide by Z.
+  Z = std::max(1e-40, Z);  // make sure we can still devide by Z.
   for (uint32_t k = 0; k < q.size(); k++) {
     q_softmax += q[k] * exp(alpha * q[k]) / Z;
   }

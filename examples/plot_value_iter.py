@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 
 show_result = True
 radius = .1
-nb_points = 100
+nb_points = 50
 average_cost = False
 
 
@@ -83,13 +83,14 @@ for i in range(10):
     print("s : ", s)
     print("t : ", t)
     viter = ValueIteration()
-    viter.set_max_iterations(300)
+    viter.set_max_iterations(1000)
     viter.set_theta(1e-6)
     viter.set_with_softmin(False)
-    viter.set_softmin_alpha(1e-5)
+    viter.set_softmin_alpha(1e-2)
     C = np.ones(costmap.shape)
+    # C = costmap
     C[t[0], t[1]] = 0
-    Vt = viter.run(costmap.T, t)
+    Vt = viter.run(C.T, t)
     # V = np.ones(costmap.shape) * Vt.min()
     # V[1:-1, 1:-1] = Vt[1:-1, 1:-1]
     # path = viter.solve(s, t, costmap)
